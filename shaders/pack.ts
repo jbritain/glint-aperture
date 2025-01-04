@@ -80,6 +80,14 @@ function setupShader() {
         .clear(true)
         .build()
 
+    registerShader(
+        Stage.PRE_RENDER,
+        new Compute("generateSkyViewLUT")
+        .location("program/sky/generateSkyViewLUT.csh")
+        .workGroups(25, 25, 1)
+        .build()
+    )
+
     let sceneTex = new Texture("sceneTex")
         .format(Format.RGB16F)
         .clear(true)
@@ -104,8 +112,17 @@ function setupShader() {
         .fragment("program/gbuffer/shadow.fsh")
         .target(0, shadowColorTex)
         .build()
-    )
+    );
+
+    registerShader(
+        Stage.PRE_TRANSLUCENT,
+        new Composite("compositeSky")
+        .vertex("program/fullscreen.vsh")
+        .fragment("program/composite/compositeSky.fsh")
+        .target(0, sceneTex)
+        .build()
+    );
 
 
-    setCombinationPass(new CombinationPass("program/final.fsh").build())
+    setCombinationPass(new CombinationPass("program/final.fsh").build());
 }
