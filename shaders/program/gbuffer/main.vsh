@@ -10,6 +10,7 @@ out vec2 uv;
 out vec2 light;
 out vec4 vertColor;
 out vec3 viewPos;
+out vec3 normal;
 
 void iris_sendParameters(VertexData data) {
     // AO is separated by default. Add it here.
@@ -20,4 +21,6 @@ void iris_sendParameters(VertexData data) {
     light = data.light;
 
     viewPos = (playerProjectionInverse * data.clipPos).xyz;
+
+    normal = mat3(iris_modelViewMatrix) * data.normal;
 }

@@ -2,7 +2,8 @@ function setupShader() {
     worldSettings.ambientOcclusionLevel = 1.0;
     worldSettings.disableShade = true;
     worldSettings.renderEntityShadow = false;
-    worldSettings.shadowMapResolution = 2048;
+    worldSettings.shadowMapResolution = 1024;
+    worldSettings.sunPathRotation = -40.0;
 
     let sceneTex = new Texture("sceneTex").format(Format.RGB16F)
     .clear(true).build();
@@ -11,7 +12,7 @@ function setupShader() {
     .clear(true).build();
 
     registerShader(
-        new ObjectShader("terrain", Usage.BASIC)
+        new ObjectShader("terrain", Usage.TERRAIN_SOLID)
         .vertex("program/gbuffer/main.vsh")
         .fragment("program/gbuffer/main.fsh")
         .target(0, sceneTex)
@@ -56,7 +57,7 @@ function setupShader() {
         "shadowModelView",
         // "shadowModelViewInverse",
         "shadowProjection",
-        "shadowProjectionSize",
+        // "shadowProjectionInverse",
         "skyColor",
         "sunPosition",
         "timeCounter",
