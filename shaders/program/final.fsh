@@ -2,6 +2,8 @@
 
 uniform sampler2D sceneTex;
 uniform sampler2DArray shadowMap;
+uniform sampler2D sunTransmittanceLUTTex;
+uniform sampler2D multipleScatteringLUTTex;
 
 in vec2 uv;
 out vec4 fragColor;
@@ -23,5 +25,5 @@ void main() {
 	fragColor.rgb = jodieReinhardTonemap(fragColor.rgb);
 	fragColor.rgb = pow(fragColor.rgb, vec3(1.0/2.2));
 
-	// fragColor = texture(shadowMap, vec3(uv, 3));
+	fragColor = texture(multipleScatteringLUTTex, uv);
 }
