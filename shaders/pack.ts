@@ -43,6 +43,10 @@ function setupShader() {
 
     finalizeUniforms();
 
+    const sceneData = new Buffer(32)
+        .clear(true)
+        .build();
+
     let sunTransmittanceLUT = new Texture("sunTransmittanceLUTTex")
         .format(Format.RGBA16F)
         .imageName("sunTransmittanceLUT")
@@ -77,6 +81,7 @@ function setupShader() {
         .format(Format.RGBA16F)
         .imageName("skyViewLUT")
         .width(200).height(200)
+        // .mipmap(true)
         .clear(true)
         .build()
 
@@ -85,6 +90,16 @@ function setupShader() {
         new Compute("generateSkyViewLUT")
         .location("program/sky/generateSkyViewLUT.csh")
         .workGroups(25, 25, 1)
+        .ssbo(0, sceneData)
+        .build()
+    )
+
+    registerShader(
+        Stage.PRE_RENDER,
+        new Compute("getSkylightColor")
+        .location("program/sky/getSkylightColor.csh")
+        .workGroups(1, 1, 1)
+        .ssbo(0, sceneData)
         .build()
     )
 
@@ -103,6 +118,7 @@ function setupShader() {
         .vertex("program/gbuffer/main.vsh")
         .fragment("program/gbuffer/main.fsh")
         .target(0, sceneTex)
+        .ssbo(0, sceneData)
         .build()
     );
 

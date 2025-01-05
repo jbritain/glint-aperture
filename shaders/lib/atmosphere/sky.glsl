@@ -78,9 +78,9 @@ vec3 getSky(vec3 color, vec3 rayDir, bool includeSun){
     return lum;
 }
 
-// vec3 getSky(vec3 rayDir, bool includeSun){
-//     return getSky(vec3(0.0), rayDir, includeSun);
-// }
+vec3 getSky(vec3 rayDir, bool includeSun){
+    return getSky(vec3(0.0), rayDir, includeSun);
+}
 
 
 

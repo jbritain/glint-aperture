@@ -8,10 +8,10 @@ in vec2 uv;
 in vec2 light;
 in vec4 vertColor;
 in vec3 viewPos;
-in vec3 normal;
+in mat3 tbnMatrix;
 
 #include "/lib/common.glsl"
-#include "/lib/shadowSpace.glsl"
+#include "/lib/lighting/shading.glsl"
 
 void iris_emitFragment() {
 	vec2 mUV = uv, mLight = light;
@@ -20,17 +20,21 @@ void iris_emitFragment() {
 	iris_modifyBase(mUV, mColor, mLight);
 
 	color = iris_sampleBaseTex(mUV) * mColor * iris_sampleLightmap(mLight);
+	vec3 albedo = color.rgb;
 
 	if (iris_discardFragment(color)) discard;
 
-	vec3 feetPlayerPos = (playerModelViewInverse * vec4(viewPos, 1.0)).xyz;
-	int cascade;
-	vec3 shadowScreenPos = getShadowScreenPos(feetPlayerPos, normal, cascade);
+	vec4 normalData = iris_sampleNormalMap(mUV);
+    vec4 specularData = iris_sampleSpecularMap(mUV);
 
-	if(clamp01(shadowScreenPos.xy) == shadowScreenPos.xy){
-		color.rgb *= (texture(shadowMap, vec4(shadowScreenPos.xy, cascade, shadowScreenPos.z)).r * clamp01(dot(normal, lightDir))) * 0.5 + 0.5;
-	}
-	
+	vec3 mappedNormal = normalData.xyz * 2.0 - 1.0;
+	mappedNormal.z = sqrt(1.0 - dot(mappedNormal.xy, mappedNormal.xy)); // reconstruct z due to labPBR encoding
+	mappedNormal = tbnMatrix * mappedNormal;
+
+	Material material = materialFromSpecularMap(albedo.rgb, specularData);
+
+	color.rgb = getShadedColor(material, mappedNormal, tbnMatrix[2], light, viewPos);
+
 
 	color.rgb = pow(color.rgb, vec3(2.2));
 }

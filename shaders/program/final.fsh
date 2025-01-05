@@ -2,23 +2,20 @@
 
 uniform sampler2D sceneTex;
 
+#include "/lib/common.glsl"
+
 in vec2 uv;
 out vec4 fragColor;
 
-float luminance(vec3 color){
-  return dot(color, vec3(0.2126, 0.7152, 0.0722));
-}
-
-vec3 jodieReinhardTonemap(vec3 v){
-	float l = luminance(v);
-	vec3 tv = v / (1.0f + v);
-	return mix(v / (1.0f + l), tv, tv);
+vec3 hejlBurgessTonemap(vec3 v){
+    v /= 2.0;
+    vec3 x = max0(v - 0.004);
+    return (x * (6.2 * x + 0.5)) / (x * (6.2 * x + 1.7) + 0.06);
 }
 
 void main() {
 	fragColor = texture(sceneTex, uv);
 
-
-	fragColor.rgb = jodieReinhardTonemap(fragColor.rgb);
-	fragColor.rgb = pow(fragColor.rgb, vec3(1.0/2.2));
+	fragColor.rgb *= 0.2;
+	fragColor.rgb = hejlBurgessTonemap(fragColor.rgb);
 }

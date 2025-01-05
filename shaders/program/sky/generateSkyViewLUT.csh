@@ -10,6 +10,7 @@ uniform sampler2D multipleScatteringLUTTex;
 layout(rgba16f) uniform image2D skyViewLUT;
 
 #include "/lib/atmosphere/hillaireCommon.glsl"
+#include "/lib/buffers/sceneData.glsl"
 
 /* 
     'Production Sky Rendering' by Andrew Helmer
@@ -92,4 +93,9 @@ void main()
     vec3 lum = raymarchScattering(atmospherePos, rayDir, worldSunDir, tMax, float(numScatteringSteps));
     
     imageStore(skyViewLUT, texelCoord, vec4(lum, 1.0));
+
+    if(texelCoord == ivec2(0)){
+       sunlightColor = sunDir == lightDir ? getValFromTLUT(sunTransmittanceLUTTex, tLUTRes, atmospherePos, worldSunDir) * sunIrradiance : getValFromTLUT(sunTransmittanceLUTTex, tLUTRes, atmospherePos, -worldSunDir) * moonIrradiance;
+       skylightColor = vec3(0.0);
+    }
 }
