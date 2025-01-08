@@ -12,29 +12,40 @@ uniform sampler2D skyViewLUTTex;
 #include "/lib/atmosphere/sky.glsl"
 
 void main(){
-    int samples = 0;
-    float sampleDelta = 0.4;
+    int samples = 4;
+    
+    vec3 radiance = vec3(0.0);
 
-    for(float phi = 0.0; phi < 2.0 * PI; phi += sampleDelta){
-        float cosPhi = cos(phi);
-        float sinPhi = sin(phi);
+    mat3 tbn = mat3(
+        vec3(1.0, 0.0, 0.0),
+        vec3(0.0, 0.0, 1.0),
+        vec3(0.0, 1.0, 0.0)
+    );
 
-        for(float theta = 0.0; theta < 0.5 * PI; theta += sampleDelta){
-            float cosTheta = cos(theta);
-            float sinTheta = sin(theta);
+    for(int i = 0; i < samples; i++){
+        float cosTheta = sqrt(float(i)/samples);
+
+        if(cosTheta < 1e-9){
+            continue;
+        }
+
+        float sinTheta = sqrt(1.0 - pow2(cosTheta));
+
+        for(int j = 0; j < samples;  j++){
+            float phi = 2 * PI * (float(j)/samples);
 
             vec3 dir = vec3(
-                sinTheta * cosPhi,
-                cosTheta,
-                sinTheta * sinPhi
+                cos(phi) * sinTheta,
+                sin(phi) * sinTheta,
+                cosTheta
             );
 
-            skylightColor += getSky(dir, false);
-            samples++;
+            radiance += getSky(tbn * dir, false) / (cosTheta / PI);
         }
     }
 
-    skylightColor /= float(samples);
-    skylightColor *= 2.0;
+    radiance /= pow2(samples);
+    radiance = max0(radiance);
+    skylightColor = radiance;
 
 }
