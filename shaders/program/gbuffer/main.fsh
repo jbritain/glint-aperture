@@ -2,7 +2,9 @@
 
 layout(location = 0) out vec4 color;
 
-uniform sampler2DArrayShadow shadowMap;
+uniform sampler2DArrayShadow shadowMapFiltered;
+uniform sampler2DArrayShadow solidShadowMapFiltered;
+uniform sampler2DArray shadowColorTex;
 
 in vec2 uv;
 in vec2 light;
@@ -20,6 +22,7 @@ void iris_emitFragment() {
 	iris_modifyBase(mUV, mColor, mLight);
 
 	color = iris_sampleBaseTex(mUV) * mColor * iris_sampleLightmap(mLight);
+	color.rgb = pow(color.rgb, vec3(2.2));
 	vec3 albedo = color.rgb;
 
 	if (iris_discardFragment(color)) discard;
@@ -36,5 +39,5 @@ void iris_emitFragment() {
 	color.rgb = getShadedColor(material, mappedNormal, tbnMatrix[2], light, viewPos);
 
 
-	color.rgb = pow(color.rgb, vec3(2.2));
+
 }

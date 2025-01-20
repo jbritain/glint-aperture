@@ -14,6 +14,4 @@ void iris_emitFragment() {
   if (iris_discardFragment(col)) discard;
 
   albedo = col;
-
-  albedo.rgb = pow(albedo.rgb, vec3(2.2));
 }

@@ -12,6 +12,8 @@ uniform sampler2D skyViewLUTTex;
 #include "/lib/atmosphere/sky.glsl"
 
 void main(){
+    skylightColor = vec3(0.0);
+
     int samples = 0;
     float sampleDelta = 0.4;
 
