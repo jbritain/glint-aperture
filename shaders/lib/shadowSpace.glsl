@@ -10,7 +10,7 @@ vec3 getShadowScreenPos(vec3 feetPlayerPos, vec3 worldNormal, out int cascade){
   for(cascade = 0; cascade < 4; cascade++){
     shadowClipPos = shadowProjection[cascade] * shadowViewPos;
 
-    if(clamp(shadowClipPos.xy, vec2(-1.0), vec2(1.0)) == shadowClipPos.xy) break;
+    if(clamp(shadowClipPos.xy, vec2(-0.95), vec2(0.95)) == shadowClipPos.xy) break;
   }
 
   vec3 shadowClipNormal = mat3(shadowProjection[cascade]) * shadowViewNormal;

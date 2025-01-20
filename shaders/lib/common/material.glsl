@@ -74,19 +74,6 @@ Material materialFromSpecularMap(vec3 albedo, vec4 specularData){
 
 	material.albedo = albedo;
 
-	#if PBR_MODE == 0
-	material.roughness = 1.0;
-	material.f0 = vec3(0.0);
-	material.f82 = vec3(0.0);
-	material.metalID = NO_METAL;
-	material.porosity = 0.0;
-	material.sss = 0.0;
-	material.emission = 0.0;
-	material.ao = 1.0;
-
-	return material;
-	#endif
-
 	material.roughness = pow2(1.0 - specularData.r);
 	if(specularData.g <= 229.0/255.0){
 		material.f0 = vec3(specularData.g);

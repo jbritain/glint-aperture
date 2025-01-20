@@ -2,6 +2,7 @@
 
 layout(location = 0) out vec4 color;
 
+uniform sampler2DArray shadowMap;
 uniform sampler2DArrayShadow shadowMapFiltered;
 uniform sampler2DArrayShadow solidShadowMapFiltered;
 uniform sampler2DArray shadowColorTex;
@@ -11,6 +12,7 @@ in vec2 light;
 in vec4 vertColor;
 in vec3 viewPos;
 in mat3 tbnMatrix;
+flat in uint blockID;
 
 #include "/lib/common.glsl"
 #include "/lib/lighting/shading.glsl"
@@ -36,8 +38,10 @@ void iris_emitFragment() {
 
 	Material material = materialFromSpecularMap(albedo.rgb, specularData);
 
+	if(iris_hasFluid(blockID)){
+		material.roughness = 0.0;
+		material.f0 = vec3(0.02);
+	}
+
 	color.rgb = getShadedColor(material, mappedNormal, tbnMatrix[2], light, viewPos);
-
-
-
 }

@@ -11,9 +11,11 @@ out vec2 light;
 out vec4 vertColor;
 out vec3 viewPos;
 out mat3 tbnMatrix;
+flat out uint blockID;
 
 void iris_sendParameters(VertexData data) {
-    // AO is separated by default. Add it here.
+    blockID = data.blockId;
+    
     vec3 colRGB = data.color.rgb * data.ao;
     vertColor = vec4(mix(data.overlayColor.rgb, colRGB, data.overlayColor.a), data.color.a); // This applies the red hit flash, if applicable.
 
