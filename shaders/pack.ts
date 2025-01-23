@@ -81,11 +81,18 @@ function setupShader() {
         .build();
 
     registerShader(
-        new ObjectShader("terrain", Usage.TERRAIN_SOLID)
+        new ObjectShader("terrain", Usage.TEXTURED)
         .vertex("program/gbuffer/main.vsh")
         .fragment("program/gbuffer/main.fsh")
         .target(0, sceneTex)
         .ssbo(0, sceneData)
+        .build()
+    );
+
+    registerShader(
+        new ObjectShader("terrain", Usage.CLOUDS)
+        .vertex("program/gbuffer/discard.vsh")
+        .fragment("program/gbuffer/discard.fsh")
         .build()
     );
 

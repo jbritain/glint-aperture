@@ -1,7 +1,6 @@
 #version 450 core
 
 void iris_emitVertex(inout VertexData data) {
-    // It's that simple.
     data.clipPos = iris_projectionMatrix * iris_modelViewMatrix * data.modelPos;
 }
 
