@@ -9,6 +9,8 @@ function setupShader() {
         .clear(true)
         .build();
 
+    // ======================= SETUP =======================
+
     let sunTransmittanceLUT = new Texture("sunTransmittanceLUTTex")
         .format(Format.RGBA16F)
         .imageName("sunTransmittanceLUT")
@@ -43,9 +45,10 @@ function setupShader() {
         .format(Format.RGBA16F)
         .imageName("skyViewLUT")
         .width(200).height(200)
-        // .mipmap(true)
         .clear(true)
         .build()
+
+    // ======================= PREPARE =======================
 
     registerShader(
         Stage.PRE_RENDER,
@@ -64,6 +67,8 @@ function setupShader() {
         .ssbo(0, sceneData)
         .build()
     )
+
+    // ======================= GBUFFERS =======================
 
     let sceneTex = new Texture("sceneTex")
         .format(Format.RGB16F)
@@ -92,6 +97,8 @@ function setupShader() {
         .build()
     );
 
+    // ======================= DEFERRED =======================
+
     registerShader(
         Stage.PRE_TRANSLUCENT,
         new Composite("compositeSky")
@@ -100,6 +107,40 @@ function setupShader() {
         .target(0, sceneTex)
         .build()
     );
+
+    // ======================= COMPOSITES =======================
+
+    let bloomTex = new Texture("bloomTex")
+        .format(Format.RGB16F)
+        .clear(true)
+        .mipmap(true)
+        .build();
+
+
+    for(let i = 0; i < 8; i++){
+        registerShader(
+            Stage.POST_RENDER,
+            new Composite(`bloomDownsample${i}-${i+1}`)
+            .vertex("program/fullscreen.vsh")
+            .fragment("program/composite/bloomDownsample.fsh")
+            .target(0, bloomTex, i + 1)
+            .define("BLOOM_INDEX", i.toString())
+            .build()
+        )
+    }
+
+    for(let i = 8; i > 0; i -= 1){
+        registerShader(
+            Stage.POST_RENDER,
+            new Composite(`bloomUpsample${i}-${i-1}`)
+            .vertex("program/fullscreen.vsh")
+            .fragment("program/composite/bloomUpsample.fsh")
+            .target(0, bloomTex, i - 1)
+            .define("BLOOM_INDEX", i.toString())
+            .build()
+        )
+    }
+
 
 
     setCombinationPass(new CombinationPass("program/final.fsh").build());
