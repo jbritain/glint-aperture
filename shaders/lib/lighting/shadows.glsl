@@ -45,13 +45,13 @@ vec3 getShadowing(vec3 playerPos, vec3 faceNormal, vec2 lightmap, Material mater
     }
 
     int cascade;
-	vec3 shadowScreenPos = getShadowScreenPos(playerPos, mat3(playerModelViewInverse) * faceNormal, cascade);
+	vec3 shadowScreenPos = getShadowScreenPos(playerPos, mat3(ap.camera.viewInv) * faceNormal, cascade);
 
 	if(clamp01(shadowScreenPos.xy) != shadowScreenPos.xy){
         return vec3(fakeShadow);
     }
 
-    float noise = interleavedGradientNoise(floor(gl_FragCoord.xy), frameCounter);
+    float noise = interleavedGradientNoise(floor(gl_FragCoord.xy), ap.frame.counter);
 
     float scatterSampleAngle = noise * 2 * PI;
     vec2 scatterSampleOffset = vec2(sin(scatterSampleAngle), cos(scatterSampleAngle)) * (sampleRadius / 4);

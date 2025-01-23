@@ -6,10 +6,10 @@
 #include "/lib/common/spaceConversions.glsl"
 #include "/lib/common/util.glsl"
 
-vec3 sunDir = normalize(sunPosition);
-vec3 worldSunDir = mat3(playerModelViewInverse) * sunDir;
+vec3 sunDir = normalize(ap.celestial.sunPos);
+vec3 worldSunDir = mat3(ap.camera.viewInv) * sunDir;
 
-vec3 lightDir = normalize(shadowLightPosition);
-vec3 worldLightDir = mat3(playerModelViewInverse) * lightDir;
+vec3 lightDir = normalize(ap.celestial.pos);
+vec3 worldLightDir = mat3(ap.camera.viewInv) * lightDir;
 
 #endif // COMMON_GLSL

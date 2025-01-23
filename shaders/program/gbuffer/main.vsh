@@ -22,7 +22,7 @@ void iris_sendParameters(VertexData data) {
     uv = data.uv;
     light = data.light;
 
-    viewPos = (playerProjectionInverse * data.clipPos).xyz;
+    viewPos = (ap.camera.projectionInv * data.clipPos).xyz;
 
     tbnMatrix[2] = normalize(mat3(iris_modelViewMatrix) * data.normal.xyz);
     tbnMatrix[0] = normalize(mat3(iris_modelViewMatrix) * data.tangent.xyz);

@@ -5,44 +5,6 @@ function setupShader() {
     worldSettings.shadowMapResolution = 1024;
     worldSettings.sunPathRotation = -40.0;
 
-    registerUniforms(
-        // "atlasSize",
-        "cameraPos",
-        "cascadeSize",
-        // "cloudHeight",
-        // "dayProgression",
-        "eyeBrightness",
-        "farPlane",
-        "fogColor",
-        "fogStart",
-        "fogEnd",
-        "frameTime",
-        "frameCounter",
-        "guiHidden",
-        "isEyeInWater",
-        "lastCameraPos",
-        "lastPlayerProjection",
-        "lastPlayerModelView",
-        "nearPlane",
-        "playerModelView",
-        "playerModelViewInverse",
-        "playerProjection",
-        "playerProjectionInverse",
-        "rainStrength",
-        "renderDistance",
-        "screenSize",
-        "shadowLightPosition",
-        "shadowModelView",
-        // "shadowModelViewInverse",
-        "shadowProjection",
-        // "shadowProjectionInverse",
-        "skyColor",
-        "sunPosition",
-        "timeCounter",
-        "worldTime");
-
-    finalizeUniforms();
-
     const sceneData = new Buffer(32)
         .clear(true)
         .build();

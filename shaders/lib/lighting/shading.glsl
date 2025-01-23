@@ -6,7 +6,7 @@
 #include "/lib/buffers/sceneData.glsl"
 
 vec3 getShadedColor(Material material, vec3 mappedNormal, vec3 faceNormal, vec2 lightmap, vec3 viewPos){
-    vec3 playerPos = (playerModelViewInverse * vec4(viewPos, 1.0)).xyz;
+    vec3 playerPos = (ap.camera.viewInv * vec4(viewPos, 1.0)).xyz;
 
     float scatter;
     vec3 shadow = getShadowing(playerPos, faceNormal, lightmap, material, scatter);
