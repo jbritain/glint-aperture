@@ -62,12 +62,12 @@ vec3 getShadowing(vec3 playerPos, vec3 faceNormal, vec2 lightmap, Material mater
     sampleRadius /= (cascade + 1);
 
     vec3 shadow = vec3(0.0);
-    for(int i = 0; i < 8; i++){
-        vec3 offset = vec3(vogelDiscSample(i, 8, noise), 0.0) * sampleRadius;
+    for(int i = 0; i < SHADOW_SAMPLES; i++){
+        vec3 offset = vec3(vogelDiscSample(i, SHADOW_SAMPLES, noise), 0.0) * sampleRadius;
         shadow += sampleShadow(shadowScreenPos + offset, cascade);
     }
 
-    shadow /= 4.0;
+    shadow /= SHADOW_SAMPLES;
 
     return shadow;
 

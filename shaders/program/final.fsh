@@ -1,7 +1,9 @@
 #version 460 core
 
 uniform sampler2D sceneTex;
+#ifdef BLOOM_ENABLED
 uniform sampler2D bloomTex;
+#endif
 
 #include "/lib/common.glsl"
 
@@ -32,7 +34,9 @@ vec3 uncharted2FilmicTonemap(vec3 v)
 void main() {
 	fragColor = texture(sceneTex, uv);
 
+    #ifdef BLOOM_ENABLED
     fragColor.rgb = mix(fragColor.rgb, texture(bloomTex, uv).rgb, 0.01);
+    #endif
 
 	fragColor.rgb = uncharted2FilmicTonemap(fragColor.rgb);
 }

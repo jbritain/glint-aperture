@@ -1,4 +1,11 @@
 function setupShader() {    
+    if(getBoolSetting("BLOOM_ENABLED")){
+        defineGlobally("BLOOM_ENABLED", 1);
+    }
+
+    defineGlobally("SHADOW_SAMPLES", getIntSetting("SHADOW_SAMPLES"));
+
+
     worldSettings.ambientOcclusionLevel = 1.0;
     worldSettings.disableShade = true;
     worldSettings.renderEntityShadow = false;
@@ -117,38 +124,44 @@ function setupShader() {
 
     // ======================= COMPOSITES =======================
 
-    let bloomTex = new Texture("bloomTex")
-        .format(Format.RGB16F)
-        .clear(true)
-        .mipmap(true)
-        .build();
 
+    if(getBoolSetting("BLOOM_ENABLED")){
+        let bloomTex = new Texture("bloomTex")
+            .format(Format.RGB16F)
+            .clear(true)
+            .mipmap(true)
+            .build();
 
-    for(let i = 0; i < 8; i++){
-        registerShader(
-            Stage.POST_RENDER,
-            new Composite(`bloomDownsample${i}-${i+1}`)
-            .vertex("program/fullscreen.vsh")
-            .fragment("program/composite/bloomDownsample.fsh")
-            .target(0, bloomTex, i + 1)
-            .define("BLOOM_INDEX", i.toString())
-            .build()
-        )
+        for(let i = 0; i < 8; i++){
+            registerShader(
+                Stage.POST_RENDER,
+                new Composite(`bloomDownsample${i}-${i+1}`)
+                .vertex("program/fullscreen.vsh")
+                .fragment("program/composite/bloomDownsample.fsh")
+                .target(0, bloomTex, i + 1)
+                .define("BLOOM_INDEX", i.toString())
+                .build()
+            )
+        }
+    
+        for(let i = 8; i > 0; i -= 1){
+            registerShader(
+                Stage.POST_RENDER,
+                new Composite(`bloomUpsample${i}-${i-1}`)
+                .vertex("program/fullscreen.vsh")
+                .fragment("program/composite/bloomUpsample.fsh")
+                .target(0, bloomTex, i - 1)
+                .define("BLOOM_INDEX", i.toString())
+                .build()
+            )
+        }
     }
 
-    for(let i = 8; i > 0; i -= 1){
-        registerShader(
-            Stage.POST_RENDER,
-            new Composite(`bloomUpsample${i}-${i-1}`)
-            .vertex("program/fullscreen.vsh")
-            .fragment("program/composite/bloomUpsample.fsh")
-            .target(0, bloomTex, i - 1)
-            .define("BLOOM_INDEX", i.toString())
-            .build()
-        )
-    }
 
 
 
-    setCombinationPass(new CombinationPass("program/final.fsh").build());
+    setCombinationPass(
+        new CombinationPass("program/final.fsh")
+        .build()
+    );
 }
