@@ -54,14 +54,16 @@ vec3 getShadowing(vec3 playerPos, vec3 faceNormal, vec2 lightmap, Material mater
     float noise = interleavedGradientNoise(floor(gl_FragCoord.xy), ap.frame.counter);
 
     float scatterSampleAngle = noise * 2 * PI;
-    vec2 scatterSampleOffset = vec2(sin(scatterSampleAngle), cos(scatterSampleAngle)) * (sampleRadius / 4);
+    vec2 scatterSampleOffset = vec2(sin(scatterSampleAngle), cos(scatterSampleAngle)) * (sampleRadius / 8);
     float blockerDepthDifference = max0(shadowScreenPos.z - texture(shadowMap, vec3(shadowScreenPos.xy + scatterSampleOffset, cascade)).r);
     float blockerDistance = blockerDepthDifference * 256;
     scatter *= (1.0 - smoothstep(0.0, 4.0, blockerDistance));
 
+    sampleRadius /= (cascade + 1);
+
     vec3 shadow = vec3(0.0);
-    for(int i = 0; i < 4; i++){
-        vec3 offset = vec3(vogelDiscSample(i, 4, noise), 0.0) * sampleRadius;
+    for(int i = 0; i < 8; i++){
+        vec3 offset = vec3(vogelDiscSample(i, 8, noise), 0.0) * sampleRadius;
         shadow += sampleShadow(shadowScreenPos + offset, cascade);
     }
 

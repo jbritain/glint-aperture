@@ -12,7 +12,7 @@ uniform sampler2D skyViewLUTTex;
 #include "/lib/atmosphere/sky.glsl"
 
 void main(){
-    int samples = 4;
+    int samples = 16;
     
     vec3 radiance = vec3(0.0);
 
