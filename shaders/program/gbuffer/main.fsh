@@ -1,6 +1,8 @@
 #version 450 core
 
 layout(location = 0) out vec4 color;
+layout(location = 1) out vec4 gbufferData1;
+layout(location = 2) out vec4 gbufferData2;
 
 uniform sampler2DArray shadowMap;
 uniform sampler2DArrayShadow shadowMapFiltered;
@@ -30,18 +32,23 @@ void iris_emitFragment() {
 	if (iris_discardFragment(color)) discard;
 
 	vec4 normalData = iris_sampleNormalMap(mUV);
-    vec4 specularData = iris_sampleSpecularMap(mUV);
+  vec4 specularData = iris_sampleSpecularMap(mUV);
 
-	vec3 mappedNormal = normalData.xyz * 2.0 - 1.0;
-	mappedNormal.z = sqrt(1.0 - dot(mappedNormal.xy, mappedNormal.xy)); // reconstruct z due to labPBR encoding
-	mappedNormal = tbnMatrix * mappedNormal;
+	GbufferData gbufferData;
+	gbufferData.lightmap = light;
+	gbufferData.faceNormal = tbnMatrix[2];
 
-	Material material = materialFromSpecularMap(albedo.rgb, specularData);
+	gbufferData.mappedNormal = normalData.xyz * 2.0 - 1.0;
+	gbufferData.mappedNormal.z = sqrt(1.0 - dot(gbufferData.mappedNormal.xy, gbufferData.mappedNormal.xy)); // reconstruct z due to labPBR encoding
+	gbufferData.mappedNormal = tbnMatrix * gbufferData.mappedNormal;
 
-	if(iris_hasFluid(blockID)){
-		material.roughness = 0.0;
-		material.f0 = vec3(0.02);
-	}
+	gbufferData.material = materialFromSpecularMap(albedo.rgb, specularData);
+	gbufferData.materialMask = buildMaterialMask(blockID);
+	overrideMaterials(gbufferData.material, gbufferData.materialMask);
 
-	color.rgb = getShadedColor(material, mappedNormal, tbnMatrix[2], light, viewPos);
+	#ifdef FORWARD_LIGHTING
+	color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, tbnMatrix[2], light, viewPos);
+	#endif
+
+	encodeGbufferData(gbufferData1, gbufferData2, gbufferData, specularData);
 }

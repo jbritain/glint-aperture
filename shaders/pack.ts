@@ -18,7 +18,7 @@ function setupShader() {
 
     // ======================= SETUP =======================
 
-    let sunTransmittanceLUT = new Texture("sunTransmittanceLUTTex")
+    const sunTransmittanceLUT = new Texture("sunTransmittanceLUTTex")
         .format(Format.RGBA16F)
         .imageName("sunTransmittanceLUT")
         .width(256).height(64)
@@ -33,7 +33,7 @@ function setupShader() {
         .build()
     )
 
-    let multipleScatteringLUT = new Texture("multipleScatteringLUTTex")
+    const multipleScatteringLUT = new Texture("multipleScatteringLUTTex")
         .format(Format.RGBA16F)
         .imageName("multipleScatteringLUT")
         .width(32).height(32)
@@ -48,7 +48,7 @@ function setupShader() {
         .build()
     )
 
-    let skyViewLUT = new Texture("skyViewLUTTex")
+    const skyViewLUT = new Texture("skyViewLUTTex")
         .format(Format.RGBA16F)
         .imageName("skyViewLUT")
         .width(200).height(200)
@@ -77,24 +77,70 @@ function setupShader() {
 
     // ======================= GBUFFERS =======================
 
-    let sceneTex = new Texture("sceneTex")
+    const sceneTex = new Texture("sceneTex")
         .format(Format.RGB16F)
         .clear(true)
         .build();
 
-    let shadowColorTex = new ArrayTexture("shadowColorTex")
+    const gbufferDataTex1 = new Texture("gbufferDataTex1")
+        .format(Format.RGBA16)
+        .clear(true)
+        .build()
+
+    const gbufferDataTex2 = new Texture("gbufferDataTex2")
+        .format(Format.RGBA16)
+        .clear(true)
+        .build()
+
+    const shadowColorTex = new ArrayTexture("shadowColorTex")
         .format(Format.RGBA8)
         .clear(true)
         .build();
 
-    registerShader(
-        new ObjectShader("terrain", Usage.TEXTURED)
-        .vertex("program/gbuffer/main.vsh")
-        .fragment("program/gbuffer/main.fsh")
-        .target(0, sceneTex)
-        .ssbo(0, sceneData)
-        .build()
-    );
+    const deferredGbuffers = [
+        Usage.TERRAIN_SOLID,
+        Usage.TERRAIN_CUTOUT,
+        Usage.ENTITY_SOLID,
+        Usage.ENTITY_CUTOUT,
+        Usage.BLOCK_ENTITY,
+        Usage.PARTICLES
+    ];
+
+    const forwardGbuffers = [
+        Usage.TERRAIN_TRANSLUCENT,
+        Usage.ENTITY_TRANSLUCENT,
+        Usage.BLOCK_ENTITY_TRANSLUCENT,
+        Usage.PARTICLES_TRANSLUCENT,
+        Usage.HAND
+    ];
+
+    deferredGbuffers.forEach(program => {
+        registerShader(
+            new ObjectShader("terrain", program)
+            .vertex("program/gbuffer/main.vsh")
+            .fragment("program/gbuffer/main.fsh")
+            .target(0, sceneTex)
+            .target(1, gbufferDataTex1)
+            .target(2, gbufferDataTex2)
+            .ssbo(0, sceneData)
+            .build()
+        );
+    })
+
+    forwardGbuffers.forEach(program => {
+        registerShader(
+            new ObjectShader("terrain", program)
+            .vertex("program/gbuffer/main.vsh")
+            .fragment("program/gbuffer/main.fsh")
+            .target(0, sceneTex)
+            .target(1, gbufferDataTex1)
+            .target(2, gbufferDataTex2)
+            .define("FORWARD_LIGHTING", "1")
+            .ssbo(0, sceneData)
+            .build()
+        );
+    })
+
 
     registerShader(
         new ObjectShader("terrain", Usage.CLOUDS)
@@ -122,11 +168,21 @@ function setupShader() {
         .build()
     );
 
+    registerShader(
+        Stage.PRE_TRANSLUCENT,
+        new Composite("deferredShading")
+        .vertex("program/fullscreen.vsh")
+        .fragment("program/composite/deferredShading.fsh")
+        .target(0, sceneTex)
+        .ssbo(0, sceneData)
+        .build()
+    );
+
     // ======================= COMPOSITES =======================
 
 
     if(getBoolSetting("BLOOM_ENABLED")){
-        let bloomTex = new Texture("bloomTex")
+        const bloomTex = new Texture("bloomTex")
             .format(Format.RGB16F)
             .clear(true)
             .mipmap(true)

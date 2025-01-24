@@ -1,6 +1,39 @@
 #ifndef MATERIAL_GLSL
 #define MATERIAL_GLSL
 
+struct MaterialMask {
+  bool isFluid;
+  bool isFullBlock;
+};
+
+MaterialMask buildMaterialMask(uint blockID){
+  MaterialMask mask;
+
+  mask.isFluid = iris_hasFluid(blockID);
+  mask.isFullBlock = iris_isFullBlock(blockID);
+
+	return mask;
+}
+
+float encodeMaterialMask(MaterialMask mask){
+  int encodedMask = 0;
+
+  encodedMask = bitfieldInsert(encodedMask, (mask.isFluid ? 1 : 0), 0, 1);
+  encodedMask = bitfieldInsert(encodedMask, (mask.isFullBlock ? 1 : 0), 1, 1);
+
+  return encodedMask / 255.0;
+}
+
+MaterialMask decodeMaterialMask(float encodedMask){
+  MaterialMask mask;
+  int intMask = int(floor(encodedMask * 255.0));
+
+  mask.isFluid = bitfieldExtract(intMask, 0, 1) == 1;
+  mask.isFullBlock = bitfieldExtract(intMask, 1, 1) == 1;
+
+  return mask;
+}
+
 // enums for metal IDs
 #define NO_METAL 0
 #define IRON 1
@@ -95,6 +128,14 @@ Material materialFromSpecularMap(vec3 albedo, vec4 specularData){
 	material.emission = specularData.a < 1.0 ? specularData.a : 0.0;
 
 	return material;
+}
+
+
+void overrideMaterials(inout Material material, MaterialMask mask){
+	if(mask.isFluid){
+		material.roughness = 0.0;
+		material.f0 = vec3(0.02);
+	}
 }
 
 #endif // MATERIAL_GLSL

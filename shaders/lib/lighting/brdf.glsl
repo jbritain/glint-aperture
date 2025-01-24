@@ -45,8 +45,8 @@ float schlickGGX(float NoV, float K) {
 }
 	
 float geometrySmith(vec3 N, vec3 V, vec3 L, float K) {
-	float NoV = max(dot(N, V), 0.0);
-	float NoL = max(dot(N, L), 0.0);
+	float NoV = max(dot(N, V), 1e-6);
+	float NoL = max(dot(N, L), 1e-6);
 	float ggx1 = schlickGGX(NoV, K);
 	float ggx2 = schlickGGX(NoL, K);
 
@@ -96,7 +96,7 @@ vec3 brdf(Material material, vec3 mappedNormal, vec3 faceNormal, vec3 viewPos, v
 
 	// trowbridge-reitz ggx
 	float denominator = NoHSquared * (pow2(alpha) - 1.0) + 1.0;
-	float D = pow2(alpha) / (PI * pow2(denominator));
+	float D = pow2(alpha) / (PI * pow2(denominator)) ;
 	float G = geometrySmith(N, V, L, material.roughness);
 
 	vec3 Rs = (F * D * G) / (4.0 * NoV + 1e-6);

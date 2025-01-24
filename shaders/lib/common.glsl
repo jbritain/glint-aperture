@@ -5,6 +5,7 @@
 #include "/lib/common/material.glsl"
 #include "/lib/common/spaceConversions.glsl"
 #include "/lib/common/util.glsl"
+#include "/lib/common/gbufferData.glsl"
 
 vec3 sunDir = normalize(ap.celestial.sunPos);
 vec3 worldSunDir = mat3(ap.camera.viewInv) * sunDir;
