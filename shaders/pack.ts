@@ -180,6 +180,37 @@ function setupShader() {
 
     // ======================= COMPOSITES =======================
 
+    // ======================= POST =======================
+
+    const previousSceneTex = new Texture("previousSceneTex")
+        .format(Format.RGB16F)
+        .clear(false)
+        .build();
+
+    const previousDepthTex = new Texture("previousDepthTex")
+        .format(Format.RG16)
+        .clear(false)
+        .build();
+
+    registerShader(
+        Stage.POST_RENDER,
+        new Composite("temporalFilter")
+            .vertex("program/fullscreen.vsh")
+            .fragment("program/post/temporalFilter.fsh")
+            .target(0, sceneTex)
+            .build()
+    );
+
+    registerShader(
+        Stage.POST_RENDER,
+        new Composite("copyHistory")
+            .vertex("program/fullscreen.vsh")
+            .fragment("program/post/copyHistory.fsh")
+            .target(0, previousSceneTex)
+            .target(1, previousDepthTex)
+            .build()
+    );
+
 
     if(getBoolSetting("BLOOM_ENABLED")){
         const bloomTex = new Texture("bloomTex")
@@ -193,7 +224,7 @@ function setupShader() {
                 Stage.POST_RENDER,
                 new Composite(`bloomDownsample${i}-${i+1}`)
                 .vertex("program/fullscreen.vsh")
-                .fragment("program/composite/bloomDownsample.fsh")
+                .fragment("program/post/bloomDownsample.fsh")
                 .target(0, bloomTex, i + 1)
                 .define("BLOOM_INDEX", i.toString())
                 .build()
@@ -205,16 +236,13 @@ function setupShader() {
                 Stage.POST_RENDER,
                 new Composite(`bloomUpsample${i}-${i-1}`)
                 .vertex("program/fullscreen.vsh")
-                .fragment("program/composite/bloomUpsample.fsh")
+                .fragment("program/post/bloomUpsample.fsh")
                 .target(0, bloomTex, i - 1)
                 .define("BLOOM_INDEX", i.toString())
                 .build()
             )
         }
     }
-
-
-
 
     setCombinationPass(
         new CombinationPass("program/final.fsh")

@@ -4,6 +4,8 @@ layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 gbufferData1;
 layout(location = 2) out vec4 gbufferData2;
 
+uniform sampler2D solidDepthTex;
+
 uniform sampler2DArray shadowMap;
 uniform sampler2DArrayShadow shadowMapFiltered;
 uniform sampler2DArrayShadow solidShadowMapFiltered;
@@ -18,6 +20,8 @@ flat in uint blockID;
 
 #include "/lib/common.glsl"
 #include "/lib/lighting/shading.glsl"
+#include "/lib/water/waveNormals.glsl"
+#include "/lib/water/waterFog.glsl"
 
 void iris_emitFragment() {
 	vec2 mUV = uv, mLight = light;
@@ -45,6 +49,11 @@ void iris_emitFragment() {
 	gbufferData.material = materialFromSpecularMap(albedo.rgb, specularData);
 	gbufferData.materialMask = buildMaterialMask(blockID);
 	overrideMaterials(gbufferData.material, gbufferData.materialMask);
+
+	if(gbufferData.materialMask.isFluid){
+		gbufferData.mappedNormal = mat3(ap.camera.view) * waveNormal((ap.camera.viewInv * vec4(viewPos, 1.0)).xz + ap.camera.pos.xz, mat3(ap.camera.viewInv) * gbufferData.faceNormal, 1.0);
+		gbufferData.material.albedo = vec3(0.0);
+	}
 
 	#ifdef FORWARD_LIGHTING
 	color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, tbnMatrix[2], light, viewPos);

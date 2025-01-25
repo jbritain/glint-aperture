@@ -1,7 +1,7 @@
 #ifndef SHADOWS_GLSL
 #define SHADOWS_GLSL
 
-#include "/lib/shadowSpace.glsl"
+#include "/lib/util/shadowSpace.glsl"
 
 vec3 sampleShadow(vec3 shadowScreenPos, int cascade){
     float transparentShadow = texture(shadowMapFiltered, vec4(shadowScreenPos.xy, cascade, shadowScreenPos.z)).r;
