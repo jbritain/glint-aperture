@@ -13,7 +13,7 @@ LightInteraction waterFog(vec3 a, vec3 b){
   LightInteraction interaction;
   vec3 opticalDepth = waterExtinction * WATER_DENSITY * distance(a, b);
   interaction.transmittance = exp(-opticalDepth);
-  interaction.scattering = clamp01((interaction.transmittance - 1.0) / -opticalDepth) * WATER_SCATTERING * (sunlightColor * getMiePhase(dot(normalize(b - a), lightDir)) + skylightColor);
+  interaction.scattering = clamp01((interaction.transmittance - 1.0) / -opticalDepth) * WATER_SCATTERING * (sunlightColor * getMiePhase(dot(normalize(b - a), lightDir)) + skylightColor) * ap.camera.brightness.y;
   return interaction;
 }
 

@@ -29,6 +29,16 @@ vec3 uncharted2FilmicTonemap(vec3 v)
     return pow(curr * white_scale, vec3(rcp(2.2)));
 }
 
+vec3 ACESFilm(vec3 x){
+    x *= 0.5;
+    float a = 2.51f;
+    float b = 0.03f;
+    float c = 2.43f;
+    float d = 0.59f;
+    float e = 0.14f;
+    return pow(clamp01((x*(a*x+b))/(x*(c*x+d)+e)), vec3(rcp(2.2)));
+}
+
 void main() {
 	fragColor = texture(sceneTex, uv);
 
@@ -36,5 +46,5 @@ void main() {
     fragColor.rgb = mix(fragColor.rgb, texture(bloomTex, uv).rgb, 0.01);
     #endif
 
-	fragColor.rgb = uncharted2FilmicTonemap(fragColor.rgb);
+	fragColor.rgb = ACESFilm(fragColor.rgb);
 }

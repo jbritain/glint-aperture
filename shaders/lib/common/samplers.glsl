@@ -10,7 +10,12 @@ uniform sampler2D gbufferDataTex1;
 uniform sampler2D gbufferDataTex2;
 uniform sampler2D previousSceneTex;
 uniform sampler2D previousDepthTex;
+
+#ifdef BLOOM_ENABLED
 uniform sampler2D bloomTex;
+#endif
+
+uniform sampler2D blueNoiseTex;
 
 uniform sampler2D mainDepthTex;
 uniform sampler2D solidDepthTex;

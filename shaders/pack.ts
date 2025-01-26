@@ -16,6 +16,8 @@ function setupShader() {
         .clear(true)
         .build();
 
+    const blueNoiseTex = new PNGTexture("blueNoiseTex", "textures/blueNoise.png", false, true);
+
     // ======================= SETUP =======================
 
     const sunTransmittanceLUT = new Texture("sunTransmittanceLUTTex")

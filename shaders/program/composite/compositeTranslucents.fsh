@@ -15,7 +15,7 @@ void main(){
   float opaqueDepth = texture(solidDepthTex, uv).r;
   float translucentDepth = texture(mainDepthTex, uv).r;
 
-  if(opaqueDepth == 1.0){
+  if(translucentDepth == 1.0){
     return;
   }
 

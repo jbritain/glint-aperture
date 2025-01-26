@@ -132,4 +132,39 @@ float getRayleighPhase(float cosTheta) {
 	return k*(1.0+cosTheta*cosTheta);
 }
 
+mat3 frisvadTBN(vec3 normal){
+	mat3 tbn;
+	tbn[2] = normal;
+
+	if(normal.z < -0.9) {
+		tbn[0] = vec3(0.,-1,0);
+		tbn[1] = vec3(-1, 0, 0);
+	} else {
+		float a = 1./(1.+normal.z);
+		float b = -normal.x*normal.y*a;
+		tbn[0] = vec3(1. - normal.x*normal.x*a, b, -normal.x) ;
+		tbn[1] = vec3(b, 1. - normal.y*normal.y*a , -normal.y);
+	}
+
+	return tbn;
+}
+
+vec4 blueNoise(vec2 texcoord){
+  ivec2 sampleCoord = ivec2(texcoord * ap.game.screenSize);
+  sampleCoord = sampleCoord % ivec2(1024);
+
+  return texelFetch(blueNoiseTex, sampleCoord, 0);
+}
+
+vec4 blueNoise(in vec2 texcoord, int frame){
+  const float g = 1.6180339887498948482;
+  float a1 = rcp(g);
+  float a2 = rcp(pow2(g));
+
+  vec2 offset = vec2(mod(0.5 + a1 * frame, 1.0), mod(0.5 + a2 * frame, 1.0));
+  texcoord += offset;
+
+  return blueNoise(texcoord);
+}
+
 #endif // UTIL_GLSL
