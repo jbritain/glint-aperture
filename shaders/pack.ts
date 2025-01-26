@@ -82,6 +82,12 @@ function setupShader() {
         .clear(true)
         .build();
 
+    const translucentsTex = new Texture("translucentsTex")
+        .format(Format.RGBA16F)
+        .clear(true)
+        .clearColor(0, 0, 0, 0)
+        .build();
+
     const gbufferDataTex1 = new Texture("gbufferDataTex1")
         .format(Format.RGBA16)
         .clear(true)
@@ -132,7 +138,7 @@ function setupShader() {
             new ObjectShader("terrain", program)
             .vertex("program/gbuffer/main.vsh")
             .fragment("program/gbuffer/main.fsh")
-            .target(0, sceneTex)
+            .target(0, translucentsTex)
             .target(1, gbufferDataTex1)
             .target(2, gbufferDataTex2)
             .define("FORWARD_LIGHTING", "1")
@@ -179,6 +185,16 @@ function setupShader() {
     );
 
     // ======================= COMPOSITES =======================
+
+    registerShader(
+        Stage.POST_RENDER,
+        new Composite("compositeTranslucents")
+        .vertex("program/fullscreen.vsh")
+        .fragment("program/composite/compositeTranslucents.fsh")
+        .target(0, sceneTex)
+        .ssbo(0, sceneData)
+        .build()
+    );
 
     // ======================= POST =======================
 

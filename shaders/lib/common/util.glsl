@@ -117,24 +117,19 @@ float facos(float x) {
 	return x >= 0 ? res : PI - res;
 }
 
-// #define BLUE_NOISE_RESOLUTION 1024
+float getMiePhase(float cosTheta) {
+	const float g = 0.8;
+	const float scale = 3.0/(8.0*PI);
+	
+	float num = (1.0-g*g)*(1.0+cosTheta*cosTheta);
+	float denom = (2.0+g*g)*pow((1.0 + g*g - 2.0*g*cosTheta), 1.5);
+	
+	return scale*num/denom;
+}
 
-// vec4 blueNoise(vec2 texcoord){
-//   ivec2 sampleCoord = ivec2(texcoord * screenSize);
-//   sampleCoord = sampleCoord % ivec2(BLUE_NOISE_RESOLUTION);
-
-//   return texelFetch(blueNoiseTex, sampleCoord, 0);
-// }
-
-// vec4 blueNoise(in vec2 texcoord, int frame){
-//   const float g = 1.6180339887498948482;
-//   float a1 = rcp(g);
-//   float a2 = rcp(pow2(g));
-
-//   vec2 offset = vec2(mod(0.5 + a1 * frame, 1.0), mod(0.5 + a2 * frame, 1.0));
-//   texcoord += offset;
-
-//   return blueNoise(texcoord);
-// }
+float getRayleighPhase(float cosTheta) {
+	const float k = 3.0/(16.0*PI);
+	return k*(1.0+cosTheta*cosTheta);
+}
 
 #endif // UTIL_GLSL

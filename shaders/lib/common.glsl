@@ -13,4 +13,9 @@ vec3 worldSunDir = mat3(ap.camera.viewInv) * sunDir;
 vec3 lightDir = normalize(ap.celestial.pos);
 vec3 worldLightDir = mat3(ap.camera.viewInv) * lightDir;
 
+struct LightInteraction {
+  vec3 scattering;
+  vec3 transmittance;
+};
+
 #endif // COMMON_GLSL

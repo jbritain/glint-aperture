@@ -18,18 +18,18 @@ MaterialMask buildMaterialMask(uint blockID){
 float encodeMaterialMask(MaterialMask mask){
   int encodedMask = 0;
 
-  encodedMask = bitfieldInsert(encodedMask, (mask.isFluid ? 1 : 0), 0, 1);
-  encodedMask = bitfieldInsert(encodedMask, (mask.isFullBlock ? 1 : 0), 1, 1);
+	encodedMask = encodedMask | (mask.isFluid ? 1 : 0);
+	encodedMask = encodedMask | (mask.isFullBlock ? 1 << 1 : 0);
 
   return encodedMask / 255.0;
 }
 
 MaterialMask decodeMaterialMask(float encodedMask){
   MaterialMask mask;
-  int intMask = int(floor(encodedMask * 255.0));
+  int intMask = int(floor(encodedMask * 255.0 + 0.5));
 
-  mask.isFluid = bitfieldExtract(intMask, 0, 1) == 1;
-  mask.isFullBlock = bitfieldExtract(intMask, 1, 1) == 1;
+  mask.isFluid = (intMask & 1) == 1;
+  mask.isFullBlock = (intMask & (1 << 1)) == 1;
 
   return mask;
 }

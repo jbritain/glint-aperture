@@ -5,12 +5,16 @@
 #define WATER_SCATTERING vec3(0.01, 0.06, 0.05)
 #define WATER_DENSITY 1.0
 
+#include "/lib/buffers/sceneData.glsl"
+
 const vec3 waterExtinction = clamp01(WATER_ABSORPTION + WATER_SCATTERING);
 
-vec3 waterFog(out vec3 transmittance, vec3 a, vec3 b){
+LightInteraction waterFog(vec3 a, vec3 b){
+  LightInteraction interaction;
   vec3 opticalDepth = waterExtinction * WATER_DENSITY * distance(a, b);
-  transmittance = exp(-opticalDepth);
-  return clamp01((transmittance - 1.0) / -opticalDepth) * WATER_SCATTERING * (sunlightColor * getMiePhase(dot(normalize(b - a), lightDir)) + skylightColor);
+  interaction.transmittance = exp(-opticalDepth);
+  interaction.scattering = clamp01((interaction.transmittance - 1.0) / -opticalDepth) * WATER_SCATTERING * (sunlightColor * getMiePhase(dot(normalize(b - a), lightDir)) + skylightColor);
+  return interaction;
 }
 
 #endif

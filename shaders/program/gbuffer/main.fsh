@@ -59,5 +59,8 @@ void iris_emitFragment() {
 	color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, tbnMatrix[2], light, viewPos);
 	#endif
 
+	float encodedMaterialMask = encodeMaterialMask(gbufferData.materialMask);
+	MaterialMask decodedMaterialMask = decodeMaterialMask(encodedMaterialMask);
+
 	encodeGbufferData(gbufferData1, gbufferData2, gbufferData, specularData);
 }
