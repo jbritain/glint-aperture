@@ -12,7 +12,7 @@ vec3 getShadedColor(Material material, vec3 mappedNormal, vec3 faceNormal, vec2 
     float scatter;
     vec3 shadow = getShadowing(playerPos, faceNormal, lightmap, material, scatter);
 
-    vec3 color = brdf(material, mappedNormal, faceNormal, viewPos, shadow, scatter, false) * sunlightColor;
+    vec3 color = cookTorrancematerial, mappedNormal, faceNormal, viewPos, shadow, scatter, false) * sunlightColor;
 
     vec3 diffuse = 
         material.albedo * (

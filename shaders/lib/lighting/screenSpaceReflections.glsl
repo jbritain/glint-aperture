@@ -42,11 +42,20 @@ vec3 SSRSample(out vec3 fresnel, vec3 viewPos, Material material, vec3 mappedNor
   vec3 reflectedDir = reflect(normalize(viewPos), mappedNormal);
 
   vec3 reflectedPos;
+
+  vec3 reflection;
+
   if(rayIntersects(viewPos, reflectedDir, 8, jitter, true, reflectedPos, true, false)){
-    return texture(previousSceneTex, reflectedPos.xy).rgb;
+    reflection = texture(previousSceneTex, reflectedPos.xy).rgb;
   } else {
-    return getSky(mat3(ap.camera.viewInv) * reflectedDir, false) * skyLightmap;
+    reflection = getSky(mat3(ap.camera.viewInv) * reflectedDir, false) * skyLightmap;
   }
+
+  if(material.metalID != NO_METAL){
+    reflection *= material.albedo;
+  }
+
+  return reflection;
 }
 
 vec3 getScreenSpaceReflections(out vec3 fresnel, vec3 viewPos, Material material, vec3 mappedNormal, float skyLightmap){
