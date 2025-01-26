@@ -65,7 +65,7 @@ vec3 getScreenSpaceReflections(out vec3 fresnel, vec3 viewPos, Material material
   }
 
 
-  if(material.roughness == 0){
+  if(material.roughness <= rcp(255.0)){
     return SSRSample(fresnel, viewPos, material, mappedNormal, skyLightmap);
   } else {
     vec3 averageReflection = vec3(0.0);

@@ -70,7 +70,7 @@ vec3 schlick(Material material, float NoV){
 	}
 }
 
-vec3 cookTorranceMaterial material, vec3 mappedNormal, vec3 faceNormal, vec3 viewPos, vec3 shadow, float scatter, bool specularOnly){
+vec3 cookTorrance(Material material, vec3 mappedNormal, vec3 faceNormal, vec3 viewPos, vec3 shadow, float scatter, bool specularOnly){
 	vec3 L = lightDir;
 	float faceNoL = clamp01(dot(faceNormal, L));
 	float mappedNoL = clamp01(dot(mappedNormal, L));
