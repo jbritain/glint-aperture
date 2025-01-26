@@ -1,6 +1,7 @@
 #ifndef COMMON_GLSL
 #define COMMON_GLSL
 
+#include "/lib/common/samplers.glsl"
 #include "/lib/common/syntax.glsl"
 #include "/lib/common/material.glsl"
 #include "/lib/common/spaceConversions.glsl"

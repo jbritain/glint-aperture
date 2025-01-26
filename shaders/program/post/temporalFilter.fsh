@@ -17,10 +17,6 @@ layout(location = 0) out vec4 color;
     ivec2( 0,-1)
   );
 
-uniform sampler2D sceneTex;
-uniform sampler2D previousSceneTex;
-uniform sampler2D mainDepthTex;
-uniform sampler2D solidDepthTex;
 
 
 void main(){

@@ -4,12 +4,7 @@
 
 in vec2 uv;
 
-uniform sampler2D sceneTex;
-uniform sampler2D solidDepthTex;
 
-uniform sampler2D skyViewLUTTex;
-uniform sampler2D sunTransmittanceLUTTex;
-uniform sampler2D multipleScatteringLUTTex;
 
 #include "/lib/atmosphere/sky.glsl"
 

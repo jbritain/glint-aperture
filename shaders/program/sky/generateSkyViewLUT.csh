@@ -4,8 +4,6 @@ layout (local_size_x = 8, local_size_y = 8) in;
 
 #include "/lib/common.glsl"
 
-uniform sampler2D sunTransmittanceLUTTex;
-uniform sampler2D multipleScatteringLUTTex;
 
 layout(rgba16f) uniform image2D skyViewLUT;
 

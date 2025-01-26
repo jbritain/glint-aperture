@@ -4,12 +4,7 @@ layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 gbufferData1;
 layout(location = 2) out vec4 gbufferData2;
 
-uniform sampler2D solidDepthTex;
 
-uniform sampler2DArray shadowMap;
-uniform sampler2DArrayShadow shadowMapFiltered;
-uniform sampler2DArrayShadow solidShadowMapFiltered;
-uniform sampler2DArray shadowColorTex;
 
 in vec2 uv;
 in vec2 light;

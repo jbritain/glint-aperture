@@ -1,8 +1,6 @@
 #version 460 core
 
-uniform sampler2D sceneTex;
 #ifdef BLOOM_ENABLED
-uniform sampler2D bloomTex;
 #endif
 
 #include "/lib/common.glsl"

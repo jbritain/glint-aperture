@@ -2,15 +2,7 @@
 
 in vec2 uv;
 
-uniform sampler2D sceneTex;
-uniform sampler2D gbufferDataTex1;
-uniform sampler2D gbufferDataTex2;
-uniform sampler2D solidDepthTex;
 
-uniform sampler2DArray shadowMap;
-uniform sampler2DArrayShadow shadowMapFiltered;
-uniform sampler2DArrayShadow solidShadowMapFiltered;
-uniform sampler2DArray shadowColorTex;
 
 #include "/lib/common.glsl"
 #include "/lib/lighting/shading.glsl"

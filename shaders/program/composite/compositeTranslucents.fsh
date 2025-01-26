@@ -5,13 +5,7 @@
 
 in vec2 uv;
 
-uniform sampler2D sceneTex;
-uniform sampler2D translucentsTex;
-uniform sampler2D solidDepthTex;
-uniform sampler2D mainDepthTex;
 
-uniform sampler2D gbufferDataTex1;
-uniform sampler2D gbufferDataTex2;
 
 layout(location = 0) out vec3 color;
 

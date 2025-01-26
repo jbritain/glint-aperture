@@ -4,9 +4,6 @@ layout (local_size_x = 1, local_size_y = 1) in;
 
 #include "/lib/common.glsl"
 
-uniform sampler2D sunTransmittanceLUTTex;
-uniform sampler2D multipleScatteringLUTTex;
-uniform sampler2D skyViewLUTTex;
 
 #include "/lib/buffers/sceneData.glsl"
 #include "/lib/atmosphere/sky.glsl"

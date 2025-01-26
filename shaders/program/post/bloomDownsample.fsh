@@ -4,8 +4,6 @@
 
 in vec2 uv;
 
-uniform sampler2D bloomTex;
-uniform sampler2D sceneTex;
 
 vec3 downSample(sampler2D sourceTexture, vec2 coord){
     // a - b - c
