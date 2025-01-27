@@ -7,6 +7,7 @@
 #include "/lib/common/spaceConversions.glsl"
 #include "/lib/common/util.glsl"
 #include "/lib/common/gbufferData.glsl"
+#include "/lib/common/debug.glsl"
 
 vec3 sunDir = normalize(ap.celestial.sunPos);
 vec3 worldSunDir = mat3(ap.camera.viewInv) * sunDir;
@@ -18,5 +19,7 @@ struct LightInteraction {
   vec3 scattering;
   vec3 transmittance;
 };
+
+
 
 #endif // COMMON_GLSL

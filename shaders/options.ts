@@ -1,6 +1,6 @@
 function setupOptions(){
   const postPage = new Page("Post-Processing")
-    .add(asBool("BLOOM_ENABLED", true))
+    .add(asBool("BLOOM_ENABLE", true))
     .build();
 
   const lightingPage = new Page("Shadows & Lighting")
@@ -11,6 +11,9 @@ function setupOptions(){
   return new Page("Glint")
     .add(postPage)
     .add(lightingPage)
+
+    .add(asBool("DEBUG_ENABLE", false))
+
     .build();
 }
 

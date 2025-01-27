@@ -1,6 +1,6 @@
 #version 460 core
 
-#ifdef BLOOM_ENABLED
+#ifdef BLOOM_ENABLE
 #endif
 
 #include "/lib/common.glsl"
@@ -39,12 +39,18 @@ vec3 ACESFilm(vec3 x){
     return pow(clamp01((x*(a*x+b))/(x*(c*x+d)+e)), vec3(rcp(2.2)));
 }
 
+uniform sampler2D debugTex;
+
 void main() {
 	fragColor = texture(sceneTex, uv);
 
-    #ifdef BLOOM_ENABLED
+    #ifdef BLOOM_ENABLE
     fragColor.rgb = mix(fragColor.rgb, texture(bloomTex, uv).rgb, 0.01);
     #endif
 
 	fragColor.rgb = ACESFilm(fragColor.rgb);
+
+    #ifdef DEBUG_ENABLE
+    fragColor.rgb = texture(debugTex, uv).rgb;
+    #endif
 }

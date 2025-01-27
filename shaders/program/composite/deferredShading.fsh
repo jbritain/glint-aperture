@@ -25,4 +25,7 @@ void main(){
   decodeGbufferData(texture(gbufferDataTex1, uv), texture(gbufferDataTex2, uv), gbufferData);
 
   color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, gbufferData.faceNormal, gbufferData.lightmap, viewPos);
+  color.rgb += texture(globalIlluminationTex, uv).rgb * sunlightColor * gbufferData.material.albedo;
+
+  show(texture(globalIlluminationTex, uv).rgb * sunlightColor);
 }

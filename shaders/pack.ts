@@ -1,9 +1,13 @@
-function setupShader() {    
-    if(getBoolSetting("BLOOM_ENABLED")){
-        defineGlobally("BLOOM_ENABLED", 1);
+function defineBoolGlobally(define){
+    if(getBoolSetting(define)){
+        defineGlobally(define, 1);
     }
+}
 
+function setupShader() {    
+    defineBoolGlobally("BLOOM_ENABLE");
     defineGlobally("SHADOW_SAMPLES", getIntSetting("SHADOW_SAMPLES"));
+    defineBoolGlobally("DEBUG_ENABLE");
 
 
     worldSettings.ambientOcclusionLevel = 1.0;
@@ -17,6 +21,14 @@ function setupShader() {
         .build();
 
     const blueNoiseTex = new PNGTexture("blueNoiseTex", "textures/blueNoise.png", false, true);
+
+    const debugTex = new Texture("debugTex")
+        .format(Format.RGBA8)
+        .imageName("debugImg")
+        .width(1920).height(1080)
+        .clear(true)
+        .clearColor(0, 0, 0, 0)
+        .build()
 
     // ======================= SETUP =======================
 
@@ -105,6 +117,16 @@ function setupShader() {
         .clear(true)
         .build();
 
+    const shadowNormalTex = new ArrayTexture("shadowNormalTex")
+        .format(Format.RGBA8)
+        .clear(true)
+        .build();
+
+    const shadowPositionTex = new ArrayTexture("shadowPositionTex")
+        .format(Format.RGB16F)
+        .clear(true)
+        .build()
+
     const deferredGbuffers = [
         Usage.TERRAIN_SOLID,
         Usage.TERRAIN_CUTOUT,
@@ -162,10 +184,27 @@ function setupShader() {
         .vertex("program/gbuffer/shadow.vsh")
         .fragment("program/gbuffer/shadow.fsh")
         .target(0, shadowColorTex)
+        .target(1, shadowNormalTex)
+        .target(2, shadowPositionTex)
         .build()
     );
 
     // ======================= DEFERRED =======================
+
+    const globalIlluminationTex = new Texture("globalIlluminationTex")
+        .format(Format.RGBA8)
+        .clear(true)
+        .width(Math.floor(screenWidth / 2)).height(Math.floor(screenHeight / 2))
+        .build();
+
+    registerShader(
+        Stage.PRE_TRANSLUCENT,
+        new Composite("globalIllumination")
+        .vertex("program/fullscreen.vsh")
+        .fragment("program/composite/globalIllumination.fsh")
+        .target(0, globalIlluminationTex)
+        .build()
+    )
 
     registerShader(
         Stage.PRE_TRANSLUCENT,
@@ -230,7 +269,7 @@ function setupShader() {
     );
 
 
-    if(getBoolSetting("BLOOM_ENABLED")){
+    if(getBoolSetting("BLOOM_ENABLE")){
         const bloomTex = new Texture("bloomTex")
             .format(Format.RGB16F)
             .clear(true)
