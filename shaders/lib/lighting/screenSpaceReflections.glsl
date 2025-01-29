@@ -5,6 +5,8 @@
 #include "/lib/lighting/brdf.glsl"
 #include "/lib/atmosphere/sky.glsl"
 
+#define ROUGH_REFLECTION_SAMPLES 8
+
 // by Zombye
 // https://discordapp.com/channels/237199950235041794/525510804494221312/1118170604160421918
 vec3 sampleVNDFGGX(
@@ -46,7 +48,9 @@ vec3 SSRSample(out vec3 fresnel, vec3 viewPos, Material material, vec3 mappedNor
   vec3 reflection;
 
   if(rayIntersects(viewPos, reflectedDir, 8, jitter, true, reflectedPos, true, false)){
-    reflection = texture(previousSceneTex, reflectedPos.xy).rgb;
+    float LOD = clamp(pow(distance(viewSpaceToScreenSpace(viewPos) * 2.0 - 1.0, reflectedPos * 2.0 - 1.0), pow(1.0-sqrt(material.roughness),5.0) * 3.0) * 6.0, 0.0, 6.0); // LOD curve by x0nk
+
+    reflection = texture(previousSceneTex, reflectedPos.xy, LOD).rgb;
   } else {
     reflection = getSky(mat3(ap.camera.viewInv) * reflectedDir, false) * skyLightmap;
   }
@@ -75,8 +79,8 @@ vec3 getScreenSpaceReflections(out vec3 fresnel, vec3 viewPos, Material material
 
     vec3 V = normalize(-viewPos);
 
-    for(int i = 0; i < 8; i++){
-      vec3 noise = blueNoise(gl_FragCoord.xy / ap.game.screenSize, ap.frame.counter).xyz;
+    for(int i = 0; i < ROUGH_REFLECTION_SAMPLES; i++){
+      vec3 noise = blueNoise(gl_FragCoord.xy / ap.game.screenSize, ap.frame.counter * ROUGH_REFLECTION_SAMPLES + i).xyz;
 
       vec3 roughNormal = tbn * (sampleVNDFGGX(V * tbn, vec2(material.roughness), noise.xy));
       
@@ -85,8 +89,8 @@ vec3 getScreenSpaceReflections(out vec3 fresnel, vec3 viewPos, Material material
       fresnel += tempFresnel;
     }
 
-    averageReflection /= 8;
-    fresnel /= 8;
+    averageReflection /= ROUGH_REFLECTION_SAMPLES;
+    fresnel /= ROUGH_REFLECTION_SAMPLES;
     return averageReflection;
   }
 }

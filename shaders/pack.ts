@@ -120,6 +120,7 @@ function setupShader() {
     const shadowNormalTex = new ArrayTexture("shadowNormalTex")
         .format(Format.RGBA8)
         .clear(true)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
         .build();
 
     const shadowPositionTex = new ArrayTexture("shadowPositionTex")
@@ -192,9 +193,9 @@ function setupShader() {
     // ======================= DEFERRED =======================
 
     const globalIlluminationTex = new Texture("globalIlluminationTex")
-        .format(Format.RGBA8)
-        .clear(true)
-        .width(Math.floor(screenWidth / 2)).height(Math.floor(screenHeight / 2))
+        .format(Format.R11F_G11F_B10F)
+        .clear(false)
+        .width(Math.floor(screenWidth / 4)).height(Math.floor(screenHeight / 4))
         .build();
 
     registerShader(
@@ -242,6 +243,7 @@ function setupShader() {
     const previousSceneTex = new Texture("previousSceneTex")
         .format(Format.RGB16F)
         .clear(false)
+        .mipmap(true)
         .build();
 
     const previousDepthTex = new Texture("previousDepthTex")
@@ -265,6 +267,15 @@ function setupShader() {
             .fragment("program/post/copyHistory.fsh")
             .target(0, previousSceneTex)
             .target(1, previousDepthTex)
+            .build()
+    );
+
+    registerShader(
+        Stage.POST_RENDER,
+        new Composite("generateHistoryMips")
+            .vertex("program/discard.vsh")
+            .fragment("program/discard.fsh")
+            .generateMips(previousSceneTex)
             .build()
     );
 
