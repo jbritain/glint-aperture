@@ -99,6 +99,8 @@ vec3 getScreenSpaceReflections(out vec3 fresnel, vec3 viewPos, Material material
 
     averageReflection /= ROUGH_REFLECTION_SAMPLES;
     fresnel /= ROUGH_REFLECTION_SAMPLES;
+
+    fresnel *= (1.0 - smoothstep(0.4, 0.5, material.roughness));
     return averageReflection;
   }
 }

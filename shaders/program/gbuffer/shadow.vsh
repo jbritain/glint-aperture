@@ -34,7 +34,7 @@ void iris_sendParameters(VertexData data) {
     if(isWithinVoxelBounds(voxelPos) && gl_VertexID % 4 == 0){
         if(emission > 0.01){
             vec3 lightColor = iris_getLightColor(data.blockId).rgb * emission;
-            lightColor *= 3.0;
+            lightColor *= 4.0;
             if(EVEN_FRAME){
                 imageStore(floodFillVoxelMap1, previousVoxelPos, vec4(lightColor, 1.0));
             } else {
@@ -42,9 +42,9 @@ void iris_sendParameters(VertexData data) {
             }
         }
 
-        // if(iris_isFullBlock(data.blockId)){
+        if(iris_isFullBlock(data.blockId)){
             imageStore(voxelMap, voxelPos, vec4(1.0));
-        // }
+        }
 
         
     }

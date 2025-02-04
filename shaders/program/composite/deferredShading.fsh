@@ -34,21 +34,19 @@ void main(){
   decodeGbufferData(texture(gbufferDataTex1, uv), texture(gbufferDataTex2, uv), gbufferData);
 
   vec3 worldNormal = mat3(ap.camera.viewInv) * gbufferData.faceNormal;
-  vec3 voxelPos = mapVoxelPosInterp(feetPlayerPos + worldNormal * 0.1);
+  vec3 worldMappedNormal = mat3(ap.camera.viewInv) * gbufferData.mappedNormal;
+  vec3 voxelPos = mapVoxelPosInterp(feetPlayerPos - worldNormal * 0.5 + worldMappedNormal);
   vec3 blocklightColor;
   if(EVEN_FRAME){
     blocklightColor = textureLod(floodFillVoxelMapTex1, voxelPos, 0).rgb;
   } else {
     blocklightColor = textureLod(floodFillVoxelMapTex2, voxelPos, 0).rgb;
   }
-  show(blocklightColor);
 
   color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, gbufferData.faceNormal, gbufferData.lightmap.y, blocklightColor, viewPos);
   color.rgb += texture(globalIlluminationTex, uv).rgb * sunlightColor * gbufferData.material.albedo;
 
-
-
-
+  // show(blocklightColor);
 
   
   

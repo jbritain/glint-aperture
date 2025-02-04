@@ -21,13 +21,14 @@ void main(){
   ivec3 pos = ivec3(gl_GlobalInvocationID); // position in the voxel map we are working with
   ivec3 previousPos = pos - getPreviousVoxelOffset();
 
-  if(imageLoad(voxelMap, pos).r > 0.5){
+  if(imageLoad(voxelMap, pos).r > 0.5){ // check for solid blocks
     vec3 color = vec3(0.0);
     if(EVEN_FRAME){
       imageStore(floodFillVoxelMap2, pos, vec4(color, 1.0));
     } else {
       imageStore(floodFillVoxelMap1, pos, vec4(color, 1.0));
     }
+    return;
   }
 
   const ivec3[6] sampleOffsets = ivec3[6](

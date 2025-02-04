@@ -44,6 +44,11 @@ void iris_emitFragment() {
 
 	gbufferData.material = materialFromSpecularMap(albedo.rgb, specularData, normalData.b);
 	gbufferData.materialMask = buildMaterialMask(blockID);
+
+	if(color.a >= 0.99){
+		gbufferData.materialMask.isFluid = false;
+	}
+
 	overrideMaterials(gbufferData.material, gbufferData.materialMask);
 
 	if(gbufferData.materialMask.isFluid){
@@ -52,6 +57,7 @@ void iris_emitFragment() {
 	}
 
 	applyDirectionalLightmap(gbufferData.lightmap, viewPos, gbufferData.mappedNormal, tbnMatrix, gbufferData.material.sss);
+	show(gbufferData.material.albedo);
 
 	#ifdef FORWARD_LIGHTING
 	color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, tbnMatrix[2], light.y, light.x, viewPos);
