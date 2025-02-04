@@ -15,7 +15,7 @@ function setLightColors() {
   setLightColor("torch", 243, 181, 73, 255);
   setLightColor("verdant_froglight", 99, 229, 60, 255);
   setLightColor("wall_torch", 243, 158, 73, 255);
-  setLightColor("nether_portal", 255, 0, 255, 255);
+  setLightColor("nether_portal", 200, 0, 255, 255);
   setLightColor("tinted_glass", 50, 38, 56, 255);
   setLightColor("white_stained_glass", 255, 255, 255, 255);
   setLightColor("white_stained_glass_pane", 255, 255, 255, 255);
@@ -72,6 +72,7 @@ function setupShader() {
   const debugTex = new Texture("debugTex").format(Format.RGBA8).imageName("debugImg").width(screenWidth).height(screenHeight).clear(true).clearColor(0, 0, 0, 0).build();
   const previousSceneTex = new Texture("previousSceneTex").format(Format.RGB16F).clear(false).mipmap(true).build();
   const previousDepthTex = new Texture("previousDepthTex").format(Format.RG16).clear(false).mipmap(true).build();
+  ;
   const sunTransmittanceLUT = new Texture("sunTransmittanceLUTTex").format(Format.RGBA16F).imageName("sunTransmittanceLUT").width(256).height(64).clear(false).build();
   registerShader(
     Stage.SCREEN_SETUP,
@@ -96,13 +97,16 @@ function setupShader() {
     Stage.PRE_RENDER,
     new GenerateMips(previousSceneTex)
   );
+  const shadowColorTex = new ArrayTexture("shadowColorTex").format(Format.RGBA8).clear(true).build();
+  const shadowNormalTex = new ArrayTexture("shadowNormalTex").format(Format.RGBA8).clear(true).clearColor(0, 0, 0, 0).build();
+  const shadowPositionTex = new ArrayTexture("shadowPositionTex").format(Format.RGB16F).clear(true).build();
+  registerShader(
+    new ObjectShader("shadow", Usage.SHADOW).vertex("program/gbuffer/shadow.vsh").fragment("program/gbuffer/shadow.fsh").target(0, shadowColorTex).target(1, shadowNormalTex).target(2, shadowPositionTex).build()
+  );
   const sceneTex = new Texture("sceneTex").format(Format.RGB16F).clear(true).clearColor(0, 0, 0, 1).build();
   const translucentsTex = new Texture("translucentsTex").format(Format.RGBA16F).clear(true).clearColor(0, 0, 0, 0).build();
   const gbufferDataTex1 = new Texture("gbufferDataTex1").format(Format.RGBA16).clear(true).build();
   const gbufferDataTex2 = new Texture("gbufferDataTex2").format(Format.RGBA16).clear(true).build();
-  const shadowColorTex = new ArrayTexture("shadowColorTex").format(Format.RGBA8).clear(true).build();
-  const shadowNormalTex = new ArrayTexture("shadowNormalTex").format(Format.RGBA8).clear(true).clearColor(0, 0, 0, 0).build();
-  const shadowPositionTex = new ArrayTexture("shadowPositionTex").format(Format.RGB16F).clear(true).build();
   registerShader(
     new ObjectShader("sky", Usage.SKYBOX).vertex("program/gbuffer/sky.vsh").fragment("program/gbuffer/sky.fsh").define("SKY_BASIC", "1").target(0, sceneTex).build()
   );
@@ -137,9 +141,18 @@ function setupShader() {
   registerShader(
     new ObjectShader("clouds", Usage.CLOUDS).vertex("program/gbuffer/discard.vsh").fragment("program/gbuffer/discard.fsh").build()
   );
+  registerShader(Stage.PRE_TRANSLUCENT, new MemoryBarrier(IMAGE_BIT));
+  const voxelMapWidth = 256;
+  const voxelMapHeight = 128;
+  defineGlobally("VOXEL_MAP_SIZE", `vec3(${voxelMapWidth}, ${voxelMapHeight}, ${voxelMapWidth})`);
+  const floodfillVoxelMap1 = new Texture("floodFillVoxelMapTex1").format(Format.R11F_G11F_B10F).imageName("floodFillVoxelMap1").clear(false).width(voxelMapWidth).height(voxelMapHeight).depth(voxelMapWidth).build();
+  const floodfillVoxelMap2 = new Texture("floodFillVoxelMapTex2").format(Format.R11F_G11F_B10F).imageName("floodFillVoxelMap2").clear(false).width(voxelMapWidth).height(voxelMapHeight).depth(voxelMapWidth).build();
+  const voxelMap = new Texture("voxelMapTex").format(Format.RGBA8).imageName("voxelMap").clear(true).clearColor(0, 0, 0, 0).width(voxelMapWidth).height(voxelMapHeight).depth(voxelMapWidth).build();
   registerShader(
-    new ObjectShader("shadow", Usage.SHADOW).vertex("program/gbuffer/shadow.vsh").fragment("program/gbuffer/shadow.fsh").target(0, shadowColorTex).target(1, shadowNormalTex).target(2, shadowPositionTex).build()
+    Stage.PRE_TRANSLUCENT,
+    new Compute("floodfillPropagate").location("program/composite/floodfillPropagate.csh").workGroups(voxelMapWidth / 4, voxelMapHeight / 4, voxelMapWidth / 4).build()
   );
+  registerShader(Stage.PRE_TRANSLUCENT, new MemoryBarrier(IMAGE_BIT));
   const globalIlluminationTex = new Texture("globalIlluminationTex").format(Format.R11F_G11F_B10F).clear(false).width(Math.floor(screenWidth / 4)).height(Math.floor(screenHeight / 4)).build();
   registerShader(
     Stage.PRE_TRANSLUCENT,

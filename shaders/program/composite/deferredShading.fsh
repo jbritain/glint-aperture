@@ -6,8 +6,15 @@ in vec2 uv;
 
 #include "/lib/common.glsl"
 #include "/lib/lighting/shading.glsl"
+#include "/lib/voxel/voxelMap.glsl"
 
 layout(location = 0) out vec4 color;
+
+vec3 hash(vec3 p) {
+    p = fract(p * vec3(443.897, 441.423, 437.195));
+    p += dot(p, p.yxz + 19.19);
+    return fract(vec3(p.x * p.y, p.y * p.z, p.z * p.x));
+}
 
 void main(){
   float depth = texture(solidDepthTex, uv).r;
@@ -26,8 +33,26 @@ void main(){
   GbufferData gbufferData;
   decodeGbufferData(texture(gbufferDataTex1, uv), texture(gbufferDataTex2, uv), gbufferData);
 
-  color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, gbufferData.faceNormal, gbufferData.lightmap, viewPos);
+  vec3 worldNormal = mat3(ap.camera.viewInv) * gbufferData.faceNormal;
+  vec3 voxelPos = mapVoxelPosInterp(feetPlayerPos + worldNormal * 0.1);
+  vec3 blocklightColor;
+  if(EVEN_FRAME){
+    blocklightColor = textureLod(floodFillVoxelMapTex1, voxelPos, 0).rgb;
+  } else {
+    blocklightColor = textureLod(floodFillVoxelMapTex2, voxelPos, 0).rgb;
+  }
+  show(blocklightColor);
+
+  color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, gbufferData.faceNormal, gbufferData.lightmap.y, blocklightColor, viewPos);
   color.rgb += texture(globalIlluminationTex, uv).rgb * sunlightColor * gbufferData.material.albedo;
+
+
+
+
+
+  
+  
+
 
   // show(texture(globalIlluminationTex, uv).rgb * sunlightColor);
 }

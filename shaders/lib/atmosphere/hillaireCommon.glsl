@@ -10,7 +10,7 @@ const float sunAngularRadius = PI/180.0;
 
 const vec3 sunIrradiance = vec3(1.0, 0.949, 0.937) * 12.6;
 const vec3 sunRadiance = sunIrradiance / sunAngularRadius;
-const vec3 moonIrradiance = vec3(0.5, 0.5, 1.0) * 2.0;
+const vec3 moonIrradiance = vec3(0.5, 0.5, 1.0) * 0.5;
 
 // Units are in megameters.
 const float groundRadiusMM = 6.360;

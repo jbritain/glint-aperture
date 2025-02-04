@@ -18,7 +18,7 @@ function setLightColors(){
     setLightColor("torch", 243, 181, 73, 255);
     setLightColor("verdant_froglight", 99, 229, 60, 255);
     setLightColor("wall_torch", 243, 158, 73, 255);
-    setLightColor("nether_portal", 255, 0, 255, 255);
+    setLightColor("nether_portal", 200, 0, 255, 255);
 
     setLightColor("tinted_glass", 50, 38, 56, 255);
     setLightColor("white_stained_glass",      255, 255, 255, 255);
@@ -62,6 +62,7 @@ function defineBoolGlobally(define){
     }
 }
 
+
 export function setupShader() {    
     defineBoolGlobally("BLOOM_ENABLE");
     defineGlobally("SHADOW_SAMPLES", getIntSetting("SHADOW_SAMPLES"));
@@ -102,7 +103,7 @@ export function setupShader() {
         .format(Format.RG16)
         .clear(false)
         .mipmap(true)
-        .build();
+        .build();;
 
     // ======================= SETUP =======================
 
@@ -165,13 +166,41 @@ export function setupShader() {
 
     registerShader(Stage.PRE_RENDER, new MemoryBarrier(SSBO_BIT));
 
-    // ======================= GBUFFERS =======================
-
     registerShader(
         Stage.PRE_RENDER,
         new GenerateMips(previousSceneTex)
     );
 
+    // ======================= SHADOW =======================
+
+    const shadowColorTex = new ArrayTexture("shadowColorTex")
+    .format(Format.RGBA8)
+    .clear(true)
+    .build();
+
+    const shadowNormalTex = new ArrayTexture("shadowNormalTex")
+        .format(Format.RGBA8)
+        .clear(true)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .build();
+
+    const shadowPositionTex = new ArrayTexture("shadowPositionTex")
+        .format(Format.RGB16F)
+        .clear(true)
+        .build()
+
+
+    registerShader(
+        new ObjectShader("shadow", Usage.SHADOW)
+        .vertex("program/gbuffer/shadow.vsh")
+        .fragment("program/gbuffer/shadow.fsh")
+        .target(0, shadowColorTex)
+        .target(1, shadowNormalTex)
+        .target(2, shadowPositionTex)
+        .build()
+    );
+
+    // ======================= GBUFFERS =======================
     const sceneTex = new Texture("sceneTex")
         .format(Format.RGB16F)
         .clear(true)
@@ -191,22 +220,6 @@ export function setupShader() {
 
     const gbufferDataTex2 = new Texture("gbufferDataTex2")
         .format(Format.RGBA16)
-        .clear(true)
-        .build()
-
-    const shadowColorTex = new ArrayTexture("shadowColorTex")
-        .format(Format.RGBA8)
-        .clear(true)
-        .build();
-
-    const shadowNormalTex = new ArrayTexture("shadowNormalTex")
-        .format(Format.RGBA8)
-        .clear(true)
-        .clearColor(0.0, 0.0, 0.0, 0.0)
-        .build();
-
-    const shadowPositionTex = new ArrayTexture("shadowPositionTex")
-        .format(Format.RGB16F)
         .clear(true)
         .build()
 
@@ -280,17 +293,54 @@ export function setupShader() {
         .build()
     );
 
+    // ======================= DEFERRED =======================
+
+    
+    registerShader(Stage.PRE_TRANSLUCENT, new MemoryBarrier(IMAGE_BIT));
+
+    // these must be multiples of 64
+    const voxelMapWidth = 256;
+    const voxelMapHeight = 128;
+
+    defineGlobally("VOXEL_MAP_SIZE", `vec3(${voxelMapWidth}, ${voxelMapHeight}, ${voxelMapWidth})`);
+
+    const floodfillVoxelMap1 = new Texture("floodFillVoxelMapTex1")
+        .format(Format.R11F_G11F_B10F)
+        .imageName("floodFillVoxelMap1")
+        .clear(false)
+        .width(voxelMapWidth)
+        .height(voxelMapHeight)
+        .depth(voxelMapWidth)
+        .build();
+
+    const floodfillVoxelMap2 = new Texture("floodFillVoxelMapTex2")
+        .format(Format.R11F_G11F_B10F)
+        .imageName("floodFillVoxelMap2")
+        .clear(false)
+        .width(voxelMapWidth)
+        .height(voxelMapHeight)
+        .depth(voxelMapWidth)
+        .build()
+
+    const voxelMap = new Texture("voxelMapTex")
+        .format(Format.RGBA8)
+        .imageName("voxelMap")
+        .clear(true)
+        .clearColor(0.0, 0.0, 0.0, 0.0)
+        .width(voxelMapWidth)
+        .height(voxelMapHeight)
+        .depth(voxelMapWidth)
+        .build()
+
     registerShader(
-        new ObjectShader("shadow", Usage.SHADOW)
-        .vertex("program/gbuffer/shadow.vsh")
-        .fragment("program/gbuffer/shadow.fsh")
-        .target(0, shadowColorTex)
-        .target(1, shadowNormalTex)
-        .target(2, shadowPositionTex)
+        Stage.PRE_TRANSLUCENT,
+        new Compute("floodfillPropagate")
+        .location("program/composite/floodfillPropagate.csh")
+        .workGroups(voxelMapWidth / 4, voxelMapHeight / 4, voxelMapWidth / 4)
         .build()
     );
 
-    // ======================= DEFERRED =======================
+    registerShader(Stage.PRE_TRANSLUCENT, new MemoryBarrier(IMAGE_BIT));
 
     const globalIlluminationTex = new Texture("globalIlluminationTex")
         .format(Format.R11F_G11F_B10F)

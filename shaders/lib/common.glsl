@@ -20,6 +20,8 @@ struct LightInteraction {
   vec3 transmittance;
 };
 
+#define EVEN_FRAME ap.time.frames % 2 == 0
+
 
 
 #endif // COMMON_GLSL

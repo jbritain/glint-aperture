@@ -25,7 +25,7 @@ void iris_emitFragment() {
 
 	iris_modifyBase(mUV, mColor, mLight);
 
-	color = iris_sampleBaseTex(mUV) * mColor * iris_sampleLightmap(mLight);
+	color = iris_sampleBaseTex(mUV) * mColor;
 	color.rgb = pow(color.rgb, vec3(2.2));
 	vec3 albedo = color.rgb;
 
@@ -54,7 +54,7 @@ void iris_emitFragment() {
 	applyDirectionalLightmap(gbufferData.lightmap, viewPos, gbufferData.mappedNormal, tbnMatrix, gbufferData.material.sss);
 
 	#ifdef FORWARD_LIGHTING
-	color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, tbnMatrix[2], light, viewPos);
+	color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, tbnMatrix[2], light.y, light.x, viewPos);
 	#endif
 
 	float encodedMaterialMask = encodeMaterialMask(gbufferData.materialMask);

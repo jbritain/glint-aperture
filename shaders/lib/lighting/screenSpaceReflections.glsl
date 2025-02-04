@@ -54,7 +54,7 @@ vec3 SSRSample(out vec3 fresnel, vec3 viewPos, Material material, vec3 mappedNor
   }
 
   if(fadeFactor < 1.0){
-    int LOD = 0;//material.roughness < 0.01 ? 0 : int(clamp(pow(distance(viewSpaceToScreenSpace(viewPos) * 2.0 - 1.0, reflectedPos * 2.0 - 1.0), pow(1.0-sqrt(material.roughness),5.0) * 3.0) * 6.0, 0.0, 6.0)); // LOD curve by x0nk
+    int LOD = material.roughness < 0.01 ? 0 : int(clamp(pow(distance(viewSpaceToScreenSpace(viewPos) * 2.0 - 1.0, reflectedPos * 2.0 - 1.0), pow(1.0-sqrt(material.roughness),5.0) * 3.0) * 6.0, 0.0, 6.0)); // LOD curve by x0nk
 
     reflection = texelFetch(previousSceneTex, ivec2(reflectedPos.xy * textureSize(previousSceneTex, LOD)), LOD).rgb;
   }

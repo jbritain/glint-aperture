@@ -30,4 +30,7 @@ uniform sampler2DArray shadowColorTex;
 uniform sampler2DArray shadowNormalTex;
 uniform sampler2DArray shadowPositionTex;
 
+uniform sampler3D floodFillVoxelMapTex1;
+uniform sampler3D floodFillVoxelMapTex2;
+
 #endif // SAMPLERS_GLSL
