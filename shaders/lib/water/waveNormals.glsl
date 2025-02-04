@@ -35,7 +35,7 @@ float waveHeight(vec2 position) {
 		vec2 p = vec2(sin(mod(iter, 2 * PI)), cos(mod(iter, 2 * PI)));
 		
 		// calculate wave data
-		vec2 res = wavedx(position, p, frequency, ap.frame.time * timeMultiplier + wavePhaseShift);
+		vec2 res = wavedx(position, p, frequency, ap.time.elapsed * timeMultiplier + wavePhaseShift);
 
 		// shift position around according to wave drag and derivative of the wave
 		position += p * res.y * weight * DRAG_MULT;
@@ -60,6 +60,7 @@ float waveHeight(vec2 position) {
 // Calculate normal at point by calculating the height at the pos and 2 additional points very close to pos
 // returned value is in world space
 vec3 waveNormal(vec2 pos, vec3 worldFaceNormal, float heightmapFactor) {
+	// return worldFaceNormal;
 	vec2 ex = vec2(WAVE_E, 0);
 	float H = waveHeight(pos.xy) * WAVE_DEPTH * heightmapFactor;
 

@@ -102,7 +102,7 @@ struct Material {
 	float ao;
 };
 
-Material materialFromSpecularMap(vec3 albedo, vec4 specularData){
+Material materialFromSpecularMap(vec3 albedo, vec4 specularData, float ao){
 	Material material;
 
 	material.albedo = albedo;
@@ -126,6 +126,8 @@ Material materialFromSpecularMap(vec3 albedo, vec4 specularData){
 	}
 
 	material.emission = specularData.a < 1.0 ? specularData.a : 0.0;
+
+	material.ao = ao;
 
 	return material;
 }

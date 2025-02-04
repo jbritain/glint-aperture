@@ -18,7 +18,7 @@ vec3 getShadedColor(Material material, vec3 mappedNormal, vec3 faceNormal, vec2 
         material.albedo * (
         skylightColor * pow2(lightmap.y) * (material.ao * 0.5 + 0.5) +
         pow(vec3(255, 152, 54), vec3(2.2)) * 1e-8 * max0(exp(-(1.0 - lightmap.x * 10.0))) +
-        vec3(0.05) * material.ao
+        vec3(material.ao * 0.1)
         )
     ;
 
@@ -27,7 +27,7 @@ vec3 getShadedColor(Material material, vec3 mappedNormal, vec3 faceNormal, vec2 
 
     color += mix(diffuse, specular, clamp01(fresnel));
 
-    // color += material.emission * material.albedo * 16.0;
+    color += material.emission * material.albedo * 16.0;
 
     return color;
 }

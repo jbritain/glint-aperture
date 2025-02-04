@@ -4,6 +4,7 @@ in vec2 uv;
 in vec4 color;
 in vec3 normal;
 in vec3 playerPos;
+flat in uint blockID;
 
 layout(location = 0) out vec4 albedo;
 layout(location = 1) out vec3 outNormal;
@@ -16,6 +17,10 @@ void iris_emitFragment() {
   vec4 col = iris_sampleBaseTex(mUV) * mColor;
 
   if (iris_discardFragment(col)) discard;
+
+  if(iris_hasFluid(blockID)){
+    discard;
+  }
 
   albedo = col;
   outNormal = normal;

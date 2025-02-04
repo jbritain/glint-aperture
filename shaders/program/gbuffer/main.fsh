@@ -17,6 +17,7 @@ flat in uint blockID;
 #include "/lib/lighting/shading.glsl"
 #include "/lib/water/waveNormals.glsl"
 #include "/lib/water/waterFog.glsl"
+#include "/lib/lighting/directionalLightmaps.glsl"
 
 void iris_emitFragment() {
 	vec2 mUV = uv, mLight = light;
@@ -41,14 +42,16 @@ void iris_emitFragment() {
 	gbufferData.mappedNormal.z = sqrt(1.0 - dot(gbufferData.mappedNormal.xy, gbufferData.mappedNormal.xy)); // reconstruct z due to labPBR encoding
 	gbufferData.mappedNormal = tbnMatrix * gbufferData.mappedNormal;
 
-	gbufferData.material = materialFromSpecularMap(albedo.rgb, specularData);
+	gbufferData.material = materialFromSpecularMap(albedo.rgb, specularData, normalData.b);
 	gbufferData.materialMask = buildMaterialMask(blockID);
 	overrideMaterials(gbufferData.material, gbufferData.materialMask);
 
 	if(gbufferData.materialMask.isFluid){
-		gbufferData.mappedNormal = mat3(ap.camera.view) * waveNormal((ap.camera.viewInv * vec4(viewPos, 1.0)).xz + ap.camera.pos.xz, mat3(ap.camera.viewInv) * gbufferData.faceNormal, 1.0);
+		gbufferData.mappedNormal = mat3(ap.camera.view) * waveNormal((ap.camera.viewInv * vec4(viewPos, 1.0)).xz + ap.camera.pos.xz, mat3(ap.camera.viewInv) * gbufferData.faceNormal, sin(PI * 0.5 * clamp01(abs(dot(gbufferData.faceNormal, normalize(viewPos))))));
 		gbufferData.material.albedo = vec3(0.0);
 	}
+
+	applyDirectionalLightmap(gbufferData.lightmap, viewPos, gbufferData.mappedNormal, tbnMatrix, gbufferData.material.sss);
 
 	#ifdef FORWARD_LIGHTING
 	color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, tbnMatrix[2], light, viewPos);

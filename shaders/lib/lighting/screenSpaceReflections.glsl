@@ -39,7 +39,7 @@ vec3 SSRSample(out vec3 fresnel, vec3 viewPos, Material material, vec3 mappedNor
     return vec3(0.0);
   }
 
-  float jitter = interleavedGradientNoise(floor(gl_FragCoord.xy), ap.frame.counter);
+  float jitter = interleavedGradientNoise(floor(gl_FragCoord.xy), ap.time.frames);
 
   vec3 reflectedDir = reflect(normalize(viewPos), mappedNormal);
 
@@ -47,12 +47,20 @@ vec3 SSRSample(out vec3 fresnel, vec3 viewPos, Material material, vec3 mappedNor
 
   vec3 reflection;
 
-  if(rayIntersects(viewPos, reflectedDir, 8, jitter, true, reflectedPos, true, false)){
-    float LOD = clamp(pow(distance(viewSpaceToScreenSpace(viewPos) * 2.0 - 1.0, reflectedPos * 2.0 - 1.0), pow(1.0-sqrt(material.roughness),5.0) * 3.0) * 6.0, 0.0, 6.0); // LOD curve by x0nk
+  float fadeFactor = 1.0;
 
-    reflection = texture(previousSceneTex, reflectedPos.xy, LOD).rgb;
-  } else {
-    reflection = getSky(mat3(ap.camera.viewInv) * reflectedDir, false) * skyLightmap;
+  if(rayIntersects(viewPos, reflectedDir, 32, jitter, true, reflectedPos, true, false)){
+    fadeFactor = smoothstep(0.8, 1.0, maxVec2(abs(reflectedPos.xy - 0.5)) * 2);
+  }
+
+  if(fadeFactor < 1.0){
+    int LOD = 0;//material.roughness < 0.01 ? 0 : int(clamp(pow(distance(viewSpaceToScreenSpace(viewPos) * 2.0 - 1.0, reflectedPos * 2.0 - 1.0), pow(1.0-sqrt(material.roughness),5.0) * 3.0) * 6.0, 0.0, 6.0)); // LOD curve by x0nk
+
+    reflection = texelFetch(previousSceneTex, ivec2(reflectedPos.xy * textureSize(previousSceneTex, LOD)), LOD).rgb;
+  }
+
+  if(fadeFactor > 0.0){
+    reflection = mix(reflection, getSky(mat3(ap.camera.viewInv) * reflectedDir, false) * skyLightmap, fadeFactor);
   }
 
   if(material.metalID != NO_METAL){
@@ -80,7 +88,7 @@ vec3 getScreenSpaceReflections(out vec3 fresnel, vec3 viewPos, Material material
     vec3 V = normalize(-viewPos);
 
     for(int i = 0; i < ROUGH_REFLECTION_SAMPLES; i++){
-      vec3 noise = blueNoise(gl_FragCoord.xy / ap.game.screenSize, ap.frame.counter * ROUGH_REFLECTION_SAMPLES + i).xyz;
+      vec3 noise = blueNoise(gl_FragCoord.xy / ap.game.screenSize, ap.time.frames * ROUGH_REFLECTION_SAMPLES + i).xyz;
 
       vec3 roughNormal = tbn * (sampleVNDFGGX(V * tbn, vec2(material.roughness), noise.xy));
       

@@ -51,7 +51,7 @@ vec3 getShadowing(vec3 playerPos, vec3 faceNormal, vec2 lightmap, Material mater
         return vec3(fakeShadow);
     }
 
-    float noise = interleavedGradientNoise(floor(gl_FragCoord.xy), ap.frame.counter);
+    float noise = interleavedGradientNoise(floor(gl_FragCoord.xy), ap.time.frames);
 
     float scatterSampleAngle = noise * 2 * PI;
     vec2 scatterSampleOffset = vec2(sin(scatterSampleAngle), cos(scatterSampleAngle)) * (sampleRadius / 8);

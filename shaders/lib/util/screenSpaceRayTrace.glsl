@@ -76,51 +76,20 @@ bool rayIntersects(vec3 viewOrigin, vec3 viewDir, int maxSteps, float jitter, bo
   for(int i = 0; i < maxSteps; ++i, rayPos += rayStep){
     if(clamp01(rayPos) != rayPos) return false; // we went offscreen
 
-    vec3 rayPos2 = rayPos + rayStep * 0.25;
-    vec3 rayPos3 = rayPos + rayStep * 0.5;
-    vec3 rayPos4 = rayPos + rayStep * 0.75;
-
     float depth = getDepth(rayPos.xy, previousFrame, opaqueOnly); // sample depth at ray position
-    float depth2 = getDepth(rayPos2.xy, previousFrame, opaqueOnly);
-    float depth3 = getDepth(rayPos3.xy, previousFrame, opaqueOnly);
-    float depth4 = getDepth(rayPos4.xy, previousFrame, opaqueOnly);
 
-    if(depth < rayPos.z && abs(depthLenience - (rayPos.z - depth)) < depthLenience && rayPos.z > handDepth){
+    if(abs(depthLenience - (rayPos.z - depth)) < depthLenience && rayPos.z > handDepth){
+      if (i == 0){
+        return false;
+      }
+
       intersect = true;
-      break;
-    }
-    if(clamp01(rayPos2) != rayPos2) return false; // we went offscreen
-    if(depth2 < rayPos2.z && abs(depthLenience - (rayPos2.z - depth2)) < depthLenience && rayPos2.z > handDepth){
-      
-      intersect = true;
-      rayPos = rayPos2;
-      break;
-    }
-    if(clamp01(rayPos3) != rayPos3) return false; // we went offscreen
-    if(depth3 < rayPos3.z && abs(depthLenience - (rayPos3.z - depth3)) < depthLenience && rayPos3.z > handDepth){
-      
-      intersect = true;
-      rayPos = rayPos3;
-      break;
-    }
-    if(clamp01(rayPos4) != rayPos4) return false; // we went offscreen
-    if(depth4 < rayPos4.z && abs(depthLenience - (rayPos4.z - depth4)) < depthLenience && rayPos4.z > handDepth){
-      intersect = true;
-      rayPos = rayPos4;
       break;
     }
   }
-
-  if(clamp01(rayPos) != rayPos) return false; // we went offscreen
-
-
 
   if(refine && intersect){
     binarySearch(rayPos, rayStep, previousFrame, opaqueOnly);
-  }
-
-  if(getDepth(rayPos.xy, previousFrame, opaqueOnly) >= 0.9999){
-    return false;
   }
 
   return intersect;

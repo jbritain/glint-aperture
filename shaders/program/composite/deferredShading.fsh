@@ -12,6 +12,8 @@ layout(location = 0) out vec4 color;
 void main(){
   float depth = texture(solidDepthTex, uv).r;
 
+  	// show(texture(previousSceneTex, (gl_FragCoord.xy / textureSize(previousSceneTex, 0))));
+
   if(depth == 1.0){
     color = texture(sceneTex, uv);
     return;
@@ -27,5 +29,5 @@ void main(){
   color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, gbufferData.faceNormal, gbufferData.lightmap, viewPos);
   color.rgb += texture(globalIlluminationTex, uv).rgb * sunlightColor * gbufferData.material.albedo;
 
-  show(texture(globalIlluminationTex, uv).rgb * sunlightColor);
+  // show(texture(globalIlluminationTex, uv).rgb * sunlightColor);
 }

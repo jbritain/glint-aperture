@@ -22,6 +22,6 @@ void main(){
     vec3 feetPlayerPos = (ap.camera.viewInv * vec4(viewPos, 1.0)).xyz;
     vec3 worldDir = normalize(feetPlayerPos);
 
-    color.rgb = getSky(vec3(0.0), worldDir, true);
+    color.rgb = getSky(color.rgb, worldDir, true);
 
 }

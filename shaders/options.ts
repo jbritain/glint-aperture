@@ -1,4 +1,6 @@
-function setupOptions(){
+import type {} from './iris'
+
+export function setupOptions(){
   const postPage = new Page("Post-Processing")
     .add(asBool("BLOOM_ENABLE", true))
     .build();
