@@ -3,7 +3,7 @@
 
 // takes in a player space position and returns a position in the voxel map
 ivec3 mapVoxelPos(vec3 playerPos){
-  return ivec3(playerPos + fract(ap.camera.pos) + ivec3(VOXEL_MAP_SIZE / 2));
+  return ivec3(floor(playerPos + fract(ap.camera.pos)) + ivec3(VOXEL_MAP_SIZE / 2));
 }
 
 bool isWithinVoxelBounds(ivec3 voxelPos){
@@ -24,7 +24,7 @@ ivec3 mapPreviousVoxelPos(vec3 playerPos){
 }
 
 ivec3 getPreviousVoxelOffset(){
-  return ivec3(floor(ap.temporal.pos) - floor(ap.camera.pos));
+  return ivec3(floor(ap.camera.pos) - floor(ap.temporal.pos));
 }
 
 #endif // VOXEL_MAP_GLSL

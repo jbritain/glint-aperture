@@ -38,19 +38,13 @@ void main(){
   vec3 voxelPos = mapVoxelPosInterp(feetPlayerPos - worldNormal * 0.5 + worldMappedNormal);
   vec3 blocklightColor;
   if(EVEN_FRAME){
-    blocklightColor = textureLod(floodFillVoxelMapTex1, voxelPos, 0).rgb;
-  } else {
     blocklightColor = textureLod(floodFillVoxelMapTex2, voxelPos, 0).rgb;
+  } else {
+    blocklightColor = textureLod(floodFillVoxelMapTex1, voxelPos, 0).rgb;
   }
 
   color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, gbufferData.faceNormal, gbufferData.lightmap.y, blocklightColor, viewPos);
   color.rgb += texture(globalIlluminationTex, uv).rgb * sunlightColor * gbufferData.material.albedo;
 
-  // show(blocklightColor);
-
-  
-  
-
-
-  // show(texture(globalIlluminationTex, uv).rgb * sunlightColor);
+  show(blocklightColor);
 }

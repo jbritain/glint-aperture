@@ -37,7 +37,7 @@ void main(){
                 cosTheta
             );
 
-            radiance += getSky(tbn * dir, false) / (cosTheta / PI);
+            radiance += getValFromSkyLUT(tbn * dir, 4) / (cosTheta / PI);
         }
     }
 

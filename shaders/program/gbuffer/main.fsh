@@ -57,7 +57,6 @@ void iris_emitFragment() {
 	}
 
 	applyDirectionalLightmap(gbufferData.lightmap, viewPos, gbufferData.mappedNormal, tbnMatrix, gbufferData.material.sss);
-	show(gbufferData.material.albedo);
 
 	#ifdef FORWARD_LIGHTING
 	color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, tbnMatrix[2], light.y, light.x, viewPos);

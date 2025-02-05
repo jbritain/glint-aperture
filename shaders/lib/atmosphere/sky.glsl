@@ -9,7 +9,7 @@
 */
 
 
-vec3 getValFromSkyLUT(vec3 rayDir) {
+vec3 getValFromSkyLUT(vec3 rayDir, int lod) {
     float height = atmospherePos.y;
     vec3 up = vec3(0.0, 1.0, 0.0);
     
@@ -33,7 +33,7 @@ vec3 getValFromSkyLUT(vec3 rayDir) {
     float v = 0.5 + 0.5*sign(altitudeAngle)*sqrt(abs(altitudeAngle)*2.0/PI);
     vec2 uv = vec2(azimuthAngle / (2.0*PI), v);
     
-    return texture(skyViewLUTTex, uv).rgb;
+    return textureLod(skyViewLUTTex, uv, lod).rgb;
 }
 
 vec3 sun(vec3 rayDir){
@@ -51,7 +51,7 @@ float fogify(float x, float w) {
 
 vec3 getSky(vec3 color, vec3 rayDir, bool includeSun){
 
-    vec3 lum = getValFromSkyLUT(rayDir);
+    vec3 lum = getValFromSkyLUT(rayDir, 0);
 
     // lum = mix(lum, weatherSkylightColor, wetness);
 

@@ -20,40 +20,42 @@ function setLightColors(){
     setLightColor("wall_torch", 243, 158, 73, 255);
     setLightColor("nether_portal", 200, 0, 255, 255);
 
-    setLightColor("tinted_glass", 50, 38, 56, 255);
-    setLightColor("white_stained_glass",      255, 255, 255, 255);
-    setLightColor("white_stained_glass_pane", 255, 255, 255, 255);
-    setLightColor("light_gray_stained_glass",      153, 153, 153, 255);
-    setLightColor("light_gray_stained_glass_pane", 153, 153, 153, 255);
-    setLightColor("gray_stained_glass",      76, 76, 76, 255);
-    setLightColor("gray_stained_glass_pane", 76, 76, 76, 255);
-    setLightColor("black_stained_glass",      25, 25, 25, 255);
-    setLightColor("black_stained_glass_pane", 25, 25, 25, 255);
-    setLightColor("brown_stained_glass",      102, 76, 51, 255);
-    setLightColor("brown_stained_glass_pane", 102, 76, 51, 255);
+    const glassOpacity = 200;
 
-    setLightColor("red_stained_glass",      153, 51, 51, 255);
-    setLightColor("red_stained_glass_pane", 153, 51, 51, 255);
-    setLightColor("orange_stained_glass",      216, 127, 51, 255);
-    setLightColor("orange_stained_glass_pane", 216, 127, 51, 255);
-    setLightColor("yellow_stained_glass",      229, 229, 51, 255);
-    setLightColor("yellow_stained_glass_pane", 229, 229, 51, 255);
-    setLightColor("lime_stained_glass",      127, 204, 25, 255);
-    setLightColor("lime_stained_glass_pane", 127, 204, 25, 255);
-    setLightColor("green_stained_glass",      102, 127, 51, 255);
-    setLightColor("green_stained_glass_pane", 102, 127, 51, 255);
-    setLightColor("cyan_stained_glass",      76, 127, 153, 255);
-    setLightColor("cyan_stained_glass_pane", 76, 127, 153, 255);
-    setLightColor("light_blue_stained_glass",      102, 153, 216, 255);
-    setLightColor("light_blue_stained_glass_pane", 102, 153, 216, 255);
-    setLightColor("blue_stained_glass",      51, 76, 178, 255);
-    setLightColor("blue_stained_glass_pane", 51, 76, 178, 255);
-    setLightColor("purple_stained_glass",      127, 63, 178, 255);
-    setLightColor("purple_stained_glass_pane", 127, 63, 178, 255);
-    setLightColor("magenta_stained_glass",      178, 76, 216, 255);
-    setLightColor("magenta_stained_glass_pane", 178, 76, 216, 255);
-    setLightColor("pink_stained_glass",      242, 127, 165, 255);
-    setLightColor("pink_stained_glass_pane", 242, 127, 165, 255);
+    setLightColor("tinted_glass", 50, 38, 56, glassOpacity);
+    setLightColor("white_stained_glass",      255, 255, 255, glassOpacity);
+    setLightColor("white_stained_glass_pane", 255, 255, 255, glassOpacity);
+    setLightColor("light_gray_stained_glass",      153, 153, 153, glassOpacity);
+    setLightColor("light_gray_stained_glass_pane", 153, 153, 153, glassOpacity);
+    setLightColor("gray_stained_glass",      76, 76, 76, glassOpacity);
+    setLightColor("gray_stained_glass_pane", 76, 76, 76, glassOpacity);
+    setLightColor("black_stained_glass",      25, 25, 25, glassOpacity);
+    setLightColor("black_stained_glass_pane", 25, 25, 25, glassOpacity);
+    setLightColor("brown_stained_glass",      102, 76, 51, glassOpacity);
+    setLightColor("brown_stained_glass_pane", 102, 76, 51, glassOpacity);
+
+    setLightColor("red_stained_glass",      153, 51, 51, glassOpacity);
+    setLightColor("red_stained_glass_pane", 153, 51, 51, glassOpacity);
+    setLightColor("orange_stained_glass",      216, 127, 51, glassOpacity);
+    setLightColor("orange_stained_glass_pane", 216, 127, 51, glassOpacity);
+    setLightColor("yellow_stained_glass",      229, 229, 51, glassOpacity);
+    setLightColor("yellow_stained_glass_pane", 229, 229, 51, glassOpacity);
+    setLightColor("lime_stained_glass",      127, 204, 25, glassOpacity);
+    setLightColor("lime_stained_glass_pane", 127, 204, 25, glassOpacity);
+    setLightColor("green_stained_glass",      102, 127, 51, glassOpacity);
+    setLightColor("green_stained_glass_pane", 102, 127, 51, glassOpacity);
+    setLightColor("cyan_stained_glass",      76, 127, 153, glassOpacity);
+    setLightColor("cyan_stained_glass_pane", 76, 127, 153, glassOpacity);
+    setLightColor("light_blue_stained_glass",      102, 153, 216, glassOpacity);
+    setLightColor("light_blue_stained_glass_pane", 102, 153, 216, glassOpacity);
+    setLightColor("blue_stained_glass",      51, 76, 178, glassOpacity);
+    setLightColor("blue_stained_glass_pane", 51, 76, 178, glassOpacity);
+    setLightColor("purple_stained_glass",      127, 63, 178, glassOpacity);
+    setLightColor("purple_stained_glass_pane", 127, 63, 178, glassOpacity);
+    setLightColor("magenta_stained_glass",      178, 76, 216, glassOpacity);
+    setLightColor("magenta_stained_glass_pane", 178, 76, 216, glassOpacity);
+    setLightColor("pink_stained_glass",      242, 127, 165, glassOpacity);
+    setLightColor("pink_stained_glass_pane", 242, 127, 165, glassOpacity);
 }
 
 function defineBoolGlobally(define){
@@ -142,6 +144,7 @@ export function setupShader() {
         .imageName("skyViewLUT")
         .width(200).height(200)
         .clear(true)
+        .mipmap(true)
         .build()
 
     // ======================= PREPARE =======================
@@ -154,6 +157,11 @@ export function setupShader() {
         .ssbo(0, sceneData)
         .build()
     )
+
+    registerShader(
+        Stage.PRE_RENDER,
+        new GenerateMips(skyViewLUT)
+    );
 
     registerShader(
         Stage.PRE_RENDER,
@@ -323,7 +331,7 @@ export function setupShader() {
         .build()
 
     const voxelMap = new Texture("voxelMapTex")
-        .format(Format.RGBA8)
+        .format(Format.R32UI)
         .imageName("voxelMap")
         .clear(true)
         .clearColor(0.0, 0.0, 0.0, 0.0)
