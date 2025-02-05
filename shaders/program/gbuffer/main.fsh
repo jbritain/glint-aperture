@@ -13,17 +13,28 @@ in vec3 viewPos;
 in mat3 tbnMatrix;
 flat in uint blockID;
 
+in vec3 midBlock;
+
+in vec4 textureBounds;
+in vec2 singleTexSize;
+
 #include "/lib/common.glsl"
 #include "/lib/lighting/shading.glsl"
 #include "/lib/water/waveNormals.glsl"
 #include "/lib/water/waterFog.glsl"
 #include "/lib/lighting/directionalLightmaps.glsl"
+#include "/lib/misc/parallax.glsl"
 
 void iris_emitFragment() {
 	vec2 mUV = uv, mLight = light;
 	vec4 mColor = vertColor;
 
 	iris_modifyBase(mUV, mColor, mLight);
+
+	vec3 parallaxPos;
+	vec2 dx = dFdx(uv);
+	vec2 dy = dFdy(uv);
+	mUV = getParallaxTexcoord(mUV, viewPos, tbnMatrix, parallaxPos, dx, dy, 0.0, textureBounds, singleTexSize, midBlock);
 
 	color = iris_sampleBaseTex(mUV) * mColor;
 	color.rgb = pow(color.rgb, vec3(2.2));

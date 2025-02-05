@@ -18,9 +18,9 @@ function setLightColors(){
     setLightColor("torch", 243, 181, 73, 255);
     setLightColor("verdant_froglight", 99, 229, 60, 255);
     setLightColor("wall_torch", 243, 158, 73, 255);
-    setLightColor("nether_portal", 200, 0, 255, 255);
+    setLightColor("nether_portal", 100, 0, 255, 255);
 
-    const glassOpacity = 200;
+    const glassOpacity = 255;
 
     setLightColor("tinted_glass", 50, 38, 56, glassOpacity);
     setLightColor("white_stained_glass",      255, 255, 255, glassOpacity);
