@@ -15,6 +15,7 @@ out vec4 color;
 out vec3 normal;
 out vec3 playerPos;
 flat out uint blockID;
+out uint cascade;
 
 void iris_sendParameters(VertexData data) {
     color = data.color;
@@ -28,6 +29,12 @@ void iris_sendParameters(VertexData data) {
 
     if(isWithinVoxelBounds(voxelPos) && gl_VertexID % 4 == 0){
         imageStore(voxelMap, voxelPos, ivec4(data.blockId, 0, 0, 0));
+    }
+
+    for(cascade = 0; cascade < 4; cascade++){
+        if(iris_projectionMatrix == ap.celestial.projection[cascade]){
+            break;
+        }
     }
 
 

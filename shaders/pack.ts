@@ -3,19 +3,17 @@ import type {} from './iris'
 function setLightColors(){
     // colours stolen from null
 
-    setLightColor("campfire", 243, 152, 73, 255);
+    setLightColor("campfire", 255, 102, 0, 255);
     setLightColor("candle", 245, 127, 68, 255);
     setLightColor("cave_vines", 243, 133, 59, 255);
     setLightColor("cave_vines_plant", 243, 133, 59, 255);
     setLightColor("glow_lichen", 107, 238, 172, 255);
     setLightColor("lantern", 243, 158, 73, 255);
-    setLightColor("lava", 193, 100, 38, 255);
+    setLightColor("jack_o_lantern", 193, 100, 38, 255);
     setLightColor("ochre_froglight", 223, 172, 71, 255);
     setLightColor("pearlescent_froglight", 224, 117, 232, 255);
     setLightColor("redstone_torch", 249, 50, 28, 255);
-    setLightColor("soul_campfire", 40, 170, 235, 255);
-    setLightColor("soul_torch", 40, 170, 235, 255);
-    setLightColor("torch", 243, 181, 73, 255);
+    setLightColor("soul_campfire", 51, 204, 255, 255);
     setLightColor("verdant_froglight", 99, 229, 60, 255);
     setLightColor("wall_torch", 243, 158, 73, 255);
     setLightColor("nether_portal", 100, 0, 255, 255);
@@ -197,6 +195,11 @@ export function setupShader() {
         .clear(true)
         .build()
 
+    const shadowMaskTex = new ArrayTexture("shadowMaskTex")
+        .format(Format.R8UI)
+        .clear(true)
+        .build()
+
 
     registerShader(
         new ObjectShader("shadow", Usage.SHADOW)
@@ -205,6 +208,7 @@ export function setupShader() {
         .target(0, shadowColorTex)
         .target(1, shadowNormalTex)
         .target(2, shadowPositionTex)
+        .target(3, shadowMaskTex)
         .build()
     );
 
@@ -353,15 +357,15 @@ export function setupShader() {
     const globalIlluminationTex = new Texture("globalIlluminationTex")
         .format(Format.R11F_G11F_B10F)
         .clear(false)
-        .width(Math.floor(screenWidth / 4)).height(Math.floor(screenHeight / 4))
         .build();
 
     registerShader(
         Stage.PRE_TRANSLUCENT,
         new Composite("globalIllumination")
         .vertex("program/fullscreen.vsh")
-        .fragment("program/composite/globalIllumination.fsh")
+        .fragment("program/composite/SSGI.fsh")
         .target(0, globalIlluminationTex)
+        .ssbo(0, sceneData)
         .build()
     )
 
@@ -391,6 +395,16 @@ export function setupShader() {
         new Composite("compositeTranslucents")
         .vertex("program/fullscreen.vsh")
         .fragment("program/composite/compositeTranslucents.fsh")
+        .target(0, sceneTex)
+        .ssbo(0, sceneData)
+        .build()
+    );
+
+    registerShader(
+        Stage.POST_RENDER,
+        new Composite("cloudyFog")
+        .vertex("program/fullscreen.vsh")
+        .fragment("program/composite/cloudyFog.fsh")
         .target(0, sceneTex)
         .ssbo(0, sceneData)
         .build()

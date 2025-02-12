@@ -42,7 +42,7 @@ vec3 getEmittedLight(ivec3 voxelPos){
   float emission = iris_getEmission(sampleBlockID) / 15.0;
   vec4 lightColor = iris_getLightColor(sampleBlockID);
 
-  return lightColor.rgb * emission * 16.0;
+  return lightColor.rgb * emission * 32.0;
 }
 
 void main(){

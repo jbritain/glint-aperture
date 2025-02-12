@@ -43,8 +43,16 @@ void main(){
     blocklightColor = textureLod(floodFillVoxelMapTex1, voxelPos, 0).rgb;
   }
 
-  color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, gbufferData.faceNormal, gbufferData.lightmap.y, blocklightColor, viewPos);
-  color.rgb += texture(globalIlluminationTex, uv).rgb * sunlightColor * gbufferData.material.albedo;
+  // blocklightColor = vec3(0.0);
 
-  show(blocklightColor);
+  vec3 f;
+  color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, gbufferData.faceNormal, gbufferData.lightmap.y, blocklightColor, viewPos, f);
+  color.rgb += texture(globalIlluminationTex, uv).rgb * gbufferData.material.albedo;
+
+  // show(blocklightColor);
+  // for(int i = 3; i >= 0; i -= 1){
+    // show(texture(shadowColorTex, vec3(uv, 3)));
+    show(blocklightColor);
+  // }
+  
 }

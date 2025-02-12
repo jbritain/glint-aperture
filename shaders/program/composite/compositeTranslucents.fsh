@@ -37,13 +37,12 @@ void main(){
     LightInteraction waterInteraction = waterFog(vec3(0.0), opaqueViewPos);
     color.rgb = color.rgb * waterInteraction.transmittance + waterInteraction.scattering;
   }
+  
+  vec4 translucents = texture(translucentsTex, uv);
+  color = mix(color, translucents.rgb, translucents.a);
 
   if(inWater && isWater){
     LightInteraction waterInteraction = waterFog(vec3(0.0), translucentViewPos);
     color.rgb = color.rgb * waterInteraction.transmittance + waterInteraction.scattering;
   }
-
-
-  vec4 translucents = texture(translucentsTex, uv);
-  color = mix(color, translucents.rgb, translucents.a);
 }

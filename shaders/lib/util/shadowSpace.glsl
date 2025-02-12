@@ -14,7 +14,7 @@ vec3 getShadowScreenPos(vec3 feetPlayerPos, vec3 worldNormal, out int cascade){
   }
 
   vec3 shadowClipNormal = mat3(ap.celestial.projection[cascade]) * shadowViewNormal;
-  shadowClipPos.xyz += shadowClipNormal * 0.05 * pow2(cascade + 1);
+  shadowClipPos.xyz += shadowClipNormal * 0.1 * pow(2, cascade);
 
   return shadowClipPos.xyz * 0.5 + 0.5;
 }

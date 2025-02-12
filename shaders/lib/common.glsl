@@ -20,6 +20,26 @@ struct LightInteraction {
   vec3 transmittance;
 };
 
+struct ShadowMask {
+  bool water;
+};
+
+uint encodeShadowMask(ShadowMask mask){
+  uint encodedMask = 0;
+  if(mask.water){
+    encodedMask = 1;
+  }
+
+  return encodedMask;
+}
+
+ShadowMask decodeShadowMask(uint encodedMask){
+  ShadowMask mask;
+  mask.water = encodedMask == 1;
+
+  return mask;
+}
+
 #define EVEN_FRAME ap.time.frames % 2 == 0
 
 

@@ -49,5 +49,5 @@ void main(){
 
   historyColor.rgb = clamp(historyColor.rgb, minCol, maxCol);
 
-  color = mix(color, historyColor, 0.7 * float(!rejectSample));
+  color = mix(color, historyColor, 0.9 * float(!rejectSample));
 }

@@ -31,7 +31,7 @@ vec2 getParallaxTexcoord(vec2 texcoord, vec3 viewPos, mat3 tbnMatrix, out vec3 p
     return texcoord;
   }
 
-  vec3 playerPosCentred = (ap.camera.viewInv * vec4(viewPos, 1.0)).xyz + midBlock * rcp(64);
+  vec3 playerPos = (ap.camera.viewInv * vec4(viewPos, 1.0)).xyz;
 
 
   vec3 viewDir = normalize(-viewPos) * tbnMatrix;
@@ -42,6 +42,7 @@ vec2 getParallaxTexcoord(vec2 texcoord, vec3 viewPos, mat3 tbnMatrix, out vec3 p
 
   vec3 rayStep = vec3(viewDir.xy * rcp(-viewDir.z) * PARALLAX_HEIGHT * (1.0 - distFade), 1.0) * layerDepth;
   vec3 pos = vec3(atlasToLocal(texcoord, textureBounds, singleTexSize), 0.0);
+  vec3 startPos = pos;
 
   float depth = getDepth(texcoord, dx, dy);
   if(depth < rcp(255.0)){
@@ -53,24 +54,27 @@ vec2 getParallaxTexcoord(vec2 texcoord, vec3 viewPos, mat3 tbnMatrix, out vec3 p
 
   depth = getDepth(localToAtlas(pos.xy, textureBounds, singleTexSize), dx, dy);
 
+  vec3 voxelDirectionY = mat3(ap.camera.viewInv) * tbnMatrix[0];
+  vec3 voxelDirectionX = mat3(ap.camera.viewInv) * tbnMatrix[1];
+
   while(depth - pos.z > rcp(255.0)){
     previousPos = pos;
-
-    // if(mod(pos.xy, 1.0) != pos.xy){ // out of block, maybe;
-    //   vec3 blockOffset = vec3(floor(pos.xy), 0.0) * tbnMatrix;
-
-    //   ivec3 voxelPos = mapVoxelPos(playerPosCentred + blockOffset);
-
-    //   if(texelFetch(voxelMapTex, voxelPos, 0).r == 0){
-    //     discard;
-    //   }
-    // }
-
     depth = getDepth(localToAtlas(pos.xy, textureBounds, singleTexSize), dx, dy);
     pos += rayStep;
   }
 
+  // if(pos.z > 0.1){
+  //   ivec3 voxelPos = mapVoxelPos(playerPos + mat3(ap.camera.viewInv) * ((startPos - pos) * tbnMatrix));
+  //   uint voxelID = texelFetch(voxelMapTex, voxelPos, 0).r;
+  //   if(voxelID == 0){
+  //     discard;
+  //   }
+  // }
+
+
+
   depth = getDepth(localToAtlas(pos.xy, textureBounds, singleTexSize), dx, dy);
+
   // binary refinement
   for(int i = 0; i < 6; i++){
     rayStep /= 2.0;

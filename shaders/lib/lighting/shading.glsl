@@ -6,7 +6,7 @@
 #include "/lib/lighting/screenSpaceReflections.glsl"
 #include "/lib/buffers/sceneData.glsl"
 
-vec3 getShadedColor(Material material, vec3 mappedNormal, vec3 faceNormal, float skylight, vec3 blocklight, vec3 viewPos){
+vec3 getShadedColor(Material material, vec3 mappedNormal, vec3 faceNormal, float skylight, vec3 blocklight, vec3 viewPos, out vec3 fresnel){
     vec3 playerPos = (ap.camera.viewInv * vec4(viewPos, 1.0)).xyz;
 
     float scatter;
@@ -23,7 +23,6 @@ vec3 getShadedColor(Material material, vec3 mappedNormal, vec3 faceNormal, float
         )
     ;
 
-    vec3 fresnel;
     vec3 specular = getScreenSpaceReflections(fresnel, viewPos, material, mappedNormal, skylight);
 
     color += mix(diffuse, specular, clamp01(fresnel));
@@ -33,7 +32,7 @@ vec3 getShadedColor(Material material, vec3 mappedNormal, vec3 faceNormal, float
     return color;
 }
 
-vec3 getShadedColor(Material material, vec3 mappedNormal, vec3 faceNormal, float skylight, float blocklight, vec3 viewPos){
+vec3 getShadedColor(Material material, vec3 mappedNormal, vec3 faceNormal, float skylight, float blocklight, vec3 viewPos, out vec3 fresnel){
     vec3 blocklightColor = pow(vec3(255, 152, 54), vec3(2.2)) * 1e-8 * max0(exp(-(1.0 - blocklight * 10.0)));
-    return getShadedColor(material, mappedNormal, faceNormal, skylight, blocklightColor, viewPos);
+    return getShadedColor(material, mappedNormal, faceNormal, skylight, blocklightColor, viewPos, fresnel);
 }

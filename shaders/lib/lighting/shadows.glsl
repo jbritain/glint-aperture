@@ -2,8 +2,10 @@
 #define SHADOWS_GLSL
 
 #include "/lib/util/shadowSpace.glsl"
+#include "/lib/water/waterFog.glsl"
+#include "/lib/water/waveNormals.glsl"
 
-vec3 sampleShadow(vec3 shadowScreenPos, int cascade){
+vec3 sampleShadow(vec3 shadowScreenPos, int cascade, vec3 playerPos){
     float transparentShadow = texture(shadowMapFiltered, vec4(shadowScreenPos.xy, cascade, shadowScreenPos.z)).r;
 
     if(transparentShadow >= 1.0 - 1e-6){
@@ -17,6 +19,31 @@ vec3 sampleShadow(vec3 shadowScreenPos, int cascade){
     }
 
     vec4 shadowColorData = texture(shadowColorTex, vec3(shadowScreenPos.xy, cascade));
+
+    ShadowMask mask = decodeShadowMask(texture(shadowMaskTex, vec3(shadowScreenPos.xy, cascade)).r);
+    if(mask.water){
+        float zRange = (-2.0 / ap.celestial.projection[cascade][2][2]);
+
+        float translucentShadowDepth = texture(shadowMap, vec3(shadowScreenPos.xy, cascade)).r;
+
+        float depthDifference = shadowScreenPos.z - translucentShadowDepth;
+        float distanceThroughWater = zRange * max0(depthDifference);
+        
+        // vec3 oldPos = playerPos + worldLightDir * distanceThroughWater;
+
+        // vec3 waveNormal = waveNormal(oldPos.xz + ap.camera.pos.xz, vec3(0.0, 1.0, 0.0), 1.0);
+        // vec3 refracted = refract(worldLightDir, waveNormal, 1.0/1.33);
+
+        // vec3 newPos = playerPos + refracted * distanceThroughWater;
+
+        // float oldArea = length(dFdx(oldPos)) * length(dFdy(oldPos));
+        // float newArea = length(dFdx(newPos)) * length(dFdy(newPos));
+
+        // float caustics = oldArea / max(newArea, 1e-6);
+
+        return exp(-distanceThroughWater * WATER_DENSITY * waterExtinction);
+    }
+
     vec3 shadowColor = pow(shadowColorData.rgb, vec3(2.2)) * (1.0 - shadowColorData.a);
     return mix(shadowColor * solidShadow, vec3(1.0), transparentShadow);
 }
@@ -64,13 +91,26 @@ vec3 getShadowing(vec3 playerPos, vec3 faceNormal, vec2 lightmap, Material mater
     vec3 shadow = vec3(0.0);
     for(int i = 0; i < SHADOW_SAMPLES; i++){
         vec3 offset = vec3(vogelDiscSample(i, SHADOW_SAMPLES, noise), 0.0) * sampleRadius;
-        shadow += sampleShadow(shadowScreenPos + offset, cascade);
+        shadow += sampleShadow(shadowScreenPos + offset, cascade, playerPos);
     }
 
     shadow /= SHADOW_SAMPLES;
 
     return shadow;
 
+}
+
+float fastDiffuse(vec3 playerPos, vec3 faceNormal, vec2 lightmap, Material material){
+    float faceNoL = clamp01(dot(faceNormal, lightDir));
+
+    int cascade;
+	vec3 shadowScreenPos = getShadowScreenPos(playerPos, mat3(ap.camera.viewInv) * faceNormal, cascade);
+
+    if(clamp01(shadowScreenPos.xy) != shadowScreenPos.xy){
+        return clamp01(smoothstep(13.5 / 15.0, 14.5 / 15.0, lightmap.y)) * faceNoL;
+    }
+
+    return texture(shadowMapFiltered, vec4(shadowScreenPos.xy, cascade, shadowScreenPos.z)).r * faceNoL;
 }
 
 #endif

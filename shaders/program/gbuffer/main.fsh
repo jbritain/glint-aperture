@@ -70,8 +70,15 @@ void iris_emitFragment() {
 	applyDirectionalLightmap(gbufferData.lightmap, viewPos, gbufferData.mappedNormal, tbnMatrix, gbufferData.material.sss);
 
 	#ifdef FORWARD_LIGHTING
-	color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, tbnMatrix[2], light.y, light.x, viewPos);
+	vec3 fresnel;
+	color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, tbnMatrix[2], light.y, light.x, viewPos, fresnel);
+	if(color.a != 1.0){
+		color.a = minVec3(fresnel);
+	}
+	
 	#endif
+
+
 
 	float encodedMaterialMask = encodeMaterialMask(gbufferData.materialMask);
 	MaterialMask decodedMaterialMask = decodeMaterialMask(encodedMaterialMask);

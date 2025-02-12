@@ -1,18 +1,16 @@
 // pack.ts
 function setLightColors() {
-  setLightColor("campfire", 243, 152, 73, 255);
+  setLightColor("campfire", 255, 102, 0, 255);
   setLightColor("candle", 245, 127, 68, 255);
   setLightColor("cave_vines", 243, 133, 59, 255);
   setLightColor("cave_vines_plant", 243, 133, 59, 255);
   setLightColor("glow_lichen", 107, 238, 172, 255);
   setLightColor("lantern", 243, 158, 73, 255);
-  setLightColor("lava", 193, 100, 38, 255);
+  setLightColor("jack_o_lantern", 193, 100, 38, 255);
   setLightColor("ochre_froglight", 223, 172, 71, 255);
   setLightColor("pearlescent_froglight", 224, 117, 232, 255);
   setLightColor("redstone_torch", 249, 50, 28, 255);
-  setLightColor("soul_campfire", 40, 170, 235, 255);
-  setLightColor("soul_torch", 40, 170, 235, 255);
-  setLightColor("torch", 243, 181, 73, 255);
+  setLightColor("soul_campfire", 51, 204, 255, 255);
   setLightColor("verdant_froglight", 99, 229, 60, 255);
   setLightColor("wall_torch", 243, 158, 73, 255);
   setLightColor("nether_portal", 100, 0, 255, 255);
@@ -105,8 +103,9 @@ function setupShader() {
   const shadowColorTex = new ArrayTexture("shadowColorTex").format(Format.RGBA8).clear(true).build();
   const shadowNormalTex = new ArrayTexture("shadowNormalTex").format(Format.RGBA8).clear(true).clearColor(0, 0, 0, 0).build();
   const shadowPositionTex = new ArrayTexture("shadowPositionTex").format(Format.RGB16F).clear(true).build();
+  const shadowMaskTex = new ArrayTexture("shadowMaskTex").format(Format.R8UI).clear(true).build();
   registerShader(
-    new ObjectShader("shadow", Usage.SHADOW).vertex("program/gbuffer/shadow.vsh").fragment("program/gbuffer/shadow.fsh").target(0, shadowColorTex).target(1, shadowNormalTex).target(2, shadowPositionTex).build()
+    new ObjectShader("shadow", Usage.SHADOW).vertex("program/gbuffer/shadow.vsh").fragment("program/gbuffer/shadow.fsh").target(0, shadowColorTex).target(1, shadowNormalTex).target(2, shadowPositionTex).target(3, shadowMaskTex).build()
   );
   const sceneTex = new Texture("sceneTex").format(Format.RGB16F).clear(true).clearColor(0, 0, 0, 1).build();
   const translucentsTex = new Texture("translucentsTex").format(Format.RGBA16F).clear(true).clearColor(0, 0, 0, 0).build();
@@ -158,10 +157,10 @@ function setupShader() {
     new Compute("floodfillPropagate").location("program/composite/floodfillPropagate.csh").workGroups(voxelMapWidth / 4, voxelMapHeight / 4, voxelMapWidth / 4).build()
   );
   registerShader(Stage.PRE_TRANSLUCENT, new MemoryBarrier(IMAGE_BIT));
-  const globalIlluminationTex = new Texture("globalIlluminationTex").format(Format.R11F_G11F_B10F).clear(false).width(Math.floor(screenWidth / 4)).height(Math.floor(screenHeight / 4)).build();
+  const globalIlluminationTex = new Texture("globalIlluminationTex").format(Format.R11F_G11F_B10F).clear(false).build();
   registerShader(
     Stage.PRE_TRANSLUCENT,
-    new Composite("globalIllumination").vertex("program/fullscreen.vsh").fragment("program/composite/globalIllumination.fsh").target(0, globalIlluminationTex).build()
+    new Composite("globalIllumination").vertex("program/fullscreen.vsh").fragment("program/composite/SSGI.fsh").target(0, globalIlluminationTex).ssbo(0, sceneData).build()
   );
   registerShader(
     Stage.PRE_TRANSLUCENT,
@@ -174,6 +173,10 @@ function setupShader() {
   registerShader(
     Stage.POST_RENDER,
     new Composite("compositeTranslucents").vertex("program/fullscreen.vsh").fragment("program/composite/compositeTranslucents.fsh").target(0, sceneTex).ssbo(0, sceneData).build()
+  );
+  registerShader(
+    Stage.POST_RENDER,
+    new Composite("cloudyFog").vertex("program/fullscreen.vsh").fragment("program/composite/cloudyFog.fsh").target(0, sceneTex).ssbo(0, sceneData).build()
   );
   registerShader(
     Stage.POST_RENDER,

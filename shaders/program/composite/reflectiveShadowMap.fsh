@@ -30,7 +30,7 @@ void main(){
   vec3 previousGI = texelFetch(globalIlluminationTex, ivec2(previousScreenPos.xy * textureSize(globalIlluminationTex, 0)), 0).rgb;
 
   GI = vec3(0.0);
-  return;
+  // return;
 
   if(depth == 1.0){
 
@@ -65,7 +65,7 @@ void main(){
 
   float jitter = interleavedGradientNoise(floor(gl_FragCoord.xy), ap.time.frames);
 
-  float normalizationFactor = 2.0 * pow2(GI_RADIUS);
+  float normalizationFactor = 8.0 * pow2(GI_RADIUS);
 
   for(int i = 0; i < GI_SAMPLES; i++){
     vec2 offset = weightedVogelDiscSample(i, GI_SAMPLES, jitter) * radius;
@@ -93,8 +93,8 @@ void main(){
 
 
 
-  if(clamp01(previousScreenPos.xy) == previousScreenPos.xy && abs(previousScreenPos.z - texture(previousDepthTex, previousScreenPos.xy).r) < 0.001){
-    GI = mix(max0(previousGI), GI, 0.1);
+  if(true || clamp01(previousScreenPos.xy) == previousScreenPos.xy && abs(previousScreenPos.z - texture(previousDepthTex, previousScreenPos.xy).r) < 0.001){
+    GI = mix(max0(previousGI), GI, 0.05);
   }
   // show(GI);
 

@@ -57,6 +57,29 @@ float dualHenyeyGreenstein(float g1, float g2, float costh, float weight) {
   return mix(henyeyGreenstein(g1, costh), henyeyGreenstein(g2, costh), weight);
 }
 
+vec3 multipleScattering(float density, float costh, float g1, float g2, vec3 extinction, int octaves, float lobeWeight, float attenuation, float contribution, float phaseAttenuation){
+  vec3 radiance = vec3(0.0);
+
+  // float attenuation = 0.9;
+  // float contribution = 0.5;
+  // float phaseAttenuation = 0.7;
+
+  float a = 1.0;
+  float b = 1.0;
+  float c = 1.0;
+
+  for(int n = 0; n < octaves; n++){
+    float phase = dualHenyeyGreenstein(g1 * c, g2 * c, costh, lobeWeight);
+    radiance += b * phase * exp(-density * extinction * a);
+
+    a *= attenuation;
+    b *= contribution;
+    c *= (1.0 - phaseAttenuation);
+  }
+
+  return radiance;
+}
+
 vec3 hsv(vec3 c) {
 	const vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
 	vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
