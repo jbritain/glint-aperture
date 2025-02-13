@@ -14,6 +14,10 @@ function setLightColors() {
   setLightColor("verdant_froglight", 99, 229, 60, 255);
   setLightColor("wall_torch", 243, 158, 73, 255);
   setLightColor("nether_portal", 100, 0, 255, 255);
+  setLightColor("small_amethyst_bud", 184, 88, 221, 255);
+  setLightColor("medium_amethyst_bud", 184, 88, 221, 255);
+  setLightColor("large_amethyst_bud", 184, 88, 221, 255);
+  setLightColor("amethyst_cluster", 184, 88, 221, 255);
   const glassOpacity = 255;
   setLightColor("tinted_glass", 50, 38, 56, glassOpacity);
   setLightColor("white_stained_glass", 255, 255, 255, glassOpacity);
@@ -68,6 +72,8 @@ function setupShader() {
   worldSettings.renderSun = false;
   const sceneData = new Buffer(32).clear(true).build();
   const blueNoiseTex = new PNGTexture("blueNoiseTex", "textures/blueNoise.png", false, true);
+  const cloudShapeNoiseTex = new RawTexture("cloudShapeNoiseTex", "textures/cloudNoiseShape.bin").width(128).height(128).depth(128).type(PixelType.UNSIGNED_BYTE).format(Format.R8).blur(true).build();
+  const cloudErosionNoiseTex = new RawTexture("cloudErosionNoiseTex", "textures/cloudNoiseErosion.bin").width(32).height(32).depth(32).type(PixelType.UNSIGNED_BYTE).format(Format.R8).blur(true).build();
   const debugTex = new Texture("debugTex").format(Format.RGBA8).imageName("debugImg").width(screenWidth).height(screenHeight).clear(true).clearColor(0, 0, 0, 0).build();
   const previousSceneTex = new Texture("previousSceneTex").format(Format.RGB16F).clear(false).mipmap(true).build();
   const previousDepthTex = new Texture("previousDepthTex").format(Format.RG16).clear(false).mipmap(true).build();
@@ -96,6 +102,11 @@ function setupShader() {
     new Compute("getSkylightColor").location("program/sky/getSkylightColor.csh").workGroups(1, 1, 1).ssbo(0, sceneData).build()
   );
   registerShader(Stage.PRE_RENDER, new MemoryBarrier(SSBO_BIT));
+  const cloudSkyLUT = new Texture("cloudSkyLUTTex").format(Format.RGBA16F).width(512).height(512).clear(true).mipmap(true).build();
+  registerShader(
+    Stage.PRE_RENDER,
+    new Composite("renderCloudSKYLUT").vertex("program/fullscreen.vsh").fragment("program/prepare/renderCloudSkyLUT.fsh").target(0, cloudSkyLUT).ssbo(0, sceneData).build()
+  );
   registerShader(
     Stage.PRE_RENDER,
     new GenerateMips(previousSceneTex)
@@ -123,14 +134,19 @@ function setupShader() {
     Usage.ENTITY_SOLID,
     Usage.ENTITY_CUTOUT,
     Usage.BLOCK_ENTITY,
-    Usage.PARTICLES
+    Usage.PARTICLES,
+    Usage.EMISSIVE
   ];
   const forwardGbuffers = [
     Usage.TERRAIN_TRANSLUCENT,
     Usage.ENTITY_TRANSLUCENT,
     Usage.BLOCK_ENTITY_TRANSLUCENT,
     Usage.PARTICLES_TRANSLUCENT,
-    Usage.HAND
+    Usage.HAND,
+    Usage.TRANSLUCENT_HAND,
+    Usage.TEXTURED,
+    Usage.BASIC,
+    Usage.TEXT
   ];
   deferredGbuffers.forEach((program) => {
     registerShader(
@@ -165,6 +181,10 @@ function setupShader() {
   registerShader(
     Stage.PRE_TRANSLUCENT,
     new Composite("compositeSky").vertex("program/fullscreen.vsh").fragment("program/composite/compositeSky.fsh").target(0, sceneTex).build()
+  );
+  registerShader(
+    Stage.PRE_TRANSLUCENT,
+    new Composite("compositeClouds").vertex("program/fullscreen.vsh").fragment("program/composite/compositeClouds.fsh").target(0, sceneTex).ssbo(0, sceneData).build()
   );
   registerShader(
     Stage.PRE_TRANSLUCENT,

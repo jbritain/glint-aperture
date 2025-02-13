@@ -47,12 +47,14 @@ void main(){
 
   vec3 f;
   color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, gbufferData.faceNormal, gbufferData.lightmap.y, blocklightColor, viewPos, f);
-  color.rgb += texture(globalIlluminationTex, uv).rgb * gbufferData.material.albedo;
+  // color.rgb += texture(globalIlluminationTex, uv).rgb * gbufferData.material.albedo;
 
   // show(blocklightColor);
   // for(int i = 3; i >= 0; i -= 1){
     // show(texture(shadowColorTex, vec3(uv, 3)));
-    show(blocklightColor);
+    // show(blocklightColor);
   // }
+
+  show(texture(cloudSkyLUTTex, mapSphere(normalize(feetPlayerPos))));
   
 }

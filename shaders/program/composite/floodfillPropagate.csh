@@ -9,19 +9,24 @@ layout (R11F_G11F_B10F) uniform image3D floodFillVoxelMap1;
 layout (R11F_G11F_B10F) uniform image3D floodFillVoxelMap2;
 layout (R32UI) uniform uimage3D voxelMap;
 
-vec3 gatherLight(ivec3 voxelPos){
+vec3 gatherLight(ivec3 voxelPos, uint metadata){
   const ivec3[6] sampleOffsets = ivec3[6](
-    ivec3( 1,  0,  0),
-    ivec3( 0,  1,  0),
-    ivec3( 0,  0,  1),
-    ivec3(-1,  0,  0),
-    ivec3( 0, -1,  0),
-    ivec3( 0,  0, -1)
+    ivec3( 0, -1,  0), // DOWN
+    ivec3( 0,  1,  0), // UP
+    ivec3( 0,  0, -1), // NORTH
+    ivec3( 0,  0,  1), // SOUTH
+    ivec3(-1,  0,  0), // WEST
+    ivec3( 1,  0,  0)  // EAST
   );
 
   vec3 light = vec3(0.0);
 
+
   for(int i = 0; i < 6; i++){
+    if(bitfieldExtract(metadata, i, 1) == 1){
+      continue;
+    }
+
     ivec3 offsetPos = voxelPos + sampleOffsets[i] + getPreviousVoxelOffset();
 
     if(EVEN_FRAME){
@@ -49,9 +54,10 @@ void main(){
   ivec3 pos = ivec3(gl_GlobalInvocationID); // position in the voxel map we are working with
 
   uint blockID = imageLoad(voxelMap, pos).r;
+  uint metadata = iris_getMetadata(blockID);
 
   vec3 emitted = getEmittedLight(pos);
-  vec3 indirect = iris_isFullBlock(blockID) ? vec3(0.0) : gatherLight(pos);
+  vec3 indirect = iris_isFullBlock(blockID) ? vec3(0.0) : gatherLight(pos, metadata);
 
   vec4 lightColor = iris_getLightColor(blockID);
 

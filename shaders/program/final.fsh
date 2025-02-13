@@ -48,6 +48,8 @@ void main() {
     fragColor.rgb = mix(fragColor.rgb, texture(bloomTex, uv).rgb, 0.01);
     #endif
 
+    fragColor.rgb *= 0.5;
+
 	fragColor.rgb = ACESFilm(fragColor.rgb);
 
     #ifdef DEBUG_ENABLE

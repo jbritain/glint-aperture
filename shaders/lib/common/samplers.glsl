@@ -10,7 +10,7 @@ uniform sampler2D gbufferDataTex1;
 uniform sampler2D gbufferDataTex2;
 uniform sampler2D previousSceneTex;
 uniform sampler2D previousDepthTex;
-uniform sampler2D globalIlluminationTex;
+// uniform sampler2D globalIlluminationTex;
 
 #ifdef BLOOM_ENABLE
 uniform sampler2D bloomTex;
@@ -34,5 +34,10 @@ uniform usampler2DArray shadowMaskTex;
 uniform sampler3D floodFillVoxelMapTex1;
 uniform sampler3D floodFillVoxelMapTex2;
 uniform usampler3D voxelMapTex;
+
+uniform sampler3D cloudShapeNoiseTex;
+uniform sampler3D cloudErosionNoiseTex;
+
+uniform sampler2D cloudSkyLUTTex;
 
 #endif // SAMPLERS_GLSL

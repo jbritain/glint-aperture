@@ -73,7 +73,10 @@ void iris_emitFragment() {
 	vec3 fresnel;
 	color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, tbnMatrix[2], light.y, light.x, viewPos, fresnel);
 	if(color.a != 1.0){
-		color.a = minVec3(fresnel);
+		// color.a *= (maxVec3(fresnel));
+	}
+	if(gbufferData.materialMask.isFluid){
+		color.a = maxVec3(fresnel);
 	}
 	
 	#endif

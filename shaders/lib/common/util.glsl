@@ -190,4 +190,8 @@ vec4 blueNoise(in vec2 texcoord, int frame){
   return blueNoise(texcoord);
 }
 
+float mean(vec3 x){
+	return (x.x + x.y + x.z) / 3.0;
+}
+
 #endif // UTIL_GLSL

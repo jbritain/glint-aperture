@@ -4,6 +4,7 @@
 #include "/lib/util/screenSpaceRayTrace.glsl"
 #include "/lib/lighting/brdf.glsl"
 #include "/lib/atmosphere/sky.glsl"
+#include "/lib/util/uvMap.glsl"
 
 #define ROUGH_REFLECTION_SAMPLES 8
 
@@ -59,8 +60,11 @@ vec3 SSRSample(out vec3 fresnel, vec3 viewPos, Material material, vec3 mappedNor
     reflection = texelFetch(previousSceneTex, ivec2(reflectedPos.xy * textureSize(previousSceneTex, LOD)), LOD).rgb;
   }
 
+  fadeFactor = 1.0;
+
   if(fadeFactor > 0.0){
-    reflection = mix(reflection, getSky(mat3(ap.camera.viewInv) * reflectedDir, false) * skyLightmap, fadeFactor);
+    vec3 skyReflection = textureLod(cloudSkyLUTTex, mapSphere(mat3(ap.camera.viewInv) * reflectedDir), 0).rgb;
+    reflection = mix(reflection, skyReflection * skyLightmap, fadeFactor);
   }
 
   if(material.metalID != NO_METAL){
