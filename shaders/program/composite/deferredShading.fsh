@@ -55,6 +55,6 @@ void main(){
     // show(blocklightColor);
   // }
 
-  show(texture(cloudSkyLUTTex, mapSphere(normalize(feetPlayerPos))));
+  // show(texture(cloudSkyLUTTex, mapSphere(normalize(feetPlayerPos))));
   
 }

@@ -70,7 +70,7 @@ vec3 schlick(Material material, float NoV){
 	}
 }
 
-vec3 cookTorrance(Material material, vec3 mappedNormal, vec3 faceNormal, vec3 viewPos, vec3 shadow, float scatter, bool specularOnly){
+vec3 cookTorrance(Material material, vec3 mappedNormal, vec3 faceNormal, vec3 viewPos, vec3 shadow, float scatter, bool specularOnly, out vec3 F){
 	vec3 L = lightDir;
 	float faceNoL = clamp01(dot(faceNormal, L));
 	float mappedNoL = clamp01(dot(mappedNormal, L));
@@ -92,7 +92,7 @@ vec3 cookTorrance(Material material, vec3 mappedNormal, vec3 faceNormal, vec3 vi
 	float alpha = max(1e-3, material.roughness);
 	float NoHSquared = getNoHSquared(NoL, NoV, VoL, sunAngularRadius);
 
-	vec3 F = clamp01(schlick(material, HoV));
+	F = clamp01(schlick(material, HoV));
 
 	// trowbridge-reitz ggx
 	float denominator = NoHSquared * (pow2(alpha) - 1.0) + 1.0;
@@ -112,7 +112,7 @@ vec3 cookTorrance(Material material, vec3 mappedNormal, vec3 faceNormal, vec3 vi
 		Rs = vec3(0.0);
 	}
 
-	Rs = min(Rs, vec3(100.0)); // stop specular highlight blowout
+	// Rs = min(Rs, vec3(100.0)); // stop specular highlight blowout
 
 	if(specularOnly){
 		return Rs;

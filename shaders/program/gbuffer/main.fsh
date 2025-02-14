@@ -63,7 +63,7 @@ void iris_emitFragment() {
 	overrideMaterials(gbufferData.material, gbufferData.materialMask);
 
 	if(gbufferData.materialMask.isFluid){
-		gbufferData.mappedNormal = mat3(ap.camera.view) * waveNormal((ap.camera.viewInv * vec4(viewPos, 1.0)).xz + ap.camera.pos.xz, mat3(ap.camera.viewInv) * gbufferData.faceNormal, sin(PI * 0.5 * clamp01(abs(dot(gbufferData.faceNormal, normalize(viewPos))))));
+		gbufferData.mappedNormal = normalize(mat3(ap.camera.view) * waveNormal((ap.camera.viewInv * vec4(viewPos, 1.0)).xz + ap.camera.pos.xz, mat3(ap.camera.viewInv) * gbufferData.faceNormal, sin(PI * 0.5 * clamp01(abs(dot(gbufferData.faceNormal, normalize(viewPos)))))));
 		gbufferData.material.albedo = vec3(0.0);
 	}
 
@@ -71,13 +71,12 @@ void iris_emitFragment() {
 
 	#ifdef FORWARD_LIGHTING
 	vec3 fresnel;
-	color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, tbnMatrix[2], light.y, light.x, viewPos, fresnel);
-	if(color.a != 1.0){
-		// color.a *= (maxVec3(fresnel));
+	if(!gbufferData.materialMask.isFluid){
+		color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, tbnMatrix[2], light.y, light.x, viewPos, fresnel);
+	} else {
+		color.a = 0.0;
 	}
-	if(gbufferData.materialMask.isFluid){
-		color.a = maxVec3(fresnel);
-	}
+
 	
 	#endif
 

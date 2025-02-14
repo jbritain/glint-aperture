@@ -12,7 +12,8 @@ function setLightColors() {
   setLightColor("redstone_torch", 249, 50, 28, 255);
   setLightColor("soul_campfire", 51, 204, 255, 255);
   setLightColor("verdant_froglight", 99, 229, 60, 255);
-  setLightColor("wall_torch", 243, 158, 73, 255);
+  setLightColor("torch", 255, 119, 0, 255);
+  setLightColor("wall_torch", 255, 119, 0, 255);
   setLightColor("nether_portal", 100, 0, 255, 255);
   setLightColor("small_amethyst_bud", 184, 88, 221, 255);
   setLightColor("medium_amethyst_bud", 184, 88, 221, 255);

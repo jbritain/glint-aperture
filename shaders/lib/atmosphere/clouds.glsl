@@ -2,6 +2,7 @@
 #define CLOUDS_GLSL
 
 #include "/lib/buffers/sceneData.glsl"
+#include "/lib/atmosphere/atmosphericFog.glsl"
 
 // one 2D slice is a 128 by 128 image
 #define CLOUD_SHAPE_TILE_SIZE 128
@@ -210,9 +211,6 @@ vec3 marchCloudLayer(vec3 playerPos, float depth, vec3 sunlightColor, vec3 skyli
   vec3 a;
   vec3 b;
 
-  float fogDepth = 0.0;
-  float fogDepthWeight = 0.0;
-
   if(!rayPlaneIntersection(ap.camera.pos, worldDir, lowerHeight, a)){
     a = ap.camera.pos;
   }
@@ -269,8 +267,6 @@ vec3 marchCloudLayer(vec3 playerPos, float depth, vec3 sunlightColor, vec3 skyli
     }
 
     vec3 transmittance = exp(-density * CLOUD_EXTINCTION_COLOR);
-    fogDepth += distance(ap.camera.pos, rayPos) * (1.0 - mean(clamp01(transmittance)));
-    fogDepthWeight += (1.0 - mean(clamp01(transmittance)));
 
     #ifdef HIGH_CLOUD_SAMPLES
     float lightJitter = blueNoise(uv, i).r;

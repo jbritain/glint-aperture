@@ -60,7 +60,7 @@ vec3 SSRSample(out vec3 fresnel, vec3 viewPos, Material material, vec3 mappedNor
     reflection = texelFetch(previousSceneTex, ivec2(reflectedPos.xy * textureSize(previousSceneTex, LOD)), LOD).rgb;
   }
 
-  fadeFactor = 1.0;
+  // fadeFactor = 1.0;
 
   if(fadeFactor > 0.0){
     vec3 skyReflection = textureLod(cloudSkyLUTTex, mapSphere(mat3(ap.camera.viewInv) * reflectedDir), 0).rgb;

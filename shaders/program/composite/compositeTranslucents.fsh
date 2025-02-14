@@ -2,6 +2,7 @@
 
 #include "/lib/common.glsl"
 #include "/lib/water/waterFog.glsl"
+#include "/lib/lighting/shading.glsl"
 
 in vec2 uv;
 
@@ -24,9 +25,30 @@ void main(){
 
   vec3 opaqueViewPos = screenSpaceToViewSpace(vec3(uv, opaqueDepth));
   vec3 translucentViewPos = screenSpaceToViewSpace(vec3(uv, translucentDepth));
+  vec3 translucentPlayerPos = (ap.camera.viewInv * vec4(translucentViewPos, 1.0)).xyz;
 
   bool isWater = gbufferData.materialMask.isFluid;
   bool inWater = ap.camera.fluid == 1;
+
+  // refraction
+  // TODO: enable refraction once there is buffer flipping helper (please IMS)
+  // if(gbufferData.materialMask.isFluid){
+  //   vec3 refractionNormal = gbufferData.faceNormal - gbufferData.mappedNormal;
+  //   show(gbufferData.faceNormal);
+
+  //   vec3 refractedDir = normalize(refract(normalize(opaqueViewPos), refractionNormal, !inWater ? rcp(1.33) : 1.33));
+  //   vec3 refractedViewPos = translucentViewPos + refractedDir * distance(translucentViewPos, opaqueViewPos);
+  //   vec3 refractedPos = viewSpaceToScreenSpace(refractedViewPos);
+
+  //   float refractedDepth = texture(solidDepthTex, refractedPos.xy).r;
+  //   refractedViewPos = screenSpaceToViewSpace(vec3(refractedPos.xy, refractedDepth));
+
+  //   if(clamp01(refractedPos.xy) == refractedPos.xy && refractedDepth > translucentDepth){
+  //     color = texture(sceneTex, refractedPos.xy).rgb;
+  //     opaqueDepth = texture(solidDepthTex, refractedPos.xy).r;
+  //     opaqueViewPos = refractedViewPos;
+  //   } 
+  // }
 
   if(!inWater && isWater){
     LightInteraction waterInteraction = waterFog(translucentViewPos, opaqueViewPos);
@@ -40,6 +62,21 @@ void main(){
   
   vec4 translucents = texture(translucentsTex, uv);
   color = mix(color, translucents.rgb, translucents.a);
+
+  // render water
+  if(gbufferData.materialMask.isFluid){
+    overrideMaterials(gbufferData.material, gbufferData.materialMask);
+
+    float scatter;
+    vec3 shadow = getShadowing(translucentPlayerPos, gbufferData.faceNormal, gbufferData.lightmap, gbufferData.material, scatter);
+
+    vec3 F;
+    vec3 waterColor = cookTorrance(gbufferData.material, gbufferData.mappedNormal, gbufferData.faceNormal, translucentViewPos, shadow, scatter, true, F) * sunlightColor;
+
+    waterColor = getScreenSpaceReflections(F, translucentViewPos, gbufferData.material, gbufferData.mappedNormal, gbufferData.lightmap.y);
+
+    color.rgb = mix(color.rgb, waterColor, F);
+  }
 
   if(inWater && isWater){
     LightInteraction waterInteraction = waterFog(vec3(0.0), translucentViewPos);

@@ -12,7 +12,9 @@ vec3 getShadedColor(Material material, vec3 mappedNormal, vec3 faceNormal, float
     float scatter;
     vec3 shadow = getShadowing(playerPos, faceNormal, vec2(skylight, 1.0), material, scatter);
 
-    vec3 color = cookTorrance(material, mappedNormal, faceNormal, viewPos, shadow, scatter, false) * sunlightColor;
+
+    vec3 F;
+    vec3 color = cookTorrance(material, mappedNormal, faceNormal, viewPos, shadow, scatter, false, F) * sunlightColor;
 
     vec3 diffuse = 
         material.albedo * (
@@ -26,6 +28,8 @@ vec3 getShadedColor(Material material, vec3 mappedNormal, vec3 faceNormal, float
     vec3 specular = getScreenSpaceReflections(fresnel, viewPos, material, mappedNormal, skylight);
 
     color += mix(diffuse, specular, clamp01(fresnel));
+
+    fresnel = mix(fresnel, F, F / (F + fresnel));
 
     color += material.emission * material.albedo * 16.0;
 
