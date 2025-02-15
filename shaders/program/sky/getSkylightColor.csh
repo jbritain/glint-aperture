@@ -2,6 +2,8 @@
 
 layout (local_size_x = 1, local_size_y = 1) in;
 
+#define SKY_SAMPLERS
+
 #include "/lib/common.glsl"
 
 

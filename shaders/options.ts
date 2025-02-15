@@ -3,10 +3,13 @@ import type {} from './iris'
 export function setupOptions(){
   const postPage = new Page("Post-Processing")
     .add(asBool("BLOOM_ENABLE", true))
+    .add(asBool("TEMPORAL_FILTER_ENABLE", true))
+    .add(asBool("DOF_ENABLE", false))
     .build();
 
   const lightingPage = new Page("Shadows & Lighting")
     .add(asIntRange("SHADOW_SAMPLES", 8, 4, 32, 1))
+    .add(asBool("SSGI_ENABLE", false))
     .build();
 
 

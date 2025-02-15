@@ -1,5 +1,9 @@
 #version 450 core
 
+#define SKY_SAMPLERS
+#define VOXEL_SAMPLERS
+#define SHADOW_SAMPLERS
+
 in vec2 uv;
 
 #include "/lib/common.glsl"

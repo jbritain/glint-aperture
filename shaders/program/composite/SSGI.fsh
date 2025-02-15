@@ -2,6 +2,9 @@
 
 in vec2 uv;
 
+#define GBUFFER_SAMPLERS
+#define SHADOW_SAMPLERS
+
 #include "/lib/common.glsl"
 #include "/lib/util/reproject.glsl"
 #include "/lib/util/screenSpaceRayTrace.glsl"
@@ -15,7 +18,6 @@ layout(location = 0) out vec3 GI;
 
 void main(){
   GI = vec3(0.0);
-  return;
 
   float depth = texture(solidDepthTex, uv).r;
   if(depth == 1.0){

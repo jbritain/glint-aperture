@@ -2,7 +2,10 @@
 
 in vec2 uv;
 
-
+#define GBUFFER_SAMPLERS
+#define SHADOW_SAMPLERS
+#define SKY_SAMPLERS
+#define VOXEL_SAMPLERS
 
 #include "/lib/common.glsl"
 #include "/lib/lighting/shading.glsl"
@@ -47,7 +50,7 @@ void main(){
 
   vec3 f;
   color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, gbufferData.faceNormal, gbufferData.lightmap.y, blocklightColor, viewPos, f);
-  // color.rgb += texture(globalIlluminationTex, uv).rgb * gbufferData.material.albedo;
+  color.rgb += texture(globalIlluminationTex, uv).rgb * gbufferData.material.albedo;
 
   // show(blocklightColor);
   // for(int i = 3; i >= 0; i -= 1){

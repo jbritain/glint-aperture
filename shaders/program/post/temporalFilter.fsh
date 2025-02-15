@@ -2,6 +2,8 @@
 
 in vec2 uv;
 
+#define GBUFFER_SAMPLERS
+
 #include "/lib/common.glsl"
 
 layout(location = 0) out vec4 color;

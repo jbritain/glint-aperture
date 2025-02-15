@@ -1,5 +1,8 @@
 #version 450 core
 
+#define CLOUD_NOISE_SAMPLERS
+#define SKY_SAMPLERS
+
 #include "/lib/common.glsl"
 
 in vec2 uv;

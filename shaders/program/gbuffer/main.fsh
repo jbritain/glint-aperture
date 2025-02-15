@@ -18,6 +18,10 @@ in vec3 midBlock;
 in vec4 textureBounds;
 in vec2 singleTexSize;
 
+#define GBUFFER_SAMPLERS
+#define SHADOW_SAMPLERS
+#define SKY_SAMPLERS
+
 #include "/lib/common.glsl"
 #include "/lib/lighting/shading.glsl"
 #include "/lib/water/waveNormals.glsl"

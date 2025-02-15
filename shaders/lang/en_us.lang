@@ -1,3 +1,6 @@
 option.BLOOM_ENABLE=Bloom
+option.TEMPORAL_FILTER_ENABLE=Temporal Filter
+option.DOF_ENABLE=Depth of Field
 
 option.SHADOW_SAMPLES=Shadow Samples
+option.SSGI_ENABLE=SSGI

@@ -61,7 +61,9 @@ function defineBoolGlobally(define) {
 }
 function setupShader() {
   defineBoolGlobally("BLOOM_ENABLE");
+  defineBoolGlobally("TEMPORAL_FILTER_ENABLE");
   defineGlobally("SHADOW_SAMPLES", getIntSetting("SHADOW_SAMPLES"));
+  defineBoolGlobally("SSGI_ENABLE");
   defineBoolGlobally("DEBUG_ENABLE");
   setLightColors();
   const maxMip = Math.floor(Math.log2(Math.max(screenWidth, screenHeight)));
@@ -175,10 +177,12 @@ function setupShader() {
   );
   registerShader(Stage.PRE_TRANSLUCENT, new MemoryBarrier(IMAGE_BIT));
   const globalIlluminationTex = new Texture("globalIlluminationTex").format(Format.R11F_G11F_B10F).clear(false).build();
-  registerShader(
-    Stage.PRE_TRANSLUCENT,
-    new Composite("globalIllumination").vertex("program/fullscreen.vsh").fragment("program/composite/SSGI.fsh").target(0, globalIlluminationTex).ssbo(0, sceneData).build()
-  );
+  if (getBoolSetting("SSGI_ENABLE")) {
+    registerShader(
+      Stage.PRE_TRANSLUCENT,
+      new Composite("globalIllumination").vertex("program/fullscreen.vsh").fragment("program/composite/SSGI.fsh").target(0, globalIlluminationTex).ssbo(0, sceneData).build()
+    );
+  }
   registerShader(
     Stage.PRE_TRANSLUCENT,
     new Composite("compositeSky").vertex("program/fullscreen.vsh").fragment("program/composite/compositeSky.fsh").target(0, sceneTex).build()
@@ -199,6 +203,22 @@ function setupShader() {
     Stage.POST_RENDER,
     new Composite("cloudyFog").vertex("program/fullscreen.vsh").fragment("program/composite/cloudyFog.fsh").target(0, sceneTex).ssbo(0, sceneData).build()
   );
+  if (getBoolSetting("DOF_ENABLE")) {
+    const DoFCoCTex = new Texture("DoFCoCTex").format(Format.R16F).build();
+    registerShader(
+      Stage.POST_RENDER,
+      new Composite("DoFCoC").vertex("program/fullscreen.vsh").fragment("program/post/DoFCoC.fsh").target(0, DoFCoCTex).build()
+    );
+    const DoFTex = new Texture("DoFTex").format(Format.RGB16F).width(screenWidth * 0.5).height(screenWidth * 0.5).build();
+    registerShader(
+      Stage.POST_RENDER,
+      new Composite("DoFBlur").vertex("program/fullscreen.vsh").fragment("program/post/DoFBlur.fsh").target(0, DoFTex).build()
+    );
+    registerShader(
+      Stage.POST_RENDER,
+      new Composite("DoFBlend").vertex("program/fullscreen.vsh").fragment("program/post/DoFBlend.fsh").target(0, sceneTex).build()
+    );
+  }
   registerShader(
     Stage.POST_RENDER,
     new Composite("temporalFilter").vertex("program/fullscreen.vsh").fragment("program/post/temporalFilter.fsh").target(0, sceneTex).build()

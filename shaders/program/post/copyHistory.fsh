@@ -1,5 +1,7 @@
 #version 450 core
 
+#define GBUFFER_SAMPLERS
+
 #include "/lib/common.glsl"
 
 in vec2 uv;

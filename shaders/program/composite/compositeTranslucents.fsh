@@ -1,5 +1,9 @@
 #version 450 core
 
+#define GBUFFER_SAMPLERS
+#define SHADOW_SAMPLERS
+#define SKY_SAMPLERS
+
 #include "/lib/common.glsl"
 #include "/lib/water/waterFog.glsl"
 #include "/lib/lighting/shading.glsl"

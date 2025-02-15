@@ -74,7 +74,7 @@ vec3 getShadowing(vec3 playerPos, vec3 faceNormal, vec2 lightmap, Material mater
     int cascade;
 	vec3 shadowScreenPos = getShadowScreenPos(playerPos, mat3(ap.camera.viewInv) * faceNormal, cascade);
 
-	if(clamp01(shadowScreenPos.xy) != shadowScreenPos.xy){
+	if(clamp01(shadowScreenPos.xy) != shadowScreenPos.xy || cascade == 4){
         return vec3(fakeShadow);
     }
 
