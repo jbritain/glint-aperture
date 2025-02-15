@@ -14,7 +14,7 @@ in vec2 uv;
 
 layout(location = 0) out vec3 GI;
 
-#define GI_SAMPLES 8
+#define GI_SAMPLES 32
 
 void main(){
   GI = vec3(0.0);
@@ -58,20 +58,20 @@ void main(){
 
     vec3 GISamplePos;
     if(rayIntersects(viewPos, sampleDir, 16, noise.z, true, GISamplePos, false, true)){
-      // GI += texture(previousSceneTex, GISamplePos.xy).rgb;
+      GI += texture(previousSceneTex, GISamplePos.xy).rgb;
 
-      GbufferData sampleGbufferData;
-      decodeGbufferData(texelFetch(gbufferDataTex1, ivec2(GISamplePos.xy * ap.game.screenSize), 0), texelFetch(gbufferDataTex2, ivec2(GISamplePos.xy * ap.game.screenSize), 0), sampleGbufferData);
+      // GbufferData sampleGbufferData;
+      // decodeGbufferData(texelFetch(gbufferDataTex1, ivec2(GISamplePos.xy * ap.game.screenSize), 0), texelFetch(gbufferDataTex2, ivec2(GISamplePos.xy * ap.game.screenSize), 0), sampleGbufferData);
 
-      vec3 sampleViewPos = screenSpaceToViewSpace(GISamplePos);
-      vec3 samplePlayerPos = (ap.camera.viewInv * vec4(sampleViewPos, 1.0)).xyz;
+      // vec3 sampleViewPos = screenSpaceToViewSpace(GISamplePos);
+      // vec3 samplePlayerPos = (ap.camera.viewInv * vec4(sampleViewPos, 1.0)).xyz;
 
-      vec3 sampleColor = sampleGbufferData.material.albedo * sunlightColor * fastDiffuse(samplePlayerPos, sampleGbufferData.faceNormal, sampleGbufferData.lightmap, sampleGbufferData.material);
-      sampleColor += sampleGbufferData.material.albedo * pow3(sampleGbufferData.lightmap.y);
+      // vec3 sampleColor = sampleGbufferData.material.albedo * sunlightColor * fastDiffuse(samplePlayerPos, sampleGbufferData.faceNormal, sampleGbufferData.lightmap, sampleGbufferData.material);
+      // sampleColor += sampleGbufferData.material.albedo * pow3(sampleGbufferData.lightmap.y);
 
-      sampleColor /= cosTheta / PI;
+      // sampleColor /= cosTheta / PI;
 
-      GI += sampleColor;
+      // GI += sampleColor;
     }
 
     validSamples++;

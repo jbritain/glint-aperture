@@ -20,7 +20,9 @@ vec3 getShadedColor(Material material, vec3 mappedNormal, vec3 faceNormal, float
         material.albedo * (
         skylightColor * pow3(skylight) * (material.ao * 0.5 + 0.5) +
         // pow(vec3(255, 152, 54), vec3(2.2)) * 1e-8 * max0(exp(-(1.0 - lightmap.x * 10.0))) +
+        #ifndef SSGI_ENABLE
         blocklight + 
+        #endif
         vec3(material.ao * 0.05)
         )
     ;

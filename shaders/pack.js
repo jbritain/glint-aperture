@@ -67,7 +67,7 @@ function setupShader() {
   defineBoolGlobally("DEBUG_ENABLE");
   setLightColors();
   const maxMip = Math.floor(Math.log2(Math.max(screenWidth, screenHeight)));
-  worldSettings.ambientOcclusionLevel = 1;
+  worldSettings.ambientOcclusionLevel = 0;
   worldSettings.disableShade = true;
   worldSettings.renderEntityShadow = false;
   worldSettings.shadowMapResolution = 1024;
