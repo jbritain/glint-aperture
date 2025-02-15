@@ -51,7 +51,7 @@ void main(){
       cosTheta
     );
 
-    mat3 tbn = frisvadTBN(gbufferData.faceNormal);
+    mat3 tbn = frisvadTBN(gbufferData.mappedNormal);
     vec3 sampleDir = tbn * hemisphereDir;
 
     // sampleDir = reflect(normalize(viewPos), gbufferData.faceNormal);

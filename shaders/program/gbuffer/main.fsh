@@ -21,6 +21,7 @@ in vec2 singleTexSize;
 #define GBUFFER_SAMPLERS
 #define SHADOW_SAMPLERS
 #define SKY_SAMPLERS
+#define VOXEL_SAMPLERS
 
 #include "/lib/common.glsl"
 #include "/lib/lighting/shading.glsl"
@@ -28,6 +29,7 @@ in vec2 singleTexSize;
 #include "/lib/water/waterFog.glsl"
 #include "/lib/lighting/directionalLightmaps.glsl"
 #include "/lib/misc/parallax.glsl"
+#include "/lib/voxel/voxelMap.glsl"
 
 void iris_emitFragment() {
 	vec2 mUV = uv, mLight = light;
@@ -46,6 +48,8 @@ void iris_emitFragment() {
 
 	if (iris_discardFragment(color)) discard;
 
+	vec3 playerPos = (ap.camera.viewInv * vec4(viewPos, 1.0)).xyz;
+
 	vec4 normalData = iris_sampleNormalMap(mUV);
   vec4 specularData = iris_sampleSpecularMap(mUV);
 
@@ -57,6 +61,9 @@ void iris_emitFragment() {
 	gbufferData.mappedNormal.z = sqrt(1.0 - dot(gbufferData.mappedNormal.xy, gbufferData.mappedNormal.xy)); // reconstruct z due to labPBR encoding
 	gbufferData.mappedNormal = tbnMatrix * gbufferData.mappedNormal;
 
+	vec3 worldFaceNormal = mat3(ap.camera.viewInv) * gbufferData.faceNormal;
+	vec3 worldMappedNormal = mat3(ap.camera.viewInv) * gbufferData.mappedNormal;
+
 	gbufferData.material = materialFromSpecularMap(albedo.rgb, specularData, normalData.b);
 	gbufferData.materialMask = buildMaterialMask(blockID);
 
@@ -67,16 +74,25 @@ void iris_emitFragment() {
 	overrideMaterials(gbufferData.material, gbufferData.materialMask);
 
 	if(gbufferData.materialMask.isFluid){
-		gbufferData.mappedNormal = normalize(mat3(ap.camera.view) * waveNormal((ap.camera.viewInv * vec4(viewPos, 1.0)).xz + ap.camera.pos.xz, mat3(ap.camera.viewInv) * gbufferData.faceNormal, sin(PI * 0.5 * clamp01(abs(dot(gbufferData.faceNormal, normalize(viewPos)))))));
+		gbufferData.mappedNormal = normalize(mat3(ap.camera.view) * waveNormal((ap.camera.viewInv * vec4(viewPos, 1.0)).xz + ap.camera.pos.xz, worldFaceNormal, sin(PI * 0.5 * clamp01(abs(dot(gbufferData.faceNormal, normalize(viewPos)))))));
 		gbufferData.material.albedo = vec3(0.0);
 	}
+
+
 
 	applyDirectionalLightmap(gbufferData.lightmap, viewPos, gbufferData.mappedNormal, tbnMatrix, gbufferData.material.sss);
 
 	#ifdef FORWARD_LIGHTING
 	vec3 fresnel;
 	if(!gbufferData.materialMask.isFluid){
-		color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, tbnMatrix[2], light.y, light.x, viewPos, fresnel);
+		vec3 blocklightColor;
+		vec3 voxelPos = mapVoxelPosInterp(playerPos - worldFaceNormal * 0.5 + mat3(ap.camera.viewInv) * worldMappedNormal);
+		if(EVEN_FRAME){
+			blocklightColor = textureLod(floodFillVoxelMapTex2, voxelPos, 0).rgb;
+		} else {
+			blocklightColor = textureLod(floodFillVoxelMapTex1, voxelPos, 0).rgb;
+		}
+		color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, tbnMatrix[2], light.y, blocklightColor, viewPos, fresnel);
 	} else {
 		color.a = 0.0;
 	}

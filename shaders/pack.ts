@@ -13,6 +13,7 @@ function setLightColors(){
     setLightColor("ochre_froglight", 223, 172, 71, 255);
     setLightColor("pearlescent_froglight", 224, 117, 232, 255);
     setLightColor("redstone_torch", 249, 50, 28, 255);
+    setLightColor("redstone_wall_torch", 249, 50, 28, 255);
     setLightColor("soul_campfire", 51, 204, 255, 255);
     setLightColor("verdant_froglight", 99, 229, 60, 255);
     setLightColor("torch", 255, 119, 0, 255);
@@ -80,7 +81,7 @@ export function setupShader() {
 
     const maxMip = Math.floor(Math.log2(Math.max(screenWidth, screenHeight)));
 
-    worldSettings.ambientOcclusionLevel = 0.0;
+    worldSettings.ambientOcclusionLevel = getBoolSetting("SSGI_ENABLE") ? 0.0 : 1.0;
     worldSettings.disableShade = true;
     worldSettings.renderEntityShadow = false;
     worldSettings.shadowMapResolution = 1024;

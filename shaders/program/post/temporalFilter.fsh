@@ -36,7 +36,7 @@ void main(){
   color = texture(sceneTex, uv);
 
   bool rejectSample = clamp01(previousScreenPos.xy) != previousScreenPos.xy;
-  rejectSample = rejectSample || opaqueDepth != depth;
+  // rejectSample = rejectSample || opaqueDepth != depth;
 
   vec4 historyColor = texture(previousSceneTex, previousScreenPos.xy);
 
