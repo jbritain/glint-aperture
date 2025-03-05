@@ -7,6 +7,7 @@ function setLightColors() {
   setLightColor("glow_lichen", 107, 238, 172, 255);
   setLightColor("lantern", 243, 158, 73, 255);
   setLightColor("jack_o_lantern", 193, 100, 38, 255);
+  setLightColor("magma_block", 193, 100, 38, 255);
   setLightColor("ochre_froglight", 223, 172, 71, 255);
   setLightColor("pearlescent_froglight", 224, 117, 232, 255);
   setLightColor("redstone_torch", 249, 50, 28, 255);

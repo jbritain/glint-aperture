@@ -15,14 +15,6 @@ vec3 mapVoxelPosInterp(vec3 playerPos){
   return (playerPos + fract(ap.camera.pos) + VOXEL_MAP_SIZE / 2) / VOXEL_MAP_SIZE;
 }
 
-bool isWithinVoxelBoundsInterp(vec3 voxelPosInterp){
-  return all(greaterThanEqual(voxelPosInterp, vec3(0.0))) && all(lessThanEqual(voxelPosInterp, vec3(1.0)));
-}
-
-ivec3 mapPreviousVoxelPos(vec3 playerPos){
-  return ivec3(playerPos + fract(ap.temporal.pos) + ivec3(VOXEL_MAP_SIZE / 2));
-}
-
 ivec3 getPreviousVoxelOffset(){
   return ivec3(floor(ap.camera.pos) - floor(ap.temporal.pos));
 }
