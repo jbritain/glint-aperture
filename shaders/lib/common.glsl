@@ -42,6 +42,6 @@ ShadowMask decodeShadowMask(uint encodedMask){
 
 #define EVEN_FRAME ap.time.frames % 2 == 0
 
-
+#define FLOODFILL_SCALING 4.0
 
 #endif // COMMON_GLSL

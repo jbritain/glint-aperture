@@ -21,7 +21,7 @@ vec4 cloudErosionNoiseSample(vec3 texcoord){
 }
 
 float CUMULUS_DENSITY = 0.02;//mix(0.05, 0.2, wetness);
-float CUMULUS_COVERAGE = 0.1;//mix(0.07, 0.21, wetness * 0.5 + thunderStrength * 0.25);
+float CUMULUS_COVERAGE = 0.08;//mix(0.07, 0.21, wetness * 0.5 + thunderStrength * 0.25);
 #define CUMULUS_LOWER_HEIGHT 500.0
 #define CUMULUS_UPPER_HEIGHT 700.0
 #define CUMULUS_SAMPLES 15
@@ -42,8 +42,8 @@ float ALTOCUMULUS_COVERAGE = 0.08;//mix(0.08, 0.17, wetness * 0.5 + thunderStren
 #define CIRRUS_SUBSAMPLES 1
 
 #define CLOUD_SHAPE_SCALE 2342
-#define CLOUD_SHAPE_SCALE_2 7573
-#define CLOUD_EROSION_SCALE 234.426
+#define CLOUD_SHAPE_SCALE_2 7500
+#define CLOUD_EROSION_SCALE 230
 
 #define CLOUD_DISTANCE 100000.0
 
@@ -120,7 +120,7 @@ float getCloudDensity(vec3 pos){
   
   
   // erosionDensity = mix(1.0 - erosionDensity, erosionDensity, heightInPlane * 0.5 + 0.5);
-  // coverage = mix(coverage * 0.5, coverage * 2.0, texture(blueNoiseTex, fract(pos.xz / 100000.0)).r);
+  coverage = mix(coverage * 0.5, coverage * 2.0, texture(blueNoiseTex, fract(pos.xz / 100000.0)).r);
 
   float density = clamp01(shapeDensity - (1.0 - coverage));
   density = mix(density, clamp01(shapeDensity2 - (1.0 - coverage) - 0.05), 0.3);

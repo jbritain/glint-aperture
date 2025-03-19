@@ -144,9 +144,9 @@ LightInteraction getCloudFog(vec3 a, vec3 b, float depth){
     if(clamp01(voxelPos) == voxelPos){
       vec3 blocklightColor = vec3(0.0);
       if(EVEN_FRAME){
-        blocklightColor = textureLod(floodFillVoxelMapTex2, voxelPos, 0).rgb;
+        blocklightColor = textureLod(floodFillVoxelMapTex2, voxelPos, 0).rgb / FLOODFILL_SCALING;
       } else {
-        blocklightColor = textureLod(floodFillVoxelMapTex1, voxelPos, 0).rgb;
+        blocklightColor = textureLod(floodFillVoxelMapTex1, voxelPos, 0).rgb / FLOODFILL_SCALING;
       }
       radiance += blocklightColor * isotropicPhase;
     }

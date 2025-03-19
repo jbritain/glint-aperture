@@ -11,13 +11,16 @@ in vec2 uv;
 #include "/lib/buffers/sceneData.glsl"
 #include "/lib/lighting/shadows.glsl"
 #include "/lib/voxel/voxelMap.glsl"
+#include "/lib/lighting/brdf.glsl"
 
 layout(location = 0) out vec3 GI;
 
-#define GI_SAMPLES 32
+#define GI_SAMPLES 8
 
 void main(){
   GI = vec3(0.0);
+
+
 
   float depth = texture(solidDepthTex, uv).r;
   if(depth == 1.0){
@@ -28,10 +31,13 @@ void main(){
   vec3 feetPlayerPos = (ap.camera.viewInv * vec4(viewPos, 1.0)).xyz;
   vec3 worldDir = normalize(feetPlayerPos);
 
+  ivec2 texelUV = ivec2(uv * textureSize(sceneTex, 0));
+
   GbufferData gbufferData;
-  decodeGbufferData(texture(gbufferDataTex1, uv), texture(gbufferDataTex2, uv), gbufferData);
+  decodeGbufferData(texelFetch(gbufferDataTex1, texelUV, 0), texelFetch(gbufferDataTex2, texelUV, 0), gbufferData);
   
   int validSamples;
+  vec3 fresnel;
 
   for(int i = 0; i < GI_SAMPLES; i++){
     vec3 noise = blueNoise(uv, ap.time.frames * GI_SAMPLES + i).rgb;
@@ -51,36 +57,34 @@ void main(){
       cosTheta
     );
 
-    mat3 tbn = frisvadTBN(gbufferData.mappedNormal);
+    mat3 tbn = frisvadTBN(gbufferData.faceNormal);
     vec3 sampleDir = tbn * hemisphereDir;
 
     // sampleDir = reflect(normalize(viewPos), gbufferData.faceNormal);
 
+
+
     vec3 GISamplePos;
-    if(rayIntersects(viewPos, sampleDir, 16, noise.z, true, GISamplePos, false, true)){
-      GI += texture(previousSceneTex, GISamplePos.xy).rgb;
-
-      // GbufferData sampleGbufferData;
-      // decodeGbufferData(texelFetch(gbufferDataTex1, ivec2(GISamplePos.xy * ap.game.screenSize), 0), texelFetch(gbufferDataTex2, ivec2(GISamplePos.xy * ap.game.screenSize), 0), sampleGbufferData);
-
-      // vec3 sampleViewPos = screenSpaceToViewSpace(GISamplePos);
-      // vec3 samplePlayerPos = (ap.camera.viewInv * vec4(sampleViewPos, 1.0)).xyz;
-
-      // vec3 sampleColor = sampleGbufferData.material.albedo * sunlightColor * fastDiffuse(samplePlayerPos, sampleGbufferData.faceNormal, sampleGbufferData.lightmap, sampleGbufferData.material);
-      // sampleColor += sampleGbufferData.material.albedo * pow3(sampleGbufferData.lightmap.y);
-
-      // sampleColor /= cosTheta / PI;
-
-      // GI += sampleColor;
+    if(rayIntersects(viewPos, sampleDir, 8, noise.z, true, GISamplePos, false, true)){
+      fresnel += schlick(gbufferData.material, dot(sampleDir, normalize(-viewPos)));
+      GI += texture(sceneTex, GISamplePos.xy).rgb;
     }
 
     validSamples++;
   }
 
   if(validSamples > 0){
-      GI /= float(validSamples);
+    GI /= float(validSamples);
+    fresnel /= float(validSamples);
   }
 
+  GI *= (1.0 - fresnel);
+
+  // vec3 previousScreenPos = reprojectScreen(vec3(uv, depth));
+  // if(clamp01(previousScreenPos.xy) == previousScreenPos.xy){
+  //   vec3 oldGI = texelFetch(globalIlluminationTex, ivec2(previousScreenPos.xy * textureSize(globalIlluminationTex, 0)), 0).rgb;
+  //   GI = mix(GI, oldGI, 0.98);
+  // }
 
 
 }

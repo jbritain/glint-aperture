@@ -73,9 +73,9 @@ function setupShader() {
   worldSettings.disableShade = true;
   worldSettings.renderEntityShadow = false;
   worldSettings.shadowMapResolution = 1024;
-  worldSettings.sunPathRotation = -40;
+  worldSettings.sunPathRotation = 40;
   worldSettings.renderSun = false;
-  const sceneData = new Buffer(32).clear(true).build();
+  const sceneData = new GPUBuffer(32).clear(true).build();
   const blueNoiseTex = new PNGTexture("blueNoiseTex", "textures/blueNoise.png", false, true);
   const cloudShapeNoiseTex = new RawTexture("cloudShapeNoiseTex", "textures/cloudNoiseShape.bin").width(128).height(128).depth(128).type(PixelType.UNSIGNED_BYTE).format(Format.R8).blur(true).build();
   const cloudErosionNoiseTex = new RawTexture("cloudErosionNoiseTex", "textures/cloudNoiseErosion.bin").width(32).height(32).depth(32).type(PixelType.UNSIGNED_BYTE).format(Format.R8).blur(true).build();
@@ -160,7 +160,7 @@ function setupShader() {
   });
   forwardGbuffers.forEach((program) => {
     registerShader(
-      new ObjectShader("terrain", program).vertex("program/gbuffer/main.vsh").fragment("program/gbuffer/main.fsh").target(0, translucentsTex).target(1, gbufferDataTex1).target(2, gbufferDataTex2).define("FORWARD_LIGHTING", "1").ssbo(0, sceneData).build()
+      new ObjectShader("terrain", program).vertex("program/gbuffer/main.vsh").fragment("program/gbuffer/main.fsh").target(0, translucentsTex).target(1, gbufferDataTex1).target(2, gbufferDataTex2).blendFunc(1, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO).blendFunc(2, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO).define("FORWARD_LIGHTING", "1").ssbo(0, sceneData).build()
     );
   });
   registerShader(
@@ -178,11 +178,19 @@ function setupShader() {
     new Compute("floodfillPropagate").location("program/composite/floodfillPropagate.csh").workGroups(voxelMapWidth / 4, voxelMapHeight / 4, voxelMapWidth / 4).build()
   );
   registerShader(Stage.PRE_TRANSLUCENT, new MemoryBarrier(IMAGE_BIT));
-  const globalIlluminationTex = new Texture("globalIlluminationTex").format(Format.R11F_G11F_B10F).clear(false).build();
+  const globalIlluminationTex = new Texture("globalIlluminationTex").format(Format.R11F_G11F_B10F).clear(false).width(parseInt(screenWidth * 0.5)).height(parseInt(screenHeight * 0.5)).build();
+  registerShader(
+    Stage.PRE_TRANSLUCENT,
+    new Composite("deferredShading").vertex("program/fullscreen.vsh").fragment("program/composite/deferredShading.fsh").target(0, sceneTex).ssbo(0, sceneData).build()
+  );
   if (getBoolSetting("SSGI_ENABLE")) {
     registerShader(
       Stage.PRE_TRANSLUCENT,
       new Composite("globalIllumination").vertex("program/fullscreen.vsh").fragment("program/composite/SSGI.fsh").target(0, globalIlluminationTex).ssbo(0, sceneData).build()
+    );
+    registerShader(
+      Stage.PRE_TRANSLUCENT,
+      new Composite("compositeGlobalIllumination").vertex("program/fullscreen.vsh").fragment("program/composite/compositeSSGI.fsh").target(0, sceneTex).ssbo(0, sceneData).build()
     );
   }
   registerShader(
@@ -192,10 +200,6 @@ function setupShader() {
   registerShader(
     Stage.PRE_TRANSLUCENT,
     new Composite("compositeClouds").vertex("program/fullscreen.vsh").fragment("program/composite/compositeClouds.fsh").target(0, sceneTex).ssbo(0, sceneData).build()
-  );
-  registerShader(
-    Stage.PRE_TRANSLUCENT,
-    new Composite("deferredShading").vertex("program/fullscreen.vsh").fragment("program/composite/deferredShading.fsh").target(0, sceneTex).ssbo(0, sceneData).build()
   );
   registerShader(
     Stage.POST_RENDER,

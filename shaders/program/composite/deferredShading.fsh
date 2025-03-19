@@ -41,9 +41,9 @@ void main(){
   vec3 voxelPos = mapVoxelPosInterp(feetPlayerPos - worldNormal * 0.5 + worldMappedNormal);
   vec3 blocklightColor;
   if(EVEN_FRAME){
-    blocklightColor = textureLod(floodFillVoxelMapTex2, voxelPos, 0).rgb;
+    blocklightColor = textureLod(floodFillVoxelMapTex2, voxelPos, 0).rgb / FLOODFILL_SCALING;
   } else {
-    blocklightColor = textureLod(floodFillVoxelMapTex1, voxelPos, 0).rgb;
+    blocklightColor = textureLod(floodFillVoxelMapTex1, voxelPos, 0).rgb / FLOODFILL_SCALING;
   }
 
   // blocklightColor = vec3(0.0);

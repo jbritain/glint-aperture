@@ -30,9 +30,9 @@ vec3 gatherLight(ivec3 voxelPos, uint metadata){
     ivec3 offsetPos = voxelPos + sampleOffsets[i] + getPreviousVoxelOffset();
 
     if(EVEN_FRAME){
-      light += imageLoad(floodFillVoxelMap1, offsetPos).rgb;
+      light += imageLoad(floodFillVoxelMap1, offsetPos).rgb / FLOODFILL_SCALING;
     } else {
-      light += imageLoad(floodFillVoxelMap2, offsetPos).rgb;
+      light += imageLoad(floodFillVoxelMap2, offsetPos).rgb / FLOODFILL_SCALING;
     }
   }
 
@@ -66,8 +66,8 @@ void main(){
   vec3 color = emitted + indirect;
 
   if(EVEN_FRAME){
-    imageStore(floodFillVoxelMap2, pos, vec4(color, 1.0));
+    imageStore(floodFillVoxelMap2, pos, vec4(color * FLOODFILL_SCALING + vec3(1e-6), 1.0));
   } else {
-    imageStore(floodFillVoxelMap1, pos, vec4(color, 1.0));
+    imageStore(floodFillVoxelMap1, pos, vec4(color * FLOODFILL_SCALING + vec3(1e-6), 1.0));
   }
 }

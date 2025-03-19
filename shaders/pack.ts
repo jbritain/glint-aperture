@@ -86,10 +86,10 @@ export function setupShader() {
     worldSettings.disableShade = true;
     worldSettings.renderEntityShadow = false;
     worldSettings.shadowMapResolution = 1024;
-    worldSettings.sunPathRotation = -40.0;
+    worldSettings.sunPathRotation = 40.0;
     worldSettings.renderSun = false;
 
-    const sceneData = new Buffer(32)
+    const sceneData = new GPUBuffer(32)
         .clear(true)
         .build();
 
@@ -329,6 +329,8 @@ export function setupShader() {
             .target(0, sceneTex)
             .target(1, gbufferDataTex1)
             .target(2, gbufferDataTex2)
+            // .blendOff(1)
+            // .blendOff(2)
             .ssbo(0, sceneData)
             .build()
         );
@@ -341,9 +343,9 @@ export function setupShader() {
             .fragment("program/gbuffer/main.fsh")
             .target(0, translucentsTex)
             .target(1, gbufferDataTex1)
-            // .blendFunc(1, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)
             .target(2, gbufferDataTex2)
-            // .blendFunc(2, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)
+            .blendFunc(1, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)
+            .blendFunc(2, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)
             .define("FORWARD_LIGHTING", "1")
             .ssbo(0, sceneData)
             .build()
@@ -410,7 +412,19 @@ export function setupShader() {
     const globalIlluminationTex = new Texture("globalIlluminationTex")
         .format(Format.R11F_G11F_B10F)
         .clear(false)
+        .width(parseInt(screenWidth * 0.5))
+        .height(parseInt(screenHeight * 0.5))
         .build();
+
+    registerShader(
+        Stage.PRE_TRANSLUCENT,
+        new Composite("deferredShading")
+        .vertex("program/fullscreen.vsh")
+        .fragment("program/composite/deferredShading.fsh")
+        .target(0, sceneTex)
+        .ssbo(0, sceneData)
+        .build()
+    );
 
     if(getBoolSetting("SSGI_ENABLE")){
         registerShader(
@@ -419,6 +433,16 @@ export function setupShader() {
             .vertex("program/fullscreen.vsh")
             .fragment("program/composite/SSGI.fsh")
             .target(0, globalIlluminationTex)
+            .ssbo(0, sceneData)
+            .build()
+        )
+
+        registerShader(
+            Stage.PRE_TRANSLUCENT,
+            new Composite("compositeGlobalIllumination")
+            .vertex("program/fullscreen.vsh")
+            .fragment("program/composite/compositeSSGI.fsh")
+            .target(0, sceneTex)
             .ssbo(0, sceneData)
             .build()
         )
@@ -444,15 +468,7 @@ export function setupShader() {
         .build()
     );
 
-    registerShader(
-        Stage.PRE_TRANSLUCENT,
-        new Composite("deferredShading")
-        .vertex("program/fullscreen.vsh")
-        .fragment("program/composite/deferredShading.fsh")
-        .target(0, sceneTex)
-        .ssbo(0, sceneData)
-        .build()
-    );
+
 
     // ======================= COMPOSITES =======================
 

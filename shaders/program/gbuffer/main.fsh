@@ -88,9 +88,9 @@ void iris_emitFragment() {
 		vec3 blocklightColor;
 		vec3 voxelPos = mapVoxelPosInterp(playerPos - worldFaceNormal * 0.5 + mat3(ap.camera.viewInv) * worldMappedNormal);
 		if(EVEN_FRAME){
-			blocklightColor = textureLod(floodFillVoxelMapTex2, voxelPos, 0).rgb;
+			blocklightColor = textureLod(floodFillVoxelMapTex2, voxelPos, 0).rgb / FLOODFILL_SCALING;
 		} else {
-			blocklightColor = textureLod(floodFillVoxelMapTex1, voxelPos, 0).rgb;
+			blocklightColor = textureLod(floodFillVoxelMapTex1, voxelPos, 0).rgb / FLOODFILL_SCALING;
 		}
 		color.rgb = getShadedColor(gbufferData.material, gbufferData.mappedNormal, tbnMatrix[2], light.y, blocklightColor, viewPos, fresnel);
 	} else {
