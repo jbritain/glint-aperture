@@ -201,7 +201,7 @@ function setupShader() {
     new Composite("compositeSky").vertex("program/fullscreen.vsh").fragment("program/composite/compositeSky.fsh").target(0, sceneTex).build()
   );
   const cloudScatterTex = new Texture("cloudScatterTex").format(Format.RGB16F).clear(false).width(parseInt(screenWidth)).height(parseInt(screenHeight)).mipmap(true).build();
-  const cloudTransmitTex = new Texture("cloudTransmitTex").format(Format.R11F_G11F_B10F).clear(false).width(parseInt(screenWidth)).height(parseInt(screenHeight)).mipmap(true).build();
+  const cloudTransmitTex = new Texture("cloudTransmitTex").format(Format.RGB16F).clear(false).width(parseInt(screenWidth)).height(parseInt(screenHeight)).mipmap(true).build();
   registerShader(
     Stage.PRE_TRANSLUCENT,
     new Composite("renderClouds").vertex("program/fullscreen.vsh").fragment("program/composite/renderClouds.fsh").target(0, cloudScatterTex).target(1, cloudTransmitTex).ssbo(0, sceneData).build()

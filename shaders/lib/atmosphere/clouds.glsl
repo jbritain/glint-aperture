@@ -5,7 +5,7 @@
 #include "/lib/atmosphere/atmosphericFog.glsl"
 
 #define CLOUD_DISTANCE 100000.0
-#define CUMULUS_LOWER_HEIGHT 100
+#define CUMULUS_LOWER_HEIGHT 200
 #define CUMULUS_UPPER_HEIGHT 800
 
 #define CLOUD_EXTINCTION_COLOR vec3(0.2 + ap.world.rainStrength * 0.2)
@@ -19,7 +19,7 @@ float getCloudDensity(vec3 pos){
 
   vec3 samplePos = pos * 0.0007;
 
-  vec3 wind = -ap.time.elapsed * vec3(0.0, 1.0, 0.2) * 0.2;
+  vec3 wind = -ap.time.elapsed * vec3(0.0, 1.0, 0.2) * 0.0;
 
   vec4 lowFreq = texture(cloudShapeNoiseTex, fract(samplePos + wind * 0.01));
 
@@ -30,7 +30,7 @@ float getCloudDensity(vec3 pos){
 
   if(density < 0.01) return 0.0;
 
-  float type = texture(worleyNoiseTex, fract(samplePos.xz * 0.005)).r;
+  float type = texture(perlinNoiseTex, fract(samplePos.xz * 0.005)).r;
 
   vec2 heightGradientCoord = vec2(type, 1.0 - heightInPlane);
 
@@ -58,14 +58,19 @@ float getTotalDensityTowardsLight(vec3 rayPos, float jitter, float lowerHeight, 
   vec3 a = rayPos;
   vec3 b = rayPos;
 
-  samples = int(mix(float(samples), samples * 2.0, 1.0 - abs(worldLightDir.y)));
+  vec3 dir = worldLightDir;
+  vec3 tempPoint = a + dir * 2.0;
+  tempPoint += blueNoise(uv, pow2(ap.time.frames)).xyz * 2.0 - 1.0;
+  dir = normalize(tempPoint - a);
 
-  bool goingDown = worldLightDir.y < 0;
+  samples = int(mix(float(samples), samples * 2.0, 1.0 - abs(dir.y)));
+
+  bool goingDown = dir.y < 0;
   bool belowLayer = rayPos.y < lowerHeight;
   if(goingDown != belowLayer) return 0.0;
 
-  if(!rayPlaneIntersection(rayPos, worldLightDir, lowerHeight, b)){ 
-    rayPlaneIntersection(rayPos, worldLightDir, upperHeight, b);
+  if(!rayPlaneIntersection(rayPos, dir, lowerHeight, b)){ 
+    rayPlaneIntersection(rayPos, dir, upperHeight, b);
   }
 
   vec3 increment = (b - a) / float(samples);
@@ -75,7 +80,8 @@ float getTotalDensityTowardsLight(vec3 rayPos, float jitter, float lowerHeight, 
 
   subRayPos += increment * jitter;
 
-  for(int i = 0; i < samples; i++, subRayPos += increment){
+  for(int i = 0; i < samples; i++){
+    subRayPos += increment;
     totalDensity += getCloudDensity(subRayPos) * length(increment);
   }
 
@@ -94,8 +100,9 @@ vec3 calculateCloudLightEnergy(vec3 rayPos, float jitter, float costh, int sampl
   // return clamp01(transmit) * dualHenyeyGreenstein(0.8, -0.5, costh, 0.5);
 
   vec3 powder = clamp01((1.0 - exp(-totalDensity * 2.0 * CLOUD_EXTINCTION_COLOR)));
+  vec3 beers = clamp01(exp(-totalDensity * CLOUD_EXTINCTION_COLOR));
 
-  return multipleScattering(totalDensity, costh, 0.8, -0.5, CLOUD_EXTINCTION_COLOR, 4, 0.5, 0.9, 0.8, 0.1) * mix(2.0 * powder, vec3(1.0), costh * 0.5 + 0.5);
+  return multipleScattering(totalDensity, costh, 0.8, -0.5, CLOUD_EXTINCTION_COLOR, 4, 0.5, 0.9, 0.8, 0.1) * beers;// * powder 2.0;
 }
 
 vec3 marchCloudLayer(vec3 playerPos, float depth, vec3 sunlightColor, vec3 skylightColor, inout vec3 totalTransmittance, float lowerHeight, float upperHeight, int samples, int subsamples){
@@ -158,11 +165,15 @@ vec3 marchCloudLayer(vec3 playerPos, float depth, vec3 sunlightColor, vec3 skyli
   vec3 lightEnergy = vec3(0.0);
 
   #ifdef HIGH_CLOUD_SAMPLES
-  float jitter = blueNoise(uv).r;
+  vec2 noise = blueNoise(uv).rg;
   #else
-  float jitter = blueNoise(uv, ap.time.frames).r;
+  vec2 noise = blueNoise(uv, ap.time.frames).rg;
   #endif
+  float jitter = noise.x;
+  float lightJitter = noise.y;
   rayPos += increment * jitter;
+
+
 
   vec3 scatter = vec3(0.0);
 
@@ -178,11 +189,7 @@ vec3 marchCloudLayer(vec3 playerPos, float depth, vec3 sunlightColor, vec3 skyli
 
     vec3 transmittance = exp(-density * CLOUD_EXTINCTION_COLOR);
 
-    #ifdef HIGH_CLOUD_SAMPLES
-    float lightJitter = interleavedGradientNoise(floor(gl_FragCoord.xy), i).r;
-    #else
-    float lightJitter = interleavedGradientNoise(floor(gl_FragCoord.xy), i + ap.time.frames * samples).r;
-    #endif
+
 
     vec3 lightEnergy = calculateCloudLightEnergy(rayPos, lightJitter, mu, subsamples);
     vec3 radiance = lightEnergy * sunlightColor + skylightColor * henyeyGreenstein(0.0, 0.0);

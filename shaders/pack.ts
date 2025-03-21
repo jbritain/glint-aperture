@@ -471,7 +471,7 @@ export function setupShader() {
         .build();
 
     const cloudTransmitTex = new Texture("cloudTransmitTex")
-        .format(Format.R11F_G11F_B10F)
+        .format(Format.RGB16F)
         .clear(false)
         .width(parseInt(screenWidth))
         .height(parseInt(screenHeight))

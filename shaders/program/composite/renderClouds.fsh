@@ -31,7 +31,7 @@ void main(){
 
     LightInteraction clouds = getClouds(feetPlayerPos, depth);
 
-    float blend = clamp01(previousScreenPos.xy) == previousScreenPos.xy && ((previousDepth == 1.0) == (depth == 1.0)) ? 0.1 : 1.0;
+    float blend = length(previousScreenPos.xy - uv) < 0.01 ? 0.05 : 1.0;
 
     scattering = mix(scattering, clouds.scattering, blend);
     transmittance = mix(transmittance, clouds.transmittance, blend);
