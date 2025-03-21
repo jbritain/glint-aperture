@@ -77,8 +77,11 @@ function setupShader() {
   worldSettings.renderSun = false;
   const sceneData = new GPUBuffer(32).clear(true).build();
   const blueNoiseTex = new PNGTexture("blueNoiseTex", "textures/blueNoise.png", false, true);
-  const cloudShapeNoiseTex = new RawTexture("cloudShapeNoiseTex", "textures/cloudNoiseShape.bin").width(128).height(128).depth(128).type(PixelType.UNSIGNED_BYTE).format(Format.R8).blur(true).build();
-  const cloudErosionNoiseTex = new RawTexture("cloudErosionNoiseTex", "textures/cloudNoiseErosion.bin").width(32).height(32).depth(32).type(PixelType.UNSIGNED_BYTE).format(Format.R8).blur(true).build();
+  const perlinNoiseTex = new PNGTexture("perlinNoiseTex", "textures/perlinNoise.png", true, true);
+  const worleyNoiseTex = new PNGTexture("worleyNoiseTex", "textures/worleyNoise.png", true, true);
+  const cloudShapeNoiseTex = new RawTexture("cloudShapeNoiseTex", "textures/cloudNoiseShape.bin").width(128).height(128).depth(128).type(PixelType.UNSIGNED_BYTE).format(Format.RGBA8).blur(true).build();
+  const cloudErosionNoiseTex = new RawTexture("cloudErosionNoiseTex", "textures/cloudNoiseErosion.bin").width(32).height(32).depth(32).type(PixelType.UNSIGNED_BYTE).format(Format.RGB8).blur(true).build();
+  const cloudHeightGradientTex = new PNGTexture("cloudHeightGradientTex", "textures/cloudHeightGradient.png", false, true);
   const debugTex = new Texture("debugTex").format(Format.RGBA8).imageName("debugImg").width(screenWidth).height(screenHeight).clear(true).clearColor(0, 0, 0, 0).build();
   const previousSceneTex = new Texture("previousSceneTex").format(Format.RGB16F).clear(false).mipmap(true).build();
   const previousDepthTex = new Texture("previousDepthTex").format(Format.RG16).clear(false).mipmap(true).build();
@@ -107,7 +110,7 @@ function setupShader() {
     new Compute("getSkylightColor").location("program/sky/getSkylightColor.csh").workGroups(1, 1, 1).ssbo(0, sceneData).build()
   );
   registerShader(Stage.PRE_RENDER, new MemoryBarrier(SSBO_BIT));
-  const cloudSkyLUT = new Texture("cloudSkyLUTTex").format(Format.RGBA16F).width(512).height(512).clear(true).mipmap(true).build();
+  const cloudSkyLUT = new Texture("cloudSkyLUTTex").format(Format.RGBA16F).width(512).height(512).clear(false).mipmap(true).build();
   registerShader(
     Stage.PRE_RENDER,
     new Composite("renderCloudSKYLUT").vertex("program/fullscreen.vsh").fragment("program/prepare/renderCloudSkyLUT.fsh").target(0, cloudSkyLUT).ssbo(0, sceneData).build()
@@ -196,6 +199,20 @@ function setupShader() {
   registerShader(
     Stage.PRE_TRANSLUCENT,
     new Composite("compositeSky").vertex("program/fullscreen.vsh").fragment("program/composite/compositeSky.fsh").target(0, sceneTex).build()
+  );
+  const cloudScatterTex = new Texture("cloudScatterTex").format(Format.RGB16F).clear(false).width(parseInt(screenWidth)).height(parseInt(screenHeight)).mipmap(true).build();
+  const cloudTransmitTex = new Texture("cloudTransmitTex").format(Format.R11F_G11F_B10F).clear(false).width(parseInt(screenWidth)).height(parseInt(screenHeight)).mipmap(true).build();
+  registerShader(
+    Stage.PRE_TRANSLUCENT,
+    new Composite("renderClouds").vertex("program/fullscreen.vsh").fragment("program/composite/renderClouds.fsh").target(0, cloudScatterTex).target(1, cloudTransmitTex).ssbo(0, sceneData).build()
+  );
+  registerShader(
+    Stage.PRE_TRANSLUCENT,
+    new GenerateMips(cloudScatterTex)
+  );
+  registerShader(
+    Stage.PRE_TRANSLUCENT,
+    new GenerateMips(cloudTransmitTex)
   );
   registerShader(
     Stage.PRE_TRANSLUCENT,

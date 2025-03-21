@@ -30,6 +30,14 @@ uniform sampler2D DoFTex;
 
 uniform sampler2D blueNoiseTex;
 
+#ifdef CLOUD_NOISE_SAMPLERS
+uniform sampler2D worleyNoiseTex;
+uniform sampler2D perlinNoiseTex;
+uniform sampler3D cloudShapeNoiseTex;
+uniform sampler3D cloudErosionNoiseTex;
+uniform sampler2D cloudHeightGradientTex;
+#endif
+
 uniform sampler2D mainDepthTex;
 uniform sampler2D solidDepthTex;
 
@@ -49,11 +57,6 @@ uniform usampler2DArray shadowMaskTex;
 uniform sampler3D floodFillVoxelMapTex1;
 uniform sampler3D floodFillVoxelMapTex2;
 uniform usampler3D voxelMapTex;
-#endif
-
-#ifdef CLOUD_NOISE_SAMPLERS
-uniform sampler3D cloudShapeNoiseTex;
-uniform sampler3D cloudErosionNoiseTex;
 #endif
 
 

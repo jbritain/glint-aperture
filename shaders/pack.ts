@@ -94,13 +94,15 @@ export function setupShader() {
         .build();
 
     const blueNoiseTex = new PNGTexture("blueNoiseTex", "textures/blueNoise.png", false, true);
+    const perlinNoiseTex = new PNGTexture("perlinNoiseTex", "textures/perlinNoise.png", true, true);
+    const worleyNoiseTex = new PNGTexture("worleyNoiseTex", "textures/worleyNoise.png", true, true);
 
     const cloudShapeNoiseTex = new RawTexture("cloudShapeNoiseTex", "textures/cloudNoiseShape.bin")
         .width(128)
         .height(128)
         .depth(128)
         .type(PixelType.UNSIGNED_BYTE)
-        .format(Format.R8)
+        .format(Format.RGBA8)
         .blur(true)
         .build();
 
@@ -109,9 +111,11 @@ export function setupShader() {
         .height(32)
         .depth(32)
         .type(PixelType.UNSIGNED_BYTE)
-        .format(Format.R8)
+        .format(Format.RGB8)
         .blur(true)
         .build();
+
+    const cloudHeightGradientTex = new PNGTexture("cloudHeightGradientTex", "textures/cloudHeightGradient.png", false, true);
 
     const debugTex = new Texture("debugTex")
         .format(Format.RGBA8)
@@ -203,7 +207,7 @@ export function setupShader() {
     const cloudSkyLUT = new Texture("cloudSkyLUTTex")
         .format(Format.RGBA16F)
         .width(512).height(512)
-        .clear(true)
+        .clear(false)
         .mipmap(true)
         .build()
 
@@ -457,6 +461,44 @@ export function setupShader() {
         .target(0, sceneTex)
         .build()
     );
+
+    const cloudScatterTex = new Texture("cloudScatterTex")
+        .format(Format.RGB16F)
+        .clear(false)
+        .width(parseInt(screenWidth))
+        .height(parseInt(screenHeight))
+        .mipmap(true)
+        .build();
+
+    const cloudTransmitTex = new Texture("cloudTransmitTex")
+        .format(Format.R11F_G11F_B10F)
+        .clear(false)
+        .width(parseInt(screenWidth))
+        .height(parseInt(screenHeight))
+        .mipmap(true)
+        .build();
+
+    registerShader(
+        Stage.PRE_TRANSLUCENT,
+        new Composite("renderClouds")
+        .vertex("program/fullscreen.vsh")
+        .fragment("program/composite/renderClouds.fsh")
+        .target(0, cloudScatterTex)
+        .target(1, cloudTransmitTex)
+        .ssbo(0, sceneData)
+        .build()
+    );
+
+    registerShader(
+        Stage.PRE_TRANSLUCENT,
+        new GenerateMips(cloudScatterTex),
+    );
+
+    registerShader(
+        Stage.PRE_TRANSLUCENT,
+        new GenerateMips(cloudTransmitTex)
+    );
+
 
     registerShader(
         Stage.PRE_TRANSLUCENT,

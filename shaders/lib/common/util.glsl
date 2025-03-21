@@ -5,6 +5,14 @@ float luminance(vec3 color){
     return dot(color, vec3(0.2126, 0.7152, 0.0722));
 }
 
+float linearstep(float edge0, float edge1, float x) {
+  return clamp01((x - edge0) * rcp(edge1 - edge0));
+}
+
+float remap(float originalValue, float originalMin, float originalMax, float newMin, float newMax){
+	return newMin + (((originalValue - originalMin) / (originalMax - originalMin)) * (newMax - newMin));
+}
+
 // https://blog.demofox.org/2022/01/01/interleaved-gradient-noise-a-different-kind-of-low-discrepancy-sequence/
 // adapted with help from balint and hardester
 float interleavedGradientNoise(vec2 coord){
@@ -193,5 +201,14 @@ vec4 blueNoise(in vec2 texcoord, int frame){
 float mean(vec3 x){
 	return (x.x + x.y + x.z) / 3.0;
 }
+
+float bayer2(vec2 a) {
+    a = floor(a);
+    return fract(a.x * 0.5 + a.y * a.y * 0.75);
+}
+
+#define bayer4(a) (bayer2(a * 0.5) * 0.25 + bayer2(a))
+#define bayer8(a) (bayer4(a * 0.5) * 0.25 + bayer2(a))
+#define bayer16(a) (bayer8(a * 0.5) * 0.25 + bayer2(a))
 
 #endif // UTIL_GLSL

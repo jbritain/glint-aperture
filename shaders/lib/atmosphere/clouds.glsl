@@ -4,142 +4,54 @@
 #include "/lib/buffers/sceneData.glsl"
 #include "/lib/atmosphere/atmosphericFog.glsl"
 
-// one 2D slice is a 128 by 128 image
-#define CLOUD_SHAPE_TILE_SIZE 128
-#define CLOUD_EROSION_TILE_SIZE 32
-
-vec4 cloudShapeNoiseSample(vec3 texcoord){
-  vec3 texelcoord = vec3(mod(texcoord, 1.0) * CLOUD_SHAPE_TILE_SIZE);
-
-  return texture(cloudShapeNoiseTex, texelcoord.xyz / CLOUD_SHAPE_TILE_SIZE);
-}
-
-vec4 cloudErosionNoiseSample(vec3 texcoord){
-  vec3 texelcoord = vec3(mod(texcoord, 1.0) * CLOUD_EROSION_TILE_SIZE);
-
-  return texture(cloudErosionNoiseTex, texelcoord.xyz / CLOUD_EROSION_TILE_SIZE);
-}
-
-float CUMULUS_DENSITY = 0.02;//mix(0.05, 0.2, wetness);
-float CUMULUS_COVERAGE = 0.08;//mix(0.07, 0.21, wetness * 0.5 + thunderStrength * 0.25);
-#define CUMULUS_LOWER_HEIGHT 500.0
-#define CUMULUS_UPPER_HEIGHT 700.0
-#define CUMULUS_SAMPLES 15
-#define CUMULUS_SUBSAMPLES 6
-
-#define ALTOCUMULUS_LOWER_HEIGHT 1500.0
-#define ALTOCUMULUS_UPPER_HEIGHT 1700.0
-#define ALTOCUMULUS_DENSITY 0.02
-float ALTOCUMULUS_COVERAGE = 0.08;//mix(0.08, 0.17, wetness * 0.5 + thunderStrength * 0.25);
-#define ALTOCUMULUS_SAMPLES 6
-#define ALTOCUMULUS_SUBSAMPLES 4
-
-#define CIRRUS_DENSITY 0.001
-#define CIRRUS_COVERAGE 0.1
-#define CIRRUS_LOWER_HEIGHT 1900.0
-#define CIRRUS_UPPER_HEIGHT 2100.0
-#define CIRRUS_SAMPLES 1
-#define CIRRUS_SUBSAMPLES 1
-
-#define CLOUD_SHAPE_SCALE 2342
-#define CLOUD_SHAPE_SCALE_2 7500
-#define CLOUD_EROSION_SCALE 230
-
 #define CLOUD_DISTANCE 100000.0
+#define CUMULUS_LOWER_HEIGHT 100
+#define CUMULUS_UPPER_HEIGHT 800
 
-// blocks per second
-#define CLOUD_SHAPE_SPEED 0.001
-#define CLOUD_EROSION_SPEED 0.005
+#define CLOUD_EXTINCTION_COLOR vec3(0.2 + ap.world.rainStrength * 0.2)
 
-#define CLOUD_EXTINCTION_COLOR vec3(1.0)
-#define CLOUD_DUAL_LOBE_WEIGHT 0.7
-#define CLOUD_G 0.6
-
-#define CUMULUS_CLOUDS
-// #define ALTOCUMULUS_CLOUDS
-// #define CIRRUS_CLOUDS
+#define CUMULUS_SAMPLES 16
+#define CUMULUS_SUBSAMPLES 8
 
 float getCloudDensity(vec3 pos){
+  if(clamp(pos.y, CUMULUS_LOWER_HEIGHT, CUMULUS_UPPER_HEIGHT) != pos.y) return 0.0;
+  float heightInPlane = linearstep(CUMULUS_LOWER_HEIGHT, CUMULUS_UPPER_HEIGHT, pos.y);
 
-  // pos.y = distance(pos, earthCentre) - earthRadius;
+  vec3 samplePos = pos * 0.0007;
 
-  float coverage = 0;
-  float densityFactor = 0;
-  float heightDenseFactor = 1.0;
+  vec3 wind = -ap.time.elapsed * vec3(0.0, 1.0, 0.2) * 0.2;
 
-  float heightInPlane = 0.0;
+  vec4 lowFreq = texture(cloudShapeNoiseTex, fract(samplePos + wind * 0.01));
 
-  #ifdef CUMULUS_CLOUDS
-  if(pos.y >= CUMULUS_LOWER_HEIGHT && pos.y <= CUMULUS_UPPER_HEIGHT){
-    coverage = mix(CUMULUS_COVERAGE, 1.0, smoothstep(0.0, 50000.0, 0.0));
-    densityFactor = CUMULUS_DENSITY;
+  float lowFreqFBM = lowFreq.g * 0.625 + lowFreq.b * 0.25 + lowFreq.a * 0.125;
 
-    float cumulusCentreHeight = mix(CUMULUS_LOWER_HEIGHT, CUMULUS_UPPER_HEIGHT, 0.1); // widest part of our cumulus clouds
+  float density = (lowFreq.r);
+  density = remap(density, lowFreqFBM - 1.0 , 1.0, 0.0, 1.0);
 
-    if(pos.y <= cumulusCentreHeight){
-      heightDenseFactor = sqrt(smoothstep(CUMULUS_LOWER_HEIGHT, cumulusCentreHeight, pos.y));
-    } else {
-      heightDenseFactor = 1.0 - pow2(smoothstep(cumulusCentreHeight, CUMULUS_UPPER_HEIGHT, pos.y));
-    }
+  if(density < 0.01) return 0.0;
 
-    heightInPlane = smoothstep(CUMULUS_LOWER_HEIGHT, CUMULUS_UPPER_HEIGHT, pos.y);
+  float type = texture(worleyNoiseTex, fract(samplePos.xz * 0.005)).r;
 
-  } else 
-  #endif
-  #ifdef ALTOCUMULUS_CLOUDS
-  if(pos.y >= ALTOCUMULUS_LOWER_HEIGHT && pos.y <= ALTOCUMULUS_UPPER_HEIGHT){
-    coverage = ALTOCUMULUS_COVERAGE;
-    densityFactor = ALTOCUMULUS_DENSITY;
+  vec2 heightGradientCoord = vec2(type, 1.0 - heightInPlane);
 
-    float cumulusCentreHeight = mix(ALTOCUMULUS_LOWER_HEIGHT, ALTOCUMULUS_UPPER_HEIGHT, 0.3); // widest part of our cumulus clouds
+  density *= texture(cloudHeightGradientTex, heightGradientCoord).r;
 
-    if(pos.y <= cumulusCentreHeight){
-      heightDenseFactor = smoothstep(ALTOCUMULUS_LOWER_HEIGHT, cumulusCentreHeight, pos.y);
-    } else {
-      heightDenseFactor = 1.0 - smoothstep(cumulusCentreHeight, ALTOCUMULUS_UPPER_HEIGHT, pos.y);
-    }
+  float coverage = smoothstep(0.5, 1.0, 1.0 - texture(worleyNoiseTex, fract(samplePos.xz * 0.1 + wind.xz * 0.001)).r);
+  coverage = clamp01(coverage + ap.world.rainStrength * 0.5);
 
-    heightInPlane = smoothstep(ALTOCUMULUS_LOWER_HEIGHT, ALTOCUMULUS_UPPER_HEIGHT, pos.y);
+  density = remap(density, 1.0 - coverage, 1.0, 0.0, 1.0);
 
-  } else
-  #endif
-  #ifdef CIRRUS_CLOUDS
-   if (pos.y >= CIRRUS_LOWER_HEIGHT && pos.y <= CIRRUS_UPPER_HEIGHT){
-    coverage = CIRRUS_COVERAGE;
-    densityFactor = CIRRUS_DENSITY;
-    pos.x /= 4;
-  } else
-  #endif
-  {
-    return 0;
-  }
+  if(density < 0.01) return 0.0;
 
+  vec3 highFreq = texture(cloudErosionNoiseTex, fract(samplePos * 10.0 + wind * 0.1)).rgb;
+  float highFreqFBM = highFreq.r * 0.625 + highFreq.g * 0.25 + highFreq.b * 0.125;
 
-  float shapeDensity2 = cloudShapeNoiseSample(pos / CLOUD_SHAPE_SCALE + vec3(CLOUD_SHAPE_SPEED * ap.time.elapsed, 0.0, 0.0)).r;
-  float shapeDensity = cloudShapeNoiseSample(pos / CLOUD_SHAPE_SCALE_2 + vec3(CLOUD_SHAPE_SPEED * ap.time.elapsed, 0.0, 0.0)).r;
-  
-  
-  // erosionDensity = mix(1.0 - erosionDensity, erosionDensity, heightInPlane * 0.5 + 0.5);
-  coverage = mix(coverage * 0.5, coverage * 2.0, texture(blueNoiseTex, fract(pos.xz / 100000.0)).r);
+  highFreqFBM = mix(highFreqFBM, 1.0 - highFreqFBM, clamp01(heightInPlane * 10.0));
+  density = remap(density, highFreqFBM, 1.0, 0.0, 1.0);
 
-  float density = clamp01(shapeDensity - (1.0 - coverage));
-  density = mix(density, clamp01(shapeDensity2 - (1.0 - coverage) - 0.05), 0.3);
-  density *= 10;
-  // density *= 1.0 + thunderStrength;
+  density = max0(density);
 
-  if(density < 0.01){
-    return 0.0;
-  }
-
-  float erosionDensity = cloudErosionNoiseSample(pos / CLOUD_EROSION_SCALE  + vec3(CLOUD_EROSION_SPEED * ap.time.elapsed, 0.0, 0.0)).r;
-
-  // erosionDensity = mix(1.0 - erosionDensity, erosionDensity, smoothstep(0.4, 0.6, 1.0 - heightInPlane));
-
-  density -= clamp01(erosionDensity - 0.6);
-
-  density = mix(density, 0.0, pow4(sin(PI * (1.0 - heightDenseFactor) / 2)));
-
-  return max0(density * densityFactor);
+  return density;
 }
 
 float getTotalDensityTowardsLight(vec3 rayPos, float jitter, float lowerHeight, float upperHeight, int samples){
@@ -173,19 +85,17 @@ float getTotalDensityTowardsLight(vec3 rayPos, float jitter, float lowerHeight, 
 // march from a ray position towards the sun to calculate how much light makes it there
 vec3 calculateCloudLightEnergy(vec3 rayPos, float jitter, float costh, int samples){
   float totalDensity = 0.0;
-  #ifdef CUMULUS_CLOUDS
   totalDensity += getTotalDensityTowardsLight(rayPos, jitter, CUMULUS_LOWER_HEIGHT, CUMULUS_UPPER_HEIGHT, samples);
-  #endif
-  #ifdef ALTOCUMULUS_CLOUDS
-  totalDensity += getTotalDensityTowardsLight(rayPos, jitter, ALTOCUMULUS_LOWER_HEIGHT, ALTOCUMULUS_UPPER_HEIGHT, samples);
-  #endif
-  #ifdef CIRRUS_CLOUDS
-  totalDensity += getTotalDensityTowardsLight(rayPos, jitter, CIRRUS_LOWER_HEIGHT, CIRRUS_UPPER_HEIGHT, samples);
-  #endif
 
-  vec3 powder = clamp01((1.0 - exp(-totalDensity * 2 * CLOUD_EXTINCTION_COLOR)));
+  // float beers = exp(-totalDensity);
+  // float powder = 1.0 - exp(-totalDensity * 2.0);
 
-  return multipleScattering(totalDensity, costh, 0.9, -0.4, CLOUD_EXTINCTION_COLOR, 4, 0.85, 0.9, 0.8, 0.1) * mix(2.0 * powder, vec3(1.0), costh * 0.5 + 0.5);
+  // vec3 transmit = vec3(beers);//vec3(2.0 * beers * powder);
+  // return clamp01(transmit) * dualHenyeyGreenstein(0.8, -0.5, costh, 0.5);
+
+  vec3 powder = clamp01((1.0 - exp(-totalDensity * 2.0 * CLOUD_EXTINCTION_COLOR)));
+
+  return multipleScattering(totalDensity, costh, 0.8, -0.5, CLOUD_EXTINCTION_COLOR, 4, 0.5, 0.9, 0.8, 0.1) * mix(2.0 * powder, vec3(1.0), costh * 0.5 + 0.5);
 }
 
 vec3 marchCloudLayer(vec3 playerPos, float depth, vec3 sunlightColor, vec3 skylightColor, inout vec3 totalTransmittance, float lowerHeight, float upperHeight, int samples, int subsamples){
@@ -269,9 +179,9 @@ vec3 marchCloudLayer(vec3 playerPos, float depth, vec3 sunlightColor, vec3 skyli
     vec3 transmittance = exp(-density * CLOUD_EXTINCTION_COLOR);
 
     #ifdef HIGH_CLOUD_SAMPLES
-    float lightJitter = blueNoise(uv, i).r;
+    float lightJitter = interleavedGradientNoise(floor(gl_FragCoord.xy), i).r;
     #else
-    float lightJitter = blueNoise(uv, i + ap.time.frames * samples).r;
+    float lightJitter = interleavedGradientNoise(floor(gl_FragCoord.xy), i + ap.time.frames * samples).r;
     #endif
 
     vec3 lightEnergy = calculateCloudLightEnergy(rayPos, lightJitter, mu, subsamples);
@@ -307,18 +217,7 @@ vec3 marchCloudLayer(vec3 playerPos, float depth, vec3 sunlightColor, vec3 skyli
 LightInteraction getClouds(vec3 playerPos, float depth){
   vec3 transmit = vec3(1.0);
   vec3 scatter = vec3(0.0);
-  #ifdef VANILLA_CLOUDS
-  scatter += marchCloudLayer(playerPos, depth, sunlightColor, skylightColor, transmit, VANILLA_CLOUD_LOWER_HEIGHT, VANILLA_CLOUD_UPPER_HEIGHT, VANILLA_CLOUD_SAMPLES, VANILLA_CLOUD_SUBSAMPLES);
-  #endif
-  #ifdef CUMULUS_CLOUDS
   scatter += marchCloudLayer(playerPos, depth, sunlightColor, skylightColor, transmit, CUMULUS_LOWER_HEIGHT, CUMULUS_UPPER_HEIGHT, CUMULUS_SAMPLES, CUMULUS_SUBSAMPLES);
-  #endif
-  #ifdef ALTOCUMULUS_CLOUDS
-  scatter += marchCloudLayer(playerPos, depth, sunlightColor, skylightColor, transmit, ALTOCUMULUS_LOWER_HEIGHT, ALTOCUMULUS_UPPER_HEIGHT, ALTOCUMULUS_SAMPLES, ALTOCUMULUS_SUBSAMPLES);
-  #endif
-  #ifdef CIRRUS_CLOUDS
-  scatter += marchCloudLayer(playerPos, depth, sunlightColor, skylightColor, transmit, CIRRUS_LOWER_HEIGHT, CIRRUS_UPPER_HEIGHT, CIRRUS_SAMPLES, CIRRUS_SUBSAMPLES);
-  #endif
 
   scatter = max0(scatter);
   transmit = max0(transmit);
