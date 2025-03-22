@@ -19,9 +19,9 @@ float getCloudDensity(vec3 pos){
 
   vec3 samplePos = pos * 0.0007;
 
-  vec3 wind = -ap.time.elapsed * vec3(0.0, 1.0, 0.2) * 0.0;
+  vec3 wind = -ap.time.elapsed * vec3(0.0, 0.5, 1.0);
 
-  vec4 lowFreq = texture(cloudShapeNoiseTex, fract(samplePos + wind * 0.01));
+  vec4 lowFreq = texture(cloudShapeNoiseTex, fract(samplePos + wind * 0.001));
 
   float lowFreqFBM = lowFreq.g * 0.625 + lowFreq.b * 0.25 + lowFreq.a * 0.125;
 
@@ -37,6 +37,7 @@ float getCloudDensity(vec3 pos){
   density *= texture(cloudHeightGradientTex, heightGradientCoord).r;
 
   float coverage = smoothstep(0.5, 1.0, 1.0 - texture(worleyNoiseTex, fract(samplePos.xz * 0.1 + wind.xz * 0.001)).r);
+  // coverage = clamp01(coverage + (texture(worleyNoiseTex, fract(samplePos.xz * 0.1) * 2.0 - 1.0).r * 0.4) - 0.2);
   coverage = clamp01(coverage + ap.world.rainStrength * 0.5);
 
   density = remap(density, 1.0 - coverage, 1.0, 0.0, 1.0);
@@ -58,9 +59,12 @@ float getTotalDensityTowardsLight(vec3 rayPos, float jitter, float lowerHeight, 
   vec3 a = rayPos;
   vec3 b = rayPos;
 
+  // marching directly to the sun every time is not cool
+  // the gpu pro 7 paper had some funky solution for sampling in a cone
+  // we're just gonna vary the sample direction
   vec3 dir = worldLightDir;
   vec3 tempPoint = a + dir * 2.0;
-  tempPoint += blueNoise(uv, pow2(ap.time.frames)).xyz * 2.0 - 1.0;
+  tempPoint += blueNoise(uv, ap.time.frames + 1).xyz * 2.0 - 1.0; // adding 1 to the index to solve the bias does not seem like it should work but we move
   dir = normalize(tempPoint - a);
 
   samples = int(mix(float(samples), samples * 2.0, 1.0 - abs(dir.y)));
@@ -102,6 +106,7 @@ vec3 calculateCloudLightEnergy(vec3 rayPos, float jitter, float costh, int sampl
   vec3 powder = clamp01((1.0 - exp(-totalDensity * 2.0 * CLOUD_EXTINCTION_COLOR)));
   vec3 beers = clamp01(exp(-totalDensity * CLOUD_EXTINCTION_COLOR));
 
+  // the beer powder thing does not work
   return multipleScattering(totalDensity, costh, 0.8, -0.5, CLOUD_EXTINCTION_COLOR, 4, 0.5, 0.9, 0.8, 0.1) * beers;// * powder 2.0;
 }
 

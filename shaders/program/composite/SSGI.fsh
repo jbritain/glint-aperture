@@ -67,7 +67,7 @@ void main(){
     vec3 GISamplePos;
     if(rayIntersects(viewPos, sampleDir, 8, noise.z, true, GISamplePos, false, true)){
       fresnel += schlick(gbufferData.material, dot(sampleDir, normalize(-viewPos)));
-      GI += texture(sceneTex, GISamplePos.xy).rgb;
+      GI += clamp(texture(sceneTex, GISamplePos.xy).rgb, vec3(0.0), sunlightColor);
     }
 
     validSamples++;
@@ -80,11 +80,11 @@ void main(){
 
   GI *= (1.0 - fresnel);
 
-  // vec3 previousScreenPos = reprojectScreen(vec3(uv, depth));
-  // if(clamp01(previousScreenPos.xy) == previousScreenPos.xy){
-  //   vec3 oldGI = texelFetch(globalIlluminationTex, ivec2(previousScreenPos.xy * textureSize(globalIlluminationTex, 0)), 0).rgb;
-  //   GI = mix(GI, oldGI, 0.98);
-  // }
+  vec3 previousScreenPos = reprojectScreen(vec3(uv, depth));
+  if(clamp01(previousScreenPos.xy) == previousScreenPos.xy){
+    vec3 oldGI = texelFetch(globalIlluminationTex, ivec2(previousScreenPos.xy * textureSize(globalIlluminationTex, 0)), 0).rgb;
+    GI = mix(GI, oldGI, 0.98);
+  }
 
 
 }

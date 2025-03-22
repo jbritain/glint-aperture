@@ -82,7 +82,7 @@ export function setupShader() {
 
     const maxMip = Math.floor(Math.log2(Math.max(screenWidth, screenHeight)));
 
-    worldSettings.ambientOcclusionLevel = getBoolSetting("SSGI_ENABLE") ? 0.0 : 1.0;
+    // worldSettings.ambientOcclusionLevel = getBoolSetting("SSGI_ENABLE") ? 0.0 : 1.0;
     worldSettings.disableShade = true;
     worldSettings.renderEntityShadow = false;
     worldSettings.shadowMapResolution = 1024;

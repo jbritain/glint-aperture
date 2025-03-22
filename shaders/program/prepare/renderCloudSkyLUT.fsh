@@ -21,5 +21,5 @@ void main(){
   sky = getSky(vec3(0.0), dir, false);
   LightInteraction clouds = getClouds(dir, 1.0);
   sky = sky * clouds.transmittance + clouds.scattering;
-  sky = mix(oldSky, sky, 0.01);
+  sky = mix(oldSky, sky, 0.05);
 }
