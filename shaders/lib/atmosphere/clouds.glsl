@@ -5,21 +5,21 @@
 #include "/lib/atmosphere/atmosphericFog.glsl"
 
 #define CLOUD_DISTANCE 100000.0
-#define CUMULUS_LOWER_HEIGHT 200
-#define CUMULUS_UPPER_HEIGHT 800
+#define CUMULUS_LOWER_HEIGHT 500
+#define CUMULUS_UPPER_HEIGHT 750
 
 #define CLOUD_EXTINCTION_COLOR vec3(0.2 + ap.world.rainStrength * 0.2)
 
-#define CUMULUS_SAMPLES 16
-#define CUMULUS_SUBSAMPLES 8
+#define CUMULUS_SAMPLES 64
+#define CUMULUS_SUBSAMPLES 6
 
-float getCloudDensity(vec3 pos){
+float getCloudDensity(vec3 pos, bool lowQuality){
   if(clamp(pos.y, CUMULUS_LOWER_HEIGHT, CUMULUS_UPPER_HEIGHT) != pos.y) return 0.0;
   float heightInPlane = linearstep(CUMULUS_LOWER_HEIGHT, CUMULUS_UPPER_HEIGHT, pos.y);
 
   vec3 samplePos = pos * 0.0007;
 
-  vec3 wind = -ap.time.elapsed * vec3(0.0, 0.5, 1.0);
+  vec3 wind = 0.1 * -ap.time.elapsed * vec3(0.0, 0.5, 1.0);
 
   vec4 lowFreq = texture(cloudShapeNoiseTex, fract(samplePos + wind * 0.001));
 
@@ -36,18 +36,19 @@ float getCloudDensity(vec3 pos){
 
   density *= texture(cloudHeightGradientTex, heightGradientCoord).r;
 
-  float coverage = smoothstep(0.5, 1.0, 1.0 - texture(worleyNoiseTex, fract(samplePos.xz * 0.1 + wind.xz * 0.001)).r);
-  // coverage = clamp01(coverage + (texture(worleyNoiseTex, fract(samplePos.xz * 0.1) * 2.0 - 1.0).r * 0.4) - 0.2);
-  coverage = clamp01(coverage + ap.world.rainStrength * 0.5);
+  float coverage = smoothstep(0.5, 1.0, texture(cloudShapeNoiseTex, vec3(fract(samplePos.xz * 0.1 + wind.xz * 0.01), 0.0)).r);
+
+  coverage = mix(coverage, 1.0, ap.world.rainStrength);
 
   density = remap(density, 1.0 - coverage, 1.0, 0.0, 1.0);
 
   if(density < 0.01) return 0.0;
+  if(lowQuality) return max0(density);
 
   vec3 highFreq = texture(cloudErosionNoiseTex, fract(samplePos * 10.0 + wind * 0.1)).rgb;
   float highFreqFBM = highFreq.r * 0.625 + highFreq.g * 0.25 + highFreq.b * 0.125;
 
-  highFreqFBM = mix(highFreqFBM, 1.0 - highFreqFBM, clamp01(heightInPlane * 10.0));
+  // highFreqFBM = mix(highFreqFBM, 1.0 - highFreqFBM, clamp01(heightInPlane * 10.0));
   density = remap(density, highFreqFBM, 1.0, 0.0, 1.0);
 
   density = max0(density);
@@ -86,7 +87,7 @@ float getTotalDensityTowardsLight(vec3 rayPos, float jitter, float lowerHeight, 
 
   for(int i = 0; i < samples; i++){
     subRayPos += increment;
-    totalDensity += getCloudDensity(subRayPos) * length(increment);
+    totalDensity += getCloudDensity(subRayPos, totalDensity > 0.3) * length(increment);
   }
 
   return totalDensity;
@@ -97,17 +98,10 @@ vec3 calculateCloudLightEnergy(vec3 rayPos, float jitter, float costh, int sampl
   float totalDensity = 0.0;
   totalDensity += getTotalDensityTowardsLight(rayPos, jitter, CUMULUS_LOWER_HEIGHT, CUMULUS_UPPER_HEIGHT, samples);
 
-  // float beers = exp(-totalDensity);
-  // float powder = 1.0 - exp(-totalDensity * 2.0);
-
-  // vec3 transmit = vec3(beers);//vec3(2.0 * beers * powder);
-  // return clamp01(transmit) * dualHenyeyGreenstein(0.8, -0.5, costh, 0.5);
-
-  vec3 powder = clamp01((1.0 - exp(-totalDensity * 2.0 * CLOUD_EXTINCTION_COLOR)));
-  vec3 beers = clamp01(exp(-totalDensity * CLOUD_EXTINCTION_COLOR));
+  vec3 transmit = exp(-totalDensity * CLOUD_EXTINCTION_COLOR);
 
   // the beer powder thing does not work
-  return multipleScattering(totalDensity, costh, 0.8, -0.5, CLOUD_EXTINCTION_COLOR, 4, 0.5, 0.9, 0.8, 0.1) * beers;// * powder 2.0;
+  return multipleScattering(totalDensity, costh, 0.8, -0.5, CLOUD_EXTINCTION_COLOR, 8, 0.5, 0.5, 0.5, 0.5) * transmit;
 }
 
 vec3 marchCloudLayer(vec3 playerPos, float depth, vec3 sunlightColor, vec3 skylightColor, inout vec3 totalTransmittance, float lowerHeight, float upperHeight, int samples, int subsamples){
@@ -184,7 +178,7 @@ vec3 marchCloudLayer(vec3 playerPos, float depth, vec3 sunlightColor, vec3 skyli
 
   for(int i = 0; i < samples; i++, rayPos += increment){
 
-    float pointDensity = getCloudDensity(rayPos);
+    float pointDensity = getCloudDensity(rayPos, false);
     float density = pointDensity * length(increment);
     density = mix(density, 0.0, smoothstep(CLOUD_DISTANCE * 0.8, CLOUD_DISTANCE, length(rayPos.xz - ap.camera.pos.xz)));
 
@@ -192,8 +186,9 @@ vec3 marchCloudLayer(vec3 playerPos, float depth, vec3 sunlightColor, vec3 skyli
       continue;
     }
 
-    vec3 transmittance = exp(-density * CLOUD_EXTINCTION_COLOR);
 
+
+    vec3 transmittance = clamp01(exp(-density * CLOUD_EXTINCTION_COLOR));
 
 
     vec3 lightEnergy = calculateCloudLightEnergy(rayPos, lightJitter, mu, subsamples);
@@ -211,9 +206,9 @@ vec3 marchCloudLayer(vec3 playerPos, float depth, vec3 sunlightColor, vec3 skyli
 
     vec3 integScatter = (radiance - radiance * clamp01(transmittance)) / CLOUD_EXTINCTION_COLOR;
 
-    // scatter += getAtmosphericFog(vec4(integScatter, 1.0), rayPos - ap.camera.pos).rgb * totalTransmittance;
+    scatter += atmosphericFog(integScatter, rayPos - ap.camera.pos).rgb * totalTransmittance;
     
-    scatter += integScatter * totalTransmittance;
+    // scatter += integScatter * totalTransmittance;
 
     totalTransmittance *= transmittance;
 

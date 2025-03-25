@@ -1,6 +1,7 @@
 #version 450 core
 
 #define CLOUD_NOISE_SAMPLERS
+#define GBUFFER_SAMPLERS
 #define SKY_SAMPLERS
 
 #include "/lib/common.glsl"
@@ -20,7 +21,7 @@ uniform sampler2D cloudScatterTex;
 void main(){
     float depth = texture(solidDepthTex, uv).r;
     vec3 previousScreenPos = reprojectScreen(vec3(uv, depth));
-    float previousDepth = texture(mainDepthTex, previousScreenPos.xy).r;
+    float previousDepth = texture(previousDepthTex, uv).r;
 
     scattering = texture(cloudScatterTex, previousScreenPos.xy).rgb;
     transmittance = texture(cloudTransmitTex, previousScreenPos.xy).rgb;
@@ -31,7 +32,7 @@ void main(){
 
     LightInteraction clouds = getClouds(feetPlayerPos, depth);
 
-    float blend = length(previousScreenPos.xy - uv) < 0.01 ? 0.05 : 1.0;
+    float blend = (length(previousScreenPos.xy - uv) < 0.01 && ((previousDepth == 1.0) == (depth == 1.0))) ? 0.05 : 1.0;
 
     scattering = mix(scattering, clouds.scattering, blend);
     transmittance = mix(transmittance, clouds.transmittance, blend);

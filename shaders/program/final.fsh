@@ -144,6 +144,4 @@ void main() {
     #ifdef DEBUG_ENABLE
     fragColor.rgb = texture(debugTex, uv).rgb;
     #endif
-
-    // fragColor.rgb = vec3(texture(cloudShapeNoiseTex, vec3(0.0, uv)).r);
 }

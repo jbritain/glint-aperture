@@ -84,7 +84,6 @@ function setupShader() {
   const debugTex = new Texture("debugTex").format(Format.RGBA8).imageName("debugImg").width(screenWidth).height(screenHeight).clear(true).clearColor(0, 0, 0, 0).build();
   const previousSceneTex = new Texture("previousSceneTex").format(Format.RGB16F).clear(false).mipmap(true).build();
   const previousDepthTex = new Texture("previousDepthTex").format(Format.RG16).clear(false).mipmap(true).build();
-  ;
   const sunTransmittanceLUT = new Texture("sunTransmittanceLUTTex").format(Format.RGBA16F).imageName("sunTransmittanceLUT").width(256).height(64).clear(false).build();
   registerShader(
     Stage.SCREEN_SETUP,
@@ -113,6 +112,11 @@ function setupShader() {
   registerShader(
     Stage.PRE_RENDER,
     new Composite("renderCloudSKYLUT").vertex("program/fullscreen.vsh").fragment("program/prepare/renderCloudSkyLUT.fsh").target(0, cloudSkyLUT).ssbo(0, sceneData).build()
+  );
+  const cloudShadowMap = new Texture("cloudShadowMap").format(Format.RGB8).clear(false).width(worldSettings.shadowMapResolution).height(worldSettings.shadowMapResolution).build();
+  registerShader(
+    Stage.PRE_RENDER,
+    new Composite("renderCloudShadowMap").vertex("program/fullscreen.vsh").fragment("program/prepare/renderCloudShadowMap.fsh").target(0, cloudShadowMap).ssbo(0, sceneData).build()
   );
   registerShader(
     Stage.PRE_RENDER,

@@ -135,7 +135,7 @@ export function setupShader() {
         .format(Format.RG16)
         .clear(false)
         .mipmap(true)
-        .build();;
+        .build();
 
     // ======================= SETUP =======================
 
@@ -217,6 +217,23 @@ export function setupShader() {
         .vertex("program/fullscreen.vsh")
         .fragment("program/prepare/renderCloudSkyLUT.fsh")
         .target(0, cloudSkyLUT)
+        .ssbo(0, sceneData)
+        .build()
+    );
+
+    const cloudShadowMap = new Texture("cloudShadowMap")
+        .format(Format.RGB8)
+        .clear(false)
+        .width(worldSettings.shadowMapResolution)
+        .height(worldSettings.shadowMapResolution)
+        .build();
+
+    registerShader(
+        Stage.PRE_RENDER, 
+        new Composite("renderCloudShadowMap")
+        .vertex("program/fullscreen.vsh")
+        .fragment("program/prepare/renderCloudShadowMap.fsh")
+        .target(0, cloudShadowMap)
         .ssbo(0, sceneData)
         .build()
     );

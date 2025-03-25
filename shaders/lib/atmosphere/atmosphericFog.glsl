@@ -5,8 +5,8 @@
 #include "/lib/atmosphere/sky.glsl"
 
 vec3 atmosphericFog(vec3 color, vec3 playerPos){
-  float transmittance = clamp01(exp(-length(playerPos) * 0.0004));
-  vec3 fogColor = skylightColor;
+  float transmittance = clamp01(exp(-length(playerPos) * 0.00004));
+  vec3 fogColor = skylightColor * henyeyGreenstein(0.0, 0.0);
 
   fogColor = mix(fogColor, getSky(normalize(playerPos), false), smoothstep(ap.camera.far, ap.camera.far * 2.0, length(playerPos)));
 

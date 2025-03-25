@@ -51,6 +51,8 @@ uniform sampler2DArray shadowColorTex;
 uniform sampler2DArray shadowNormalTex;
 uniform sampler2DArray shadowPositionTex;
 uniform usampler2DArray shadowMaskTex;
+
+uniform sampler2D
 #endif
 
 #ifdef VOXEL_SAMPLERS
