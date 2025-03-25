@@ -46,6 +46,14 @@ declare var worldSettings: WorldSettings;
  */
 interface ProgramStage {}
 
+declare class NamespacedId {
+    constructor(combined : string);
+    constructor(namespace : string, path : string);
+
+    getNamespace() : string;
+    getPath() : string;
+}
+
 /**
  * The possible program stages for post passes.
  */
@@ -170,12 +178,7 @@ declare function defineGlobally(key: string, value: string | number): void;
 // Shaders
 
 interface BuiltObjectShader {}
-
-interface PostPass {
-    enable() : void;
-    disable() : void;
-    isEnabled() : boolean;
-}
+interface PostPass {}
 
 /**
  * Registers an object shader.
@@ -315,6 +318,7 @@ declare class Composite {
   fragment(loc: string): Composite;
 
   target(index: number, tex: BuiltTexture | undefined): Composite;
+  generateMips(tex: BuiltTexture): Composite;
   target(index: number, tex: BuiltTexture | undefined, mip: number): Composite;
   ssbo(index: number, buf: BuiltBuffer | undefined): Composite;
   ubo(index: number, buf: BuiltBuffer | undefined): Composite;
@@ -329,17 +333,6 @@ declare class Composite {
   ): Composite;
 
   build(): PostPass;
-}
-
-declare class GenerateMips implements PostPass {
-    constructor(name : string, ...tex : BuiltTexture[])
-    constructor(...tex : BuiltTexture[])
-
-    disable(): void;
-
-    enable(): void;
-
-    isEnabled(): boolean;
 }
 
 declare class Compute {
@@ -558,8 +551,6 @@ declare class WorldState {
      * Return the current frame (ap.time.frames).
      */
     currentFrame() : number;
-
-    getPostPass(name : string) : PostPass | null;
 }
 
 /**
