@@ -3,6 +3,7 @@
 #define GBUFFER_SAMPLERS
 #define SHADOW_SAMPLERS
 #define SKY_SAMPLERS
+#define VOXEL_SAMPLERS
 
 #include "/lib/common.glsl"
 #include "/lib/water/waterFog.glsl"
@@ -28,6 +29,7 @@ void main(){
   decodeGbufferData(texture(gbufferDataTex1, uv), texture(gbufferDataTex2, uv), gbufferData);
 
   vec3 opaqueViewPos = screenSpaceToViewSpace(vec3(uv, opaqueDepth));
+  vec3 opaquePlayerPos = (ap.camera.viewInv * vec4(opaqueViewPos, 1.0)).xyz;
   vec3 translucentViewPos = screenSpaceToViewSpace(vec3(uv, translucentDepth));
   vec3 translucentPlayerPos = (ap.camera.viewInv * vec4(translucentViewPos, 1.0)).xyz;
 
@@ -55,12 +57,12 @@ void main(){
   // }
 
   if(!inWater && isWater){
-    LightInteraction waterInteraction = waterFog(translucentViewPos, opaqueViewPos);
+    LightInteraction waterInteraction = waterFog(translucentPlayerPos, opaquePlayerPos);
     color.rgb = color.rgb * waterInteraction.transmittance + waterInteraction.scattering;
   }
 
   if(inWater && !isWater){
-    LightInteraction waterInteraction = waterFog(vec3(0.0), opaqueViewPos);
+    LightInteraction waterInteraction = waterFog(vec3(0.0), opaquePlayerPos);
     color.rgb = color.rgb * waterInteraction.transmittance + waterInteraction.scattering;
   }
   
@@ -83,7 +85,7 @@ void main(){
   }
 
   if(inWater && isWater){
-    LightInteraction waterInteraction = waterFog(vec3(0.0), translucentViewPos);
+    LightInteraction waterInteraction = waterFog(vec3(0.0), translucentPlayerPos);
     color.rgb = color.rgb * waterInteraction.transmittance + waterInteraction.scattering;
   }
 }

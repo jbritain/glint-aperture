@@ -1,7 +1,6 @@
 #version 450 core
 
 #include "/lib/common.glsl"
-#include "/lib/water/waterFog.glsl"
 
 in vec2 uv;
 in vec4 color;
@@ -30,6 +29,7 @@ void iris_emitFragment() {
 
   if(iris_hasFluid(blockID) && color.r < color.b){ // water
     mask.water = true;
+    albedo.a = 0.0;
   }
 
 

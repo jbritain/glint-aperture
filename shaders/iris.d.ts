@@ -47,7 +47,15 @@ declare var worldSettings: WorldSettings;
 interface ProgramStage {}
 
 declare class NamespacedId {
+    /**
+     * Creates a new NamespacedId from a combined string. If the string is in the format `namespace:path`, the NamespacedId will be created accordingly, otherwise it will use the `minecraft` namespace.
+     * @param combined The combined `namespace:path`, or `path` if `minecraft` is the desired namespace
+     */
     constructor(combined : string);
+
+    /**
+     * Creates a new NamespacedId from a separate namespace and path.
+     */
     constructor(namespace : string, path : string);
 
     getNamespace() : string;
@@ -62,6 +70,11 @@ declare namespace Stage {
     * Runs before any rendering takes place.
     */
   let PRE_RENDER: ProgramStage;
+
+    /**
+    * Runs after the shadow pass is drawn.
+    */
+  let POST_SHADOW: ProgramStage;
 
     /**
      * Runs after all main rendering takes place.
@@ -136,7 +149,7 @@ declare var EMPTY: BuiltPage;
  * @alpha
  */
 declare function setLightColor(
-  name: string,
+  name: NamespacedId,
   r: number,
   g: number,
   b: number,
@@ -149,7 +162,7 @@ declare function setLightColor(
  * @param hex The hex color to set
  * @alpha
  */
-declare function setLightColor(name: string, hex: number): void;
+declare function setLightColor(name: NamespacedId, hex: number): void;
 
 // Uniforms
 

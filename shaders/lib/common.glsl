@@ -40,6 +40,9 @@ ShadowMask decodeShadowMask(uint encodedMask){
   return mask;
 }
 
+#define WATER_ABSORPTION vec3(0.3, 0.09, 0.04)
+#define WATER_DENSITY vec3(1.0)
+
 #define EVEN_FRAME ap.time.frames % 2 == 0
 
 #define FLOODFILL_SCALING 4.0

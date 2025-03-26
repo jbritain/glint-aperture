@@ -19,5 +19,4 @@ void main(){
 
   LightInteraction clouds = getClouds(feetPlayerPos, 1.0);
   transmit = clouds.transmittance;
-  show(transmit);
 }

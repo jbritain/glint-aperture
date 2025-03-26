@@ -2,7 +2,6 @@
 #define SHADOWS_GLSL
 
 #include "/lib/util/shadowSpace.glsl"
-#include "/lib/water/waterFog.glsl"
 #include "/lib/water/waveNormals.glsl"
 
 vec3 sampleShadow(vec3 shadowScreenPos, int cascade, vec3 playerPos){
@@ -29,20 +28,22 @@ vec3 sampleShadow(vec3 shadowScreenPos, int cascade, vec3 playerPos){
         float depthDifference = shadowScreenPos.z - translucentShadowDepth;
         float distanceThroughWater = zRange * max0(depthDifference);
         
-        // vec3 oldPos = playerPos + worldLightDir * distanceThroughWater;
+        vec3 oldPos = playerPos + worldLightDir * distanceThroughWater;
 
-        // vec3 waveNormal = waveNormal(oldPos.xz + ap.camera.pos.xz, vec3(0.0, 1.0, 0.0), 1.0);
-        // vec3 refracted = refract(worldLightDir, waveNormal, 1.0/1.33);
+        vec3 waveNormal = waveNormal(oldPos.xz + ap.camera.pos.xz, vec3(0.0, 1.0, 0.0), 1.0);
+        vec3 refracted = refract(worldLightDir, waveNormal, 1.0/1.33);
 
-        // vec3 newPos = playerPos + refracted * distanceThroughWater;
+        vec3 newPos = playerPos + refracted * distanceThroughWater;
 
-        // float oldArea = length(dFdx(oldPos)) * length(dFdy(oldPos));
-        // float newArea = length(dFdx(newPos)) * length(dFdy(newPos));
+        float oldArea = length(dFdx(oldPos)) * length(dFdy(oldPos));
+        float newArea = length(dFdx(newPos)) * length(dFdy(newPos));
 
-        // float caustics = oldArea / max(newArea, 1e-6);
+        float caustics = clamp01(oldArea / max(newArea, 1e-6));
+        // float caustics = shadowColorData.a;
 
-        return exp(-distanceThroughWater * WATER_DENSITY * waterExtinction);
+        return exp(-distanceThroughWater * WATER_DENSITY * WATER_ABSORPTION) * caustics;
     }
+
 
     vec3 shadowColor = pow(shadowColorData.rgb, vec3(2.2)) * (1.0 - shadowColorData.a);
     return mix(shadowColor * solidShadow, vec3(1.0), transparentShadow);

@@ -81,8 +81,6 @@ vec3 calculateFogLightEnergy(vec3 rayPos, float jitter, float costh){
   return max0(multipleScattering(totalDensity, costh, -FOG_G, FOG_G, FOG_EXTINCTION, 1, FOG_DUAL_LOBE_WEIGHT, 0.9, 0.8, 0.1) * clamp01((1.0 - exp(-totalDensity * 2))) * sunlight);
 }
 
-const float isotropicPhase = henyeyGreenstein(0.0, 0.0);
-
 LightInteraction getCloudFog(vec3 a, vec3 b, float depth){
   LightInteraction interaction;
   interaction.transmittance = vec3(1.0);
