@@ -15,7 +15,7 @@ out vec4 color;
 out vec3 normal;
 out vec3 playerPos;
 flat out uint blockID;
-out uint cascade;
+flat out uint cascade;
 
 void iris_sendParameters(VertexData data) {
     color = data.color;

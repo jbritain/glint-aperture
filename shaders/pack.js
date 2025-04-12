@@ -120,8 +120,8 @@ function setupShader(dimension) {
   const voxelMapWidth = 256;
   const voxelMapHeight = 128;
   defineGlobally("VOXEL_MAP_SIZE", `vec3(${voxelMapWidth}, ${voxelMapHeight}, ${voxelMapWidth})`);
-  const floodfillVoxelMap1 = new Texture("floodFillVoxelMapTex1").format(Format.R11F_G11F_B10F).imageName("floodFillVoxelMap1").clear(false).width(voxelMapWidth).height(voxelMapHeight).depth(voxelMapWidth).build();
-  const floodfillVoxelMap2 = new Texture("floodFillVoxelMapTex2").format(Format.R11F_G11F_B10F).imageName("floodFillVoxelMap2").clear(false).width(voxelMapWidth).height(voxelMapHeight).depth(voxelMapWidth).build();
+  const floodfillVoxelMap1 = new Texture("floodFillVoxelMapTex1").format(Format.RGBA16F).imageName("floodFillVoxelMap1").clear(false).width(voxelMapWidth).height(voxelMapHeight).depth(voxelMapWidth).build();
+  const floodfillVoxelMap2 = new Texture("floodFillVoxelMapTex2").format(Format.RGBA16F).imageName("floodFillVoxelMap2").clear(false).width(voxelMapWidth).height(voxelMapHeight).depth(voxelMapWidth).build();
   const voxelMap = new Texture("voxelMapTex").format(Format.R32UI).imageName("voxelMap").clear(true).clearColor(0, 0, 0, 0).width(voxelMapWidth).height(voxelMapHeight).depth(voxelMapWidth).build();
   const shadowColorTex = new ArrayTexture("shadowColorTex").format(Format.RGBA8).clear(true).build();
   const shadowNormalTex = new ArrayTexture("shadowNormalTex").format(Format.RGBA8).clear(true).clearColor(0, 0, 0, 0).build();
@@ -129,10 +129,6 @@ function setupShader(dimension) {
   const shadowMaskTex = new ArrayTexture("shadowMaskTex").format(Format.R8UI).clear(true).build();
   registerShader(
     new ObjectShader("shadow", Usage.SHADOW).vertex("program/gbuffer/shadow.vsh").fragment("program/gbuffer/shadow.fsh").target(0, shadowColorTex).target(1, shadowNormalTex).target(2, shadowPositionTex).target(3, shadowMaskTex).blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO).blendFunc(1, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO).blendFunc(2, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO).build()
-  );
-  registerShader(
-    Stage.POST_SHADOW,
-    new ArrayComposite("computeCaustics").vertex("program/fullscreen.vsh").fragment("program/shadowcomp/computeCaustics.fsh").target(0, shadowColorTex).build()
   );
   registerShader(
     Stage.POST_SHADOW,

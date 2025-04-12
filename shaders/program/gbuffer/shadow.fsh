@@ -7,7 +7,7 @@ in vec4 color;
 in vec3 normal;
 in vec3 playerPos;
 flat in uint blockID;
-in uint cascade;
+flat in uint cascade;
 
 layout(location = 0) out vec4 albedo;
 layout(location = 1) out vec3 outNormal;

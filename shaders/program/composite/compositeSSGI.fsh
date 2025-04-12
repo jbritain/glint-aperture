@@ -2,8 +2,11 @@
 
 in vec2 uv;
 
-#define GBUFFER_SAMPLERS
-#define SHADOW_SAMPLERS
+uniform sampler2D gbufferDataTex1;
+uniform sampler2D gbufferDataTex2;
+uniform sampler2D sceneTex;
+uniform sampler2D globalIlluminationTex;
+uniform sampler2D solidDepthTex;
 
 #include "/lib/common.glsl"
 

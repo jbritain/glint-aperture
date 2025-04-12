@@ -8,6 +8,7 @@
     https://www.shadertoy.com/view/slSXRW
 */
 
+uniform sampler2D skyViewLUTTex;
 
 vec3 getValFromSkyLUT(vec3 rayDir, int lod) {
     float height = atmospherePos.y;

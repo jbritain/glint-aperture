@@ -1,13 +1,13 @@
 #version 450 core
 
-#define CLOUD_NOISE_SAMPLERS
-#define GBUFFER_SAMPLERS
-#define SKY_SAMPLERS
+uniform sampler2D sceneTex;
 
-#include "/lib/common.glsl"
+uniform sampler2D solidDepthTex;
+uniform sampler2D previousDepthTex;
 
 in vec2 uv;
 
+#include "/lib/common.glsl"
 #include "/lib/buffers/sceneData.glsl"
 #include "/lib/atmosphere/clouds.glsl"
 #include "/lib/util/reproject.glsl"

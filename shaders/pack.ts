@@ -235,7 +235,7 @@ export function setupShader(dimension : NamespacedId) {
     defineGlobally("VOXEL_MAP_SIZE", `vec3(${voxelMapWidth}, ${voxelMapHeight}, ${voxelMapWidth})`);
 
     const floodfillVoxelMap1 = new Texture("floodFillVoxelMapTex1")
-        .format(Format.R11F_G11F_B10F)
+        .format(Format.RGBA16F)
         .imageName("floodFillVoxelMap1")
         .clear(false)
         .width(voxelMapWidth)
@@ -244,7 +244,7 @@ export function setupShader(dimension : NamespacedId) {
         .build();
 
     const floodfillVoxelMap2 = new Texture("floodFillVoxelMapTex2")
-        .format(Format.R11F_G11F_B10F)
+        .format(Format.RGBA16F)
         .imageName("floodFillVoxelMap2")
         .clear(false)
         .width(voxelMapWidth)
@@ -300,15 +300,6 @@ export function setupShader(dimension : NamespacedId) {
     );
 
     // ======================= SHADOW COMPOSITE =======================
-
-    registerShader(
-        Stage.POST_SHADOW,
-        new ArrayComposite("computeCaustics")
-        .vertex("program/fullscreen.vsh")
-        .fragment("program/shadowcomp/computeCaustics.fsh")
-        .target(0, shadowColorTex)
-        .build()
-    )
 
     registerShader(
         Stage.POST_SHADOW,

@@ -1,8 +1,10 @@
 #version 450 core
 
-#define SKY_SAMPLERS
-#define VOXEL_SAMPLERS
-#define SHADOW_SAMPLERS
+uniform sampler2D sceneTex;
+
+uniform sampler2D mainDepthTex;
+
+uniform sampler2DArrayShadow shadowMapFiltered;
 
 in vec2 uv;
 

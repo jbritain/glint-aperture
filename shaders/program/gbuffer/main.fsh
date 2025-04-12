@@ -1,5 +1,25 @@
 #version 450 core
 
+uniform sampler2D mainDepthTex;
+uniform sampler2D solidDepthTex;
+
+uniform sampler3D floodFillVoxelMapTex1;
+uniform sampler3D floodFillVoxelMapTex2;
+
+uniform sampler2D globalIlluminationTex;
+
+uniform sampler2DArrayShadow shadowMapFiltered;
+uniform sampler2DArrayShadow solidShadowMapFiltered;
+uniform sampler2DArray shadowMap;
+uniform sampler2DArray solidShadowMap;
+uniform sampler2DArray shadowColorTex;
+uniform usampler2DArray shadowMaskTex;
+
+uniform sampler2D previousDepthTex;
+uniform sampler2D previousSceneTex;
+
+uniform sampler2D cloudSkyLUTTex;
+
 layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 gbufferData1;
 layout(location = 2) out vec4 gbufferData2;
@@ -18,10 +38,10 @@ in vec3 midBlock;
 in vec4 textureBounds;
 in vec2 singleTexSize;
 
-#define GBUFFER_SAMPLERS
-#define SHADOW_SAMPLERS
-#define SKY_SAMPLERS
-#define VOXEL_SAMPLERS
+
+
+
+
 
 #include "/lib/common.glsl"
 #include "/lib/lighting/shading.glsl"

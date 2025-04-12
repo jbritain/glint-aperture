@@ -1,7 +1,6 @@
 #ifndef COMMON_GLSL
 #define COMMON_GLSL
 
-#include "/lib/common/samplers.glsl"
 #include "/lib/common/syntax.glsl"
 #include "/lib/common/material.glsl"
 #include "/lib/common/spaceConversions.glsl"
@@ -40,7 +39,10 @@ ShadowMask decodeShadowMask(uint encodedMask){
   return mask;
 }
 
-#define WATER_ABSORPTION vec3(0.3, 0.09, 0.04)
+
+#define WATER_ABSORPTION vec3(0.3, 0.03, 0.04) * 2.0
+#define WATER_SCATTERING vec3(0.01)
+const vec3 waterExtinction = clamp01(WATER_ABSORPTION + WATER_SCATTERING);
 #define WATER_DENSITY vec3(1.0)
 
 #define EVEN_FRAME ap.time.frames % 2 == 0

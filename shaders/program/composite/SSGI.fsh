@@ -2,14 +2,20 @@
 
 in vec2 uv;
 
-#define GBUFFER_SAMPLERS
-#define SHADOW_SAMPLERS
+uniform sampler2D sceneTex;
+uniform sampler2D gbufferDataTex1;
+uniform sampler2D gbufferDataTex2;
+uniform sampler2D previousDepthTex;
+uniform sampler2D previousSceneTex;
+uniform sampler2D mainDepthTex;
+uniform sampler2D solidDepthTex;
+uniform sampler2D globalIlluminationTex;
+
 
 #include "/lib/common.glsl"
 #include "/lib/util/reproject.glsl"
 #include "/lib/util/screenSpaceRayTrace.glsl"
 #include "/lib/buffers/sceneData.glsl"
-#include "/lib/lighting/shadows.glsl"
 #include "/lib/voxel/voxelMap.glsl"
 #include "/lib/lighting/brdf.glsl"
 

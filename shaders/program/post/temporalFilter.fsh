@@ -1,8 +1,13 @@
 #version 450 core
 
-in vec2 uv;
+uniform sampler2D sceneTex;
+uniform sampler2D previousSceneTex;
 
-#define GBUFFER_SAMPLERS
+uniform sampler2D mainDepthTex;
+uniform sampler2D solidDepthTex;
+uniform sampler2D previousDepthTex;
+
+in vec2 uv;
 
 #include "/lib/common.glsl"
 
@@ -50,6 +55,7 @@ void main(){
   }
 
   historyColor.rgb = clamp(historyColor.rgb, minCol, maxCol);
+  rejectSample = rejectSample || any(isnan(historyColor));
 
   color = mix(color, historyColor, 0.7 * float(!rejectSample));
 }

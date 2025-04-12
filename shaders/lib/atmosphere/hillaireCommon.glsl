@@ -6,6 +6,9 @@
     https://www.shadertoy.com/view/slSXRW
 */
 
+uniform sampler2D multipleScatteringLUTTex;
+uniform sampler2D sunTransmittanceLUTTex;
+
 const float sunAngularRadius = radians(0.5);
 
 const vec3 sunIrradiance = vec3(1.0, 0.949, 0.937) * 12.6;

@@ -6,6 +6,8 @@ in vec2 uv;
 
 layout(location = 0) out vec3 color;
 
+uniform sampler2D sceneTex;
+
 uniform sampler2D cloudTransmitTex;
 uniform sampler2D cloudScatterTex;
 

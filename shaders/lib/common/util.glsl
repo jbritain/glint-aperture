@@ -61,7 +61,7 @@ float henyeyGreenstein(float g, float costh)
   return (1.0 - g * g) / (4.0 * PI * pow(1.0 + g * g - 2.0 * g * costh, 3.0/2.0));
 }
 
-const float isotropicPhase = henyeyGreenstein(0.0, 0.0);
+float isotropicPhase = henyeyGreenstein(0.0, 0.0);
 
 float dualHenyeyGreenstein(float g1, float g2, float costh, float weight) {
   return mix(henyeyGreenstein(g1, costh), henyeyGreenstein(g2, costh), weight);
@@ -182,6 +182,7 @@ mat3 frisvadTBN(vec3 normal){
 	return tbn;
 }
 
+uniform sampler2D blueNoiseTex;
 vec4 blueNoise(vec2 texcoord){
   ivec2 sampleCoord = ivec2(texcoord * ap.game.screenSize);
   sampleCoord = sampleCoord % ivec2(1024);

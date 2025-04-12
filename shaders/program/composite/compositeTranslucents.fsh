@@ -1,9 +1,30 @@
 #version 450 core
 
-#define GBUFFER_SAMPLERS
-#define SHADOW_SAMPLERS
-#define SKY_SAMPLERS
-#define VOXEL_SAMPLERS
+uniform sampler2D sceneTex;
+uniform sampler2D translucentsTex;
+
+uniform sampler2D gbufferDataTex1;
+uniform sampler2D gbufferDataTex2;
+
+uniform sampler2D mainDepthTex;
+uniform sampler2D solidDepthTex;
+
+uniform sampler3D floodFillVoxelMapTex1;
+uniform sampler3D floodFillVoxelMapTex2;
+
+uniform sampler2D globalIlluminationTex;
+
+uniform sampler2DArrayShadow shadowMapFiltered;
+uniform sampler2DArrayShadow solidShadowMapFiltered;
+uniform sampler2DArray shadowMap;
+uniform sampler2DArray solidShadowMap;
+uniform sampler2DArray shadowColorTex;
+uniform usampler2DArray shadowMaskTex;
+
+uniform sampler2D previousDepthTex;
+uniform sampler2D previousSceneTex;
+
+uniform sampler2D cloudSkyLUTTex;
 
 #include "/lib/common.glsl"
 #include "/lib/water/waterFog.glsl"

@@ -2,10 +2,29 @@
 
 in vec2 uv;
 
-#define GBUFFER_SAMPLERS
-#define SHADOW_SAMPLERS
-#define SKY_SAMPLERS
-#define VOXEL_SAMPLERS
+uniform sampler2D sceneTex;
+uniform sampler2D gbufferDataTex1;
+uniform sampler2D gbufferDataTex2;
+
+uniform sampler2D mainDepthTex;
+uniform sampler2D solidDepthTex;
+
+uniform sampler3D floodFillVoxelMapTex1;
+uniform sampler3D floodFillVoxelMapTex2;
+
+uniform sampler2D globalIlluminationTex;
+
+uniform sampler2DArrayShadow shadowMapFiltered;
+uniform sampler2DArrayShadow solidShadowMapFiltered;
+uniform sampler2DArray shadowMap;
+uniform sampler2DArray solidShadowMap;
+uniform sampler2DArray shadowColorTex;
+uniform usampler2DArray shadowMaskTex;
+
+uniform sampler2D previousDepthTex;
+uniform sampler2D previousSceneTex;
+
+uniform sampler2D cloudSkyLUTTex;
 
 #include "/lib/common.glsl"
 #include "/lib/lighting/shading.glsl"
@@ -39,7 +58,7 @@ void main(){
   vec3 worldNormal = mat3(ap.camera.viewInv) * gbufferData.faceNormal;
   vec3 worldMappedNormal = mat3(ap.camera.viewInv) * gbufferData.mappedNormal;
   vec3 voxelPos = mapVoxelPosInterp(feetPlayerPos - worldNormal * 0.5 + worldMappedNormal);
-  vec3 blocklightColor;
+  vec3 blocklightColor = vec3(0.0);
   if(EVEN_FRAME){
     blocklightColor = textureLod(floodFillVoxelMapTex2, voxelPos, 0).rgb / FLOODFILL_SCALING;
   } else {

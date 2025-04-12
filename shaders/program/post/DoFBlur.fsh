@@ -2,7 +2,7 @@
 
 in vec2 uv;
 
-#define DOF_SAMPLERS
+
 #include "/lib/common.glsl"
 
 const int kernelSampleCount = 22;

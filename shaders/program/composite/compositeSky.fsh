@@ -1,13 +1,11 @@
 #version 450 core
 
-#define SKY_SAMPLERS
-
-#include "/lib/common.glsl"
-
 in vec2 uv;
 
+uniform sampler2D sceneTex;
+uniform sampler2D solidDepthTex;
 
-
+#include "/lib/common.glsl"
 #include "/lib/atmosphere/sky.glsl"
 
 layout(location = 0) out vec4 color;

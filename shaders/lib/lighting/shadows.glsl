@@ -4,7 +4,7 @@
 #include "/lib/util/shadowSpace.glsl"
 #include "/lib/water/waveNormals.glsl"
 
-vec3 sampleShadow(vec3 shadowScreenPos, int cascade, vec3 playerPos){
+vec3 sampleShadow(vec3 shadowScreenPos, int cascade, vec3 playerPos, bool doCaustics){
     float transparentShadow = texture(shadowMapFiltered, vec4(shadowScreenPos.xy, cascade, shadowScreenPos.z)).r;
 
     if(transparentShadow >= 1.0 - 1e-6){
@@ -27,26 +27,35 @@ vec3 sampleShadow(vec3 shadowScreenPos, int cascade, vec3 playerPos){
 
         float depthDifference = shadowScreenPos.z - translucentShadowDepth;
         float distanceThroughWater = zRange * max0(depthDifference);
+
+        vec3 waterTransmittance = exp(-distanceThroughWater * WATER_DENSITY * WATER_ABSORPTION);
+
+        if(doCaustics){
+            vec3 oldPos = playerPos + worldLightDir * distanceThroughWater;
+
+            vec3 waveNormal = waveNormal(oldPos.xz + ap.camera.pos.xz, vec3(0.0, 1.0, 0.0), 1.0);
+            vec3 refracted = refract(-worldLightDir, waveNormal, 1.0/1.33);
+
+            vec3 newPos = oldPos + refracted * distanceThroughWater;
+
+            float oldArea = length(dFdx(oldPos)) * length(dFdy(oldPos));
+            float newArea = length(dFdx(newPos)) * length(dFdy(newPos));
+            float caustics = 1.0 - clamp01(oldArea / max(newArea, 1e-6));
+            
+            waterTransmittance *= caustics;
+        }
         
-        vec3 oldPos = playerPos + worldLightDir * distanceThroughWater;
 
-        vec3 waveNormal = waveNormal(oldPos.xz + ap.camera.pos.xz, vec3(0.0, 1.0, 0.0), 1.0);
-        vec3 refracted = refract(worldLightDir, waveNormal, 1.0/1.33);
-
-        vec3 newPos = playerPos + refracted * distanceThroughWater;
-
-        float oldArea = length(dFdx(oldPos)) * length(dFdy(oldPos));
-        float newArea = length(dFdx(newPos)) * length(dFdy(newPos));
-
-        float caustics = clamp01(oldArea / max(newArea, 1e-6));
-        // float caustics = shadowColorData.a;
-
-        return exp(-distanceThroughWater * WATER_DENSITY * WATER_ABSORPTION) * caustics;
+        return waterTransmittance;
     }
 
 
     vec3 shadowColor = pow(shadowColorData.rgb, vec3(2.2)) * (1.0 - shadowColorData.a);
     return mix(shadowColor * solidShadow, vec3(1.0), transparentShadow);
+}
+
+vec3 sampleShadow(vec3 shadowScreenPos, int cascade, vec3 playerPos){
+    return sampleShadow(shadowScreenPos, cascade, playerPos, true);
 }
 
 vec3 getShadowing(vec3 playerPos, vec3 faceNormal, vec2 lightmap, Material material, out float scatter){

@@ -1,7 +1,7 @@
 #version 450 core
 
-#define SKY_SAMPLERS
-#define CLOUD_NOISE_SAMPLERS
+
+
 
 #include "/lib/common.glsl"
 #include "/lib/util/uvMap.glsl"
@@ -10,6 +10,8 @@ in vec2 uv;
 
 #include "/lib/atmosphere/sky.glsl"
 #include "/lib/atmosphere/clouds.glsl"
+
+uniform sampler2D cloudSkyLUTTex;
 
 layout(location = 0) out vec3 sky;
 

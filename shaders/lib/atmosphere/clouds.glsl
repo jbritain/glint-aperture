@@ -4,6 +4,11 @@
 #include "/lib/buffers/sceneData.glsl"
 #include "/lib/atmosphere/atmosphericFog.glsl"
 
+uniform sampler3D cloudShapeNoiseTex;
+uniform sampler3D cloudErosionNoiseTex;
+uniform sampler2D perlinNoiseTex;
+uniform sampler2D cloudHeightGradientTex;
+
 #define CLOUD_DISTANCE 100000.0
 #define CUMULUS_LOWER_HEIGHT 500
 #define CUMULUS_UPPER_HEIGHT 750
@@ -17,7 +22,7 @@ float getCloudDensity(vec3 pos, bool lowQuality){
   if(clamp(pos.y, CUMULUS_LOWER_HEIGHT, CUMULUS_UPPER_HEIGHT) != pos.y) return 0.0;
   float heightInPlane = linearstep(CUMULUS_LOWER_HEIGHT, CUMULUS_UPPER_HEIGHT, pos.y);
 
-  vec3 samplePos = pos * 0.0007;
+  vec3 samplePos = pos * 0.0003;
 
   vec3 wind = 0.1 * -ap.time.elapsed * vec3(0.0, 0.5, 1.0);
 

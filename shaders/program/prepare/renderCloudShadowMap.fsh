@@ -1,7 +1,7 @@
 #version 450 core
 
-#define SKY_SAMPLERS
-#define CLOUD_NOISE_SAMPLERS
+
+
 
 #include "/lib/common.glsl"
 

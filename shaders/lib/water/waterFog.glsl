@@ -22,14 +22,14 @@ LightInteraction waterFog(vec3 a, vec3 b){
 
   rayPos += blueNoise(gl_FragCoord.xy / ap.game.screenSize, ap.time.frames).r;
 
-  vec3 stepTransmittance = exp(-WATER_ABSORPTION * WATER_DENSITY * stepLength);
+  vec3 stepTransmittance = exp(-waterExtinction * WATER_DENSITY * stepLength);
 
   float sunPhase = henyeyGreenstein(0.6, dot(dir, mat3(ap.camera.viewInv) * normalize(ap.celestial.pos)));
 
   for(int i = 0; i < VOLUMETRIC_WATER_SAMPLES; i++, rayPos += rayStep){
     int cascade;
     vec3 shadowScreenPos = getShadowScreenPos(rayPos, cascade);
-    vec3 radiance = sampleShadow(shadowScreenPos, cascade, rayPos) * sunlightColor * sunPhase;
+    vec3 radiance = sampleShadow(shadowScreenPos, cascade, rayPos, false) * sunlightColor * sunPhase;
     radiance += skylightColor * ap.camera.brightness.y * isotropicPhase;
 
     vec3 voxelPos = mapVoxelPosInterp(rayPos - ap.camera.pos);
@@ -43,10 +43,11 @@ LightInteraction waterFog(vec3 a, vec3 b){
       radiance += blocklightColor * isotropicPhase;
     }
 
-    vec3 integScatter = (radiance - radiance * clamp01(stepTransmittance)) / (WATER_ABSORPTION * WATER_DENSITY);
-    interact.scattering += integScatter * interact.transmittance;
+    interact.scattering += radiance * interact.transmittance;
     interact.transmittance *= stepTransmittance;
   }
+
+  interact.scattering *= (1.0 - stepTransmittance) * WATER_SCATTERING / waterExtinction;
 
   // show(interact.scattering);
 

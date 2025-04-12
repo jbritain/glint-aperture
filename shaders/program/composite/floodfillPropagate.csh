@@ -5,9 +5,9 @@ layout(local_size_x = 4, local_size_y = 4, local_size_z =  4) in;
 #include "/lib/common.glsl"
 #include "/lib/voxel/voxelMap.glsl"
 
-layout (R11F_G11F_B10F) uniform image3D floodFillVoxelMap1;
-layout (R11F_G11F_B10F) uniform image3D floodFillVoxelMap2;
-layout (R32UI) uniform uimage3D voxelMap;
+layout (rgba16f) uniform image3D floodFillVoxelMap1;
+layout (rgba16f) uniform image3D floodFillVoxelMap2;
+layout (r32ui) uniform uimage3D voxelMap;
 
 vec3 gatherLight(ivec3 voxelPos, uint metadata){
   const ivec3[6] sampleOffsets = ivec3[6](
