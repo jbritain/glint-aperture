@@ -13,7 +13,7 @@ uniform sampler2D cloudHeightGradientTex;
 #define CUMULUS_LOWER_HEIGHT 500
 #define CUMULUS_UPPER_HEIGHT 750
 
-#define CLOUD_EXTINCTION_COLOR vec3(0.2 + ap.world.rainStrength * 0.2)
+#define CLOUD_EXTINCTION_COLOR vec3(0.2 + ap.world.rain * 0.2)
 
 #define CUMULUS_SAMPLES 64
 #define CUMULUS_SUBSAMPLES 6
@@ -43,7 +43,7 @@ float getCloudDensity(vec3 pos, bool lowQuality){
 
   float coverage = smoothstep(0.5, 1.0, texture(cloudShapeNoiseTex, vec3(fract(samplePos.xz * 0.1 + wind.xz * 0.01), 0.0)).r);
 
-  coverage = mix(coverage, 1.0, ap.world.rainStrength);
+  coverage = mix(coverage, 1.0, ap.world.rain);
 
   density = remap(density, 1.0 - coverage, 1.0, 0.0, 1.0);
 

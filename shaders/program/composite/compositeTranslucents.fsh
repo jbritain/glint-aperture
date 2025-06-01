@@ -42,10 +42,6 @@ void main(){
   float opaqueDepth = texture(solidDepthTex, uv).r;
   float translucentDepth = texture(mainDepthTex, uv).r;
 
-  if(translucentDepth == 1.0){
-    return;
-  }
-
   GbufferData gbufferData;
   decodeGbufferData(texture(gbufferDataTex1, uv), texture(gbufferDataTex2, uv), gbufferData);
 
@@ -56,6 +52,10 @@ void main(){
 
   bool isWater = gbufferData.materialMask.isFluid;
   bool inWater = ap.camera.fluid == 1;
+
+  if(translucentDepth == 1.0 && !inWater){
+    return;
+  }
 
   // refraction
   // TODO: enable refraction once there is buffer flipping helper (please IMS)

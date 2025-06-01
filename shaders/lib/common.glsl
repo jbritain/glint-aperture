@@ -39,11 +39,10 @@ ShadowMask decodeShadowMask(uint encodedMask){
   return mask;
 }
 
-
-#define WATER_ABSORPTION vec3(0.3, 0.03, 0.04) * 2.0
-#define WATER_SCATTERING vec3(0.01)
-const vec3 waterExtinction = clamp01(WATER_ABSORPTION + WATER_SCATTERING);
-#define WATER_DENSITY vec3(1.0)
+const vec3 WATER_ABSORPTION = vec3(0.5, 0.17, 0.1);
+const vec3 WATER_SCATTERING = vec3(0.31, 0.62, 0.68);
+const vec3 WATER_DENSITY = vec3(0.5);
+const vec3 WATER_EXCTINCTION = WATER_ABSORPTION + WATER_SCATTERING;
 
 #define EVEN_FRAME ap.time.frames % 2 == 0
 
