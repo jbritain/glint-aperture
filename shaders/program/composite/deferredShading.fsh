@@ -20,6 +20,7 @@ uniform sampler2DArray shadowMap;
 uniform sampler2DArray solidShadowMap;
 uniform sampler2DArray shadowColorTex;
 uniform usampler2DArray shadowMaskTex;
+uniform samplerCubeArray pointLight;
 
 uniform sampler2D previousDepthTex;
 uniform sampler2D previousSceneTex;

@@ -20,6 +20,7 @@ uniform sampler2DArray shadowMap;
 uniform sampler2DArray solidShadowMap;
 uniform sampler2DArray shadowColorTex;
 uniform usampler2DArray shadowMaskTex;
+uniform samplerCubeArray pointLight;
 
 uniform sampler2D previousDepthTex;
 uniform sampler2D previousSceneTex;
@@ -99,6 +100,8 @@ void main(){
 
     vec3 F;
     vec3 waterColor = cookTorrance(gbufferData.material, gbufferData.mappedNormal, gbufferData.faceNormal, translucentViewPos, shadow, scatter, true, F) * sunlightColor;
+
+    F = schlick(gbufferData.material, dot(gbufferData.mappedNormal, -normalize(translucentViewPos)));
 
     waterColor = getScreenSpaceReflections(F, translucentViewPos, gbufferData.material, gbufferData.mappedNormal, gbufferData.lightmap.y);
 

@@ -1,5 +1,84 @@
 import type {} from './iris'
 
+// a texture which can be safely read from and written to in different places
+// it works by having texture A and texture B
+// if you want to "flip" the texture, you call .startFlip() before the pass and .endFlip() after the pass
+// use the .getWrite() 
+class FlippableTexture {
+    constructor(name: string){
+        this.textureA = new Texture(name + "_a");
+        this.textureB = new Texture(name + "_b");
+
+        this.referenceRead = new TextureReference(name);
+        this.referenceWrite = new TextureReference(name + "_w");
+    }
+
+
+
+    format(internalFormat: InternalTextureFormat): FlippableTexture {
+        this.textureA.format(internalFormat);
+        this.textureB.format(internalFormat);
+        this.reference.format(internalFormat);
+
+        return this;
+    }
+
+    width(width: number): FlippableTexture {
+        this.textureA.width(width);
+        this.textureB.width(width);
+        this.reference.width(width);
+
+        return this;
+    }
+
+    height(height: number): FlippableTexture {
+        this.textureA.height(height);
+        this.textureB.height(height);
+        this.reference.height(height);
+
+        return this;
+    }
+
+    depth(depth: number): FlippableTexture {
+        this.textureA.depth(depth);
+        this.textureB.depth(depth);
+        this.reference.depth(depth);
+
+        return this;
+    }
+
+    clearColor(r: number, g: number, b: number, a: number): FlippableTexture {
+        this.textureA.clearColor(r, g, b, a);
+        this.textureB.clearColor(r, g, b, a);
+        
+        return this;
+    }
+
+    clear(clear: boolean): FlippableTexture {
+        this.textureA.clear(clear);
+        this.textureB.clear(clear);
+
+        return this;
+    }
+
+    mipmap(mipmap: boolean): FlippableTexture {
+        this.textureA.mipmap(mipmap);
+        this.textureB.mipmap(mipmap);
+
+        return this;
+    }
+
+    build(): FlippableTexture {
+        this.textureA.build();
+        this.textureB.build();
+
+        this.referenceRead.pointTo(this.textureA);
+        this.referenceWrite.pointTo(this.textureB);
+
+        return this;
+    }
+}
+
 function setLightColors(){
     // colours stolen from null
 
@@ -78,6 +157,8 @@ export function setupShader(dimension : NamespacedId) {
     defineBoolGlobally("SSGI_ENABLE");
     defineBoolGlobally("DEBUG_ENABLE");
 
+    enableShadows(1024, 4);
+
     setLightColors();
 
     const maxMip = Math.floor(Math.log2(Math.max(screenWidth, screenHeight)));
@@ -85,9 +166,10 @@ export function setupShader(dimension : NamespacedId) {
     // worldSettings.ambientOcclusionLevel = getBoolSetting("SSGI_ENABLE") ? 0.0 : 1.0;
     worldSettings.disableShade = true;
     worldSettings.renderEntityShadow = false;
-    worldSettings.shadowMapResolution = 1024;
     worldSettings.sunPathRotation = 40.0;
     worldSettings.renderSun = false;
+    worldSettings.renderWaterOverlay = false;
+    worldSettings.shadowNearPlane;
 
     const sceneData = new GPUBuffer(32)
         .clear(true)
@@ -296,6 +378,13 @@ export function setupShader(dimension : NamespacedId) {
         .blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)
         .blendFunc(1, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)
         .blendFunc(2, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO)
+        .build()
+    );
+
+    registerShader(
+        new ObjectShader("point", Usage.POINT)
+        .vertex("program/gbuffer/pointShadow.vsh")
+        .fragment("program/gbuffer/pointShadow.fsh")
         .build()
     );
 

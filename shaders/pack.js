@@ -1,4 +1,58 @@
 // pack.ts
+var FlippableTexture = class {
+  constructor(name) {
+    this.textureA = new Texture(name + "_a");
+    this.textureB = new Texture(name + "_b");
+    this.referenceRead = new TextureReference(name);
+    this.referenceWrite = new TextureReference(name + "_w");
+  }
+  format(internalFormat) {
+    this.textureA.format(internalFormat);
+    this.textureB.format(internalFormat);
+    this.reference.format(internalFormat);
+    return this;
+  }
+  width(width) {
+    this.textureA.width(width);
+    this.textureB.width(width);
+    this.reference.width(width);
+    return this;
+  }
+  height(height) {
+    this.textureA.height(height);
+    this.textureB.height(height);
+    this.reference.height(height);
+    return this;
+  }
+  depth(depth) {
+    this.textureA.depth(depth);
+    this.textureB.depth(depth);
+    this.reference.depth(depth);
+    return this;
+  }
+  clearColor(r, g, b, a) {
+    this.textureA.clearColor(r, g, b, a);
+    this.textureB.clearColor(r, g, b, a);
+    return this;
+  }
+  clear(clear) {
+    this.textureA.clear(clear);
+    this.textureB.clear(clear);
+    return this;
+  }
+  mipmap(mipmap) {
+    this.textureA.mipmap(mipmap);
+    this.textureB.mipmap(mipmap);
+    return this;
+  }
+  build() {
+    this.textureA.build();
+    this.textureB.build();
+    this.referenceRead.pointTo(this.textureA);
+    this.referenceWrite.pointTo(this.textureB);
+    return this;
+  }
+};
 function setLightColors() {
   setLightColor(new NamespacedId("campfire"), 255, 102, 0, 255);
   setLightColor(new NamespacedId("candle"), 245, 127, 68, 255);
@@ -67,13 +121,15 @@ function setupShader(dimension) {
   defineGlobally("SHADOW_SAMPLES", getIntSetting("SHADOW_SAMPLES"));
   defineBoolGlobally("SSGI_ENABLE");
   defineBoolGlobally("DEBUG_ENABLE");
+  enableShadows(1024, 4);
   setLightColors();
   const maxMip = Math.floor(Math.log2(Math.max(screenWidth, screenHeight)));
   worldSettings.disableShade = true;
   worldSettings.renderEntityShadow = false;
-  worldSettings.shadowMapResolution = 1024;
   worldSettings.sunPathRotation = 40;
   worldSettings.renderSun = false;
+  worldSettings.renderWaterOverlay = false;
+  worldSettings.shadowNearPlane;
   const sceneData = new GPUBuffer(32).clear(true).build();
   const blueNoiseTex = new PNGTexture("blueNoiseTex", "textures/blueNoise.png", false, true);
   const perlinNoiseTex = new PNGTexture("perlinNoiseTex", "textures/perlinNoise.png", true, true);
@@ -129,6 +185,9 @@ function setupShader(dimension) {
   const shadowMaskTex = new ArrayTexture("shadowMaskTex").format(Format.R8UI).clear(true).build();
   registerShader(
     new ObjectShader("shadow", Usage.SHADOW).vertex("program/gbuffer/shadow.vsh").fragment("program/gbuffer/shadow.fsh").target(0, shadowColorTex).target(1, shadowNormalTex).target(2, shadowPositionTex).target(3, shadowMaskTex).blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO).blendFunc(1, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO).blendFunc(2, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO).build()
+  );
+  registerShader(
+    new ObjectShader("point", Usage.POINT).vertex("program/gbuffer/pointShadow.vsh").fragment("program/gbuffer/pointShadow.fsh").build()
   );
   registerShader(
     Stage.POST_SHADOW,

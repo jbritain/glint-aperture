@@ -21,7 +21,7 @@ LightInteraction waterFog(vec3 a, vec3 b){
 
   vec3 rayPos = a;
 
-  rayPos += blueNoise(gl_FragCoord.xy / ap.game.screenSize, ap.time.frames).r * rayStep;
+  rayPos += interleavedGradientNoise(floor(gl_FragCoord.xy), ap.time.frames) * rayStep;
   vec3 stepTransmittance = exp(-stepLength * WATER_EXCTINCTION * WATER_DENSITY);
 
   float sunPhase = henyeyGreenstein(0.6, dot(dir, mat3(ap.camera.viewInv) * normalize(ap.celestial.pos)));

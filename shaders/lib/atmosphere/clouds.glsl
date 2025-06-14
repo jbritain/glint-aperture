@@ -169,9 +169,9 @@ vec3 marchCloudLayer(vec3 playerPos, float depth, vec3 sunlightColor, vec3 skyli
   vec3 lightEnergy = vec3(0.0);
 
   #ifdef HIGH_CLOUD_SAMPLES
-  vec2 noise = blueNoise(uv).rg;
+  vec2 noise = vec2(interleavedGradientNoise(floor(gl_FragCoord.xy), 0), interleavedGradientNoise(floor(gl_FragCoord.xy), 1));
   #else
-  vec2 noise = blueNoise(uv, ap.time.frames).rg;
+  vec2 noise = vec2(interleavedGradientNoise(floor(gl_FragCoord.xy), ap.time.frames * 2), interleavedGradientNoise(floor(gl_FragCoord.xy), ap.time.frames * 2 + 1));
   #endif
   float jitter = noise.x;
   float lightJitter = noise.y;

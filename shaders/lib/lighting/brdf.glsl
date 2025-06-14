@@ -118,9 +118,56 @@ vec3 cookTorrance(Material material, vec3 mappedNormal, vec3 faceNormal, vec3 vi
 		return Rs;
 	}
 
-	vec3 Rd = material.albedo * (1.0 - F) * clamp01(NoL);
+	vec3 Rd = material.albedo * (1.0 - F) * clamp01(NoL)  * float(material.metalID == NO_METAL);
 
 	return (Rs + Rd) * shadow + material.albedo * scatter;
+}
+
+vec3 cookTorrancePoint(Material material, vec3 mappedNormal, vec3 faceNormal, vec3 playerPos, vec3 lightPos){
+	vec3 L = normalize(lightPos - playerPos);
+	float faceNoL = clamp01(dot(faceNormal, L));
+	float mappedNoL = clamp01(dot(mappedNormal, L));
+
+	float NoL = clamp01(mappedNoL * smoothstep(0.0, 0.1, faceNoL));
+
+	if(NoL < 1e-6){
+		return vec3(0.0);
+	}
+
+	vec3 V = normalize(-playerPos);
+	vec3 N = mappedNormal;
+	vec3 H = normalize(L + V);
+
+	float NoV = dot(N, V);
+	float VoL = dot(V, L);
+	float HoV = dot(H, V);
+
+	float alpha = max(1e-3, material.roughness);
+	float NoHSquared = pow2(dot(N, H));
+
+	vec3 F = clamp01(schlick(material, HoV));
+
+	// trowbridge-reitz ggx
+	float denominator = NoHSquared * (pow2(alpha) - 1.0) + 1.0;
+	float D = pow2(alpha) / (PI * pow2(denominator)) ;
+	float G = geometrySmith(N, V, L, material.roughness);
+
+	vec3 Rs = (F * D * G) / (4.0 * NoV + 1e-6);
+
+	Rs = min(Rs, vec3(500.0)); // prevent specular blowing bloom out
+
+	if(material.metalID != NO_METAL){
+		Rs *= material.albedo;
+	}
+
+	// this was causing some weird issues
+	if(NoL < 1e-6){
+		Rs = vec3(0.0);
+	}
+
+	vec3 Rd = material.albedo * (1.0 - F) * clamp01(NoL) * float(material.metalID == NO_METAL);
+
+	return (Rs + Rd);
 }
 
 #endif // BRDF_GLSL

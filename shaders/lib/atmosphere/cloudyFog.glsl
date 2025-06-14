@@ -118,7 +118,7 @@ LightInteraction getCloudFog(vec3 a, vec3 b, float depth){
   vec3 totalTransmittance = vec3(1.0);
   vec3 lightEnergy = vec3(0.0);
 
-  float jitter = blueNoise(uv, ap.time.frames).r;
+  float jitter = interleavedGradientNoise(floor(gl_FragCoord.xy), ap.time.frames);
   rayPos += increment * jitter;
 
   vec3 scatter = vec3(0.0);
@@ -133,7 +133,7 @@ LightInteraction getCloudFog(vec3 a, vec3 b, float depth){
       continue;
     }
 
-    float lightJitter = blueNoise(uv, i * ap.time.frames).r;
+    float lightJitter = interleavedGradientNoise(floor(gl_FragCoord.xy), i * (samples + 1));
 
     vec3 lightEnergy = calculateFogLightEnergy(rayPos, lightJitter, mu);
     vec3 radiance = lightEnergy * sunlightColor + skylightColor * ap.camera.brightness.y;
