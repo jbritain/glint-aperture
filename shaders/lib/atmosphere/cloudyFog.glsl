@@ -12,7 +12,7 @@
 #define FOG_SAMPLES 32
 #define FOG_SUBSAMPLES 4
 #define FOG_DUAL_LOBE_WEIGHT 0.7
-#define FOG_G 0.85
+#define FOG_G 0.4
 
 #define FOG_LOWER_HEIGHT 63
 float FOG_UPPER_HEIGHT = 103.0;
@@ -39,7 +39,7 @@ float getFogDensity(vec3 pos){
 
   // fogFactor = mix(fogFactor, 0.1 * pow2(heightFactor), distanceFactor);
 
-  return fogFactor;
+  return fogFactor;// + 0.2;
 }
 
 // march from a ray position towards the sun to calculate how much light makes it there
@@ -118,14 +118,21 @@ LightInteraction getCloudFog(vec3 a, vec3 b, float depth){
   vec3 totalTransmittance = vec3(1.0);
   vec3 lightEnergy = vec3(0.0);
 
-  float jitter = interleavedGradientNoise(floor(gl_FragCoord.xy), ap.time.frames);
-  rayPos += increment * jitter;
+  float jitter = interleavedGradientNoise(floor(gl_FragCoord.xy), ap.time.frames) - 0.5;
+
 
   vec3 scatter = vec3(0.0);
 
-  for(int i = 0; i < samples; i++, rayPos += increment){
+  vec3 lastRayPos = vec3(0.0);
+
+  for(int i = 0; i < samples; i++){
+
+    lastRayPos = rayPos;
+    float progress = float(i + 1 + jitter) / float(samples);
+    rayPos = mix(a, b, exp(10.0 * (progress - 1.0)));
+
     float pointDensity = getFogDensity(rayPos);
-    float density = length(increment) * pointDensity;
+    float density = distance(lastRayPos, rayPos) * pointDensity;
 
     vec3 transmittance = exp(-density * FOG_EXTINCTION);
 
@@ -141,13 +148,30 @@ LightInteraction getCloudFog(vec3 a, vec3 b, float depth){
     vec3 voxelPos = mapVoxelPosInterp(rayPos - ap.camera.pos);
     if(clamp01(voxelPos) == voxelPos){
       vec3 blocklightColor = vec3(0.0);
-      // if(EVEN_FRAME){
-      //   blocklightColor = textureLod(floodFillVoxelMapTex2, voxelPos, 0).rgb / FLOODFILL_SCALING;
-      // } else {
-      //   blocklightColor = textureLod(floodFillVoxelMapTex1, voxelPos, 0).rgb / FLOODFILL_SCALING;
-      // }
+      if(EVEN_FRAME){
+        blocklightColor = textureLod(floodFillVoxelMapTex2, voxelPos, 0).rgb;
+      } else {
+        blocklightColor = textureLod(floodFillVoxelMapTex1, voxelPos, 0).rgb;
+      }
       radiance += blocklightColor * isotropicPhase;
     }
+
+    #ifdef SHADOW_POINT_LIGHT
+      for(int i = 0; i < 64; i++){
+        vec3 plVector = (rayPos - ap.camera.pos) - ap.point.pos[i].xyz;
+        float plDist = length(plVector);
+        if(plDist > POINT_FAR_PLANE) continue;
+
+        vec3 transmittanceToPL = exp(-pointDensity * plDist * FOG_EXTINCTION);
+        if(maxVec3(transmittanceToPL) < 0.1) continue;
+        
+        const float bias = 0.01;
+        float depth = (POINT_FAR_PLANE + POINT_NEAR_PLANE - 2.0 * POINT_NEAR_PLANE * POINT_FAR_PLANE / (maxVec3(abs(plVector)) - bias)) / (POINT_FAR_PLANE - POINT_NEAR_PLANE) * 0.5 + 0.5;
+        float shadow = texture(pointLightFiltered, vec4(plVector, i), depth);
+
+        radiance += iris_getLightColor(ap.point.block[i]).rgb * iris_getEmission(ap.point.block[i]) * rcp(plDist) * transmittanceToPL * dualHenyeyGreenstein(-FOG_G, FOG_G, dot(worldDir, -normalize(plVector)), FOG_DUAL_LOBE_WEIGHT) * shadow;
+      }
+    #endif
 
 
     vec3 integScatter = (radiance - radiance * clamp01(transmittance)) / FOG_EXTINCTION;

@@ -5,6 +5,10 @@ uniform sampler2D sceneTex;
 uniform sampler2D mainDepthTex;
 
 uniform sampler2DArrayShadow shadowMapFiltered;
+uniform samplerCubeArray pointLight;
+uniform samplerCubeArrayShadow pointLightFiltered;
+uniform sampler3D floodFillVoxelMapTex1;
+uniform sampler3D floodFillVoxelMapTex2;
 
 in vec2 uv;
 

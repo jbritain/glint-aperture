@@ -11,7 +11,9 @@ void iris_emitVertex(inout VertexData data) {
 }
 
 out vec2 uv;
+out vec3 modelPos;
 
 void iris_sendParameters(VertexData data) {
     uv = data.uv;
+    modelPos = data.modelPos.xyz;
 }

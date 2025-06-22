@@ -10,6 +10,7 @@ export function setupOptions(){
   const lightingPage = new Page("Shadows & Lighting")
     .add(asIntRange("SHADOW_SAMPLES", 8, 4, 32, 1))
     .add(asBool("SSGI_ENABLE", false, true))
+    .add(asBool("SHADOW_POINT_LIGHT", false, true))
     .build();
 
 

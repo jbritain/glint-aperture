@@ -2,6 +2,8 @@
 
 in vec2 uv;
 
+uniform sampler2D mainDepthTex;
+
 #include "/lib/common.glsl"
 
 float tentFilter(sampler2D sourceTexture, vec2 coord){

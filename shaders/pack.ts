@@ -3,7 +3,7 @@ import type {} from './iris'
 // a texture which can be safely read from and written to in different places
 // it works by having texture A and texture B
 // if you want to "flip" the texture, you call .startFlip() before the pass and .endFlip() after the pass
-// use the .getWrite() 
+// use the .getWrite() buffer as the render target
 class FlippableTexture {
     constructor(name: string){
         this.textureA = new Texture(name + "_a");
@@ -150,12 +150,18 @@ function defineBoolGlobally(define){
 }
 
 
-export function setupShader(dimension : NamespacedId) {  
+export function setupShader(dimension : NamespacedId) {
+    worldSettings.pointNearPlane = 0.1;
+    worldSettings.pointFarPlane = 52.0;
+    
     defineBoolGlobally("BLOOM_ENABLE");
     defineBoolGlobally("TEMPORAL_FILTER_ENABLE");
     defineGlobally("SHADOW_SAMPLES", getIntSetting("SHADOW_SAMPLES"));
     defineBoolGlobally("SSGI_ENABLE");
     defineBoolGlobally("DEBUG_ENABLE");
+    defineBoolGlobally("SHADOW_POINT_LIGHT");
+    defineGlobally("POINT_NEAR_PLANE", worldSettings.pointNearPlane);
+    defineGlobally("POINT_FAR_PLANE", worldSettings.pointFarPlane);
 
     enableShadows(1024, 4);
 
@@ -163,13 +169,12 @@ export function setupShader(dimension : NamespacedId) {
 
     const maxMip = Math.floor(Math.log2(Math.max(screenWidth, screenHeight)));
 
-    // worldSettings.ambientOcclusionLevel = getBoolSetting("SSGI_ENABLE") ? 0.0 : 1.0;
+    worldSettings.ambientOcclusionLevel = 0.0;//getBoolSetting("SSGI_ENABLE") ? 0.0 : 1.0;
     worldSettings.disableShade = true;
     worldSettings.renderEntityShadow = false;
     worldSettings.sunPathRotation = 40.0;
     worldSettings.renderSun = false;
     worldSettings.renderWaterOverlay = false;
-    worldSettings.shadowNearPlane;
 
     const sceneData = new GPUBuffer(32)
         .clear(true)
@@ -381,12 +386,15 @@ export function setupShader(dimension : NamespacedId) {
         .build()
     );
 
-    registerShader(
-        new ObjectShader("point", Usage.POINT)
-        .vertex("program/gbuffer/pointShadow.vsh")
-        .fragment("program/gbuffer/pointShadow.fsh")
-        .build()
-    );
+    if(getBoolSetting("SHADOW_POINT_LIGHT")){
+        registerShader(
+            new ObjectShader("point", Usage.POINT)
+            .vertex("program/gbuffer/pointShadow.vsh")
+            .fragment("program/gbuffer/pointShadow.fsh")
+            .build()
+        );
+    }
+
 
     // ======================= SHADOW COMPOSITE =======================
 

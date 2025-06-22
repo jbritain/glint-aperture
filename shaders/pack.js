@@ -116,20 +116,25 @@ function defineBoolGlobally(define) {
   }
 }
 function setupShader(dimension) {
+  worldSettings.pointNearPlane = 0.1;
+  worldSettings.pointFarPlane = 52;
   defineBoolGlobally("BLOOM_ENABLE");
   defineBoolGlobally("TEMPORAL_FILTER_ENABLE");
   defineGlobally("SHADOW_SAMPLES", getIntSetting("SHADOW_SAMPLES"));
   defineBoolGlobally("SSGI_ENABLE");
   defineBoolGlobally("DEBUG_ENABLE");
+  defineBoolGlobally("SHADOW_POINT_LIGHT");
+  defineGlobally("POINT_NEAR_PLANE", worldSettings.pointNearPlane);
+  defineGlobally("POINT_FAR_PLANE", worldSettings.pointFarPlane);
   enableShadows(1024, 4);
   setLightColors();
   const maxMip = Math.floor(Math.log2(Math.max(screenWidth, screenHeight)));
+  worldSettings.ambientOcclusionLevel = 0;
   worldSettings.disableShade = true;
   worldSettings.renderEntityShadow = false;
   worldSettings.sunPathRotation = 40;
   worldSettings.renderSun = false;
   worldSettings.renderWaterOverlay = false;
-  worldSettings.shadowNearPlane;
   const sceneData = new GPUBuffer(32).clear(true).build();
   const blueNoiseTex = new PNGTexture("blueNoiseTex", "textures/blueNoise.png", false, true);
   const perlinNoiseTex = new PNGTexture("perlinNoiseTex", "textures/perlinNoise.png", true, true);
@@ -186,9 +191,11 @@ function setupShader(dimension) {
   registerShader(
     new ObjectShader("shadow", Usage.SHADOW).vertex("program/gbuffer/shadow.vsh").fragment("program/gbuffer/shadow.fsh").target(0, shadowColorTex).target(1, shadowNormalTex).target(2, shadowPositionTex).target(3, shadowMaskTex).blendFunc(0, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO).blendFunc(1, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO).blendFunc(2, Func.ONE, Func.ZERO, Func.ONE, Func.ZERO).build()
   );
-  registerShader(
-    new ObjectShader("point", Usage.POINT).vertex("program/gbuffer/pointShadow.vsh").fragment("program/gbuffer/pointShadow.fsh").build()
-  );
+  if (getBoolSetting("SHADOW_POINT_LIGHT")) {
+    registerShader(
+      new ObjectShader("point", Usage.POINT).vertex("program/gbuffer/pointShadow.vsh").fragment("program/gbuffer/pointShadow.fsh").build()
+    );
+  }
   registerShader(
     Stage.POST_SHADOW,
     new Compute("floodfillPropagate").location("program/composite/floodfillPropagate.csh").workGroups(voxelMapWidth / 4, voxelMapHeight / 4, voxelMapWidth / 4).build()

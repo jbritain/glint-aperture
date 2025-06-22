@@ -1,7 +1,7 @@
 // options.ts
 function setupOptions() {
   const postPage = new Page("Post-Processing").add(asBool("BLOOM_ENABLE", true, true)).add(asBool("TEMPORAL_FILTER_ENABLE", true, true)).add(asBool("DOF_ENABLE", false, true)).build();
-  const lightingPage = new Page("Shadows & Lighting").add(asIntRange("SHADOW_SAMPLES", 8, 4, 32, 1)).add(asBool("SSGI_ENABLE", false, true)).build();
+  const lightingPage = new Page("Shadows & Lighting").add(asIntRange("SHADOW_SAMPLES", 8, 4, 32, 1)).add(asBool("SSGI_ENABLE", false, true)).add(asBool("SHADOW_POINT_LIGHT", false, true)).build();
   return new Page("Glint").add(postPage).add(lightingPage).add(asBool("DEBUG_ENABLE", false, true)).build();
 }
 function asIntRange(key, defaultVal, minVal, maxVal, interval) {

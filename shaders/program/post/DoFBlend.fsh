@@ -2,6 +2,10 @@
 
 in vec2 uv;
 
+uniform sampler2D DoFTex;
+uniform sampler2D DoFCoCTex;
+uniform sampler2D sceneTex;
+
 
 #include "/lib/common.glsl"
 

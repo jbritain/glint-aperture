@@ -42,6 +42,15 @@ vec3 gatherLight(ivec3 voxelPos, uint metadata){
 }
 
 vec3 getEmittedLight(ivec3 voxelPos){
+  #ifdef SHADOW_POINT_LIGHT
+  vec3 playerPos = unmapVoxelPos(voxelPos);
+  for(int i = 0; i < 64; i++){
+    if(distance(playerPos, ap.point.pos[i].xyz) < 1.0){
+      return vec3(0.0);
+    }
+  }
+  #endif
+
   uint sampleBlockID = imageLoad(voxelMap, voxelPos).r;
 
   float emission = iris_getEmission(sampleBlockID) / 15.0;
