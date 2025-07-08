@@ -1,83 +1,5 @@
 import type {} from './iris'
-
-// a texture which can be safely read from and written to in different places
-// it works by having texture A and texture B
-// if you want to "flip" the texture, you call .startFlip() before the pass and .endFlip() after the pass
-// use the .getWrite() buffer as the render target
-class FlippableTexture {
-    constructor(name: string){
-        this.textureA = new Texture(name + "_a");
-        this.textureB = new Texture(name + "_b");
-
-        this.referenceRead = new TextureReference(name);
-        this.referenceWrite = new TextureReference(name + "_w");
-    }
-
-
-
-    format(internalFormat: InternalTextureFormat): FlippableTexture {
-        this.textureA.format(internalFormat);
-        this.textureB.format(internalFormat);
-        this.reference.format(internalFormat);
-
-        return this;
-    }
-
-    width(width: number): FlippableTexture {
-        this.textureA.width(width);
-        this.textureB.width(width);
-        this.reference.width(width);
-
-        return this;
-    }
-
-    height(height: number): FlippableTexture {
-        this.textureA.height(height);
-        this.textureB.height(height);
-        this.reference.height(height);
-
-        return this;
-    }
-
-    depth(depth: number): FlippableTexture {
-        this.textureA.depth(depth);
-        this.textureB.depth(depth);
-        this.reference.depth(depth);
-
-        return this;
-    }
-
-    clearColor(r: number, g: number, b: number, a: number): FlippableTexture {
-        this.textureA.clearColor(r, g, b, a);
-        this.textureB.clearColor(r, g, b, a);
-        
-        return this;
-    }
-
-    clear(clear: boolean): FlippableTexture {
-        this.textureA.clear(clear);
-        this.textureB.clear(clear);
-
-        return this;
-    }
-
-    mipmap(mipmap: boolean): FlippableTexture {
-        this.textureA.mipmap(mipmap);
-        this.textureB.mipmap(mipmap);
-
-        return this;
-    }
-
-    build(): FlippableTexture {
-        this.textureA.build();
-        this.textureB.build();
-
-        this.referenceRead.pointTo(this.textureA);
-        this.referenceWrite.pointTo(this.textureB);
-
-        return this;
-    }
-}
+import FlippableTexture from './tslib/FlippableTexture';
 
 function setLightColors(){
     // colours stolen from null
@@ -409,7 +331,7 @@ export function setupShader(dimension : NamespacedId) {
     registerShader(Stage.POST_SHADOW, new MemoryBarrier(IMAGE_BIT));
 
     // ======================= GBUFFERS =======================
-    const sceneTex = new Texture("sceneTex")
+    const sceneTex = new FlippableTexture("sceneTex")
         .format(Format.RGB16F)
         .clear(true)
         .clearColor(0.0, 0.0, 0.0, 1.0)
@@ -436,7 +358,7 @@ export function setupShader(dimension : NamespacedId) {
         .vertex("program/gbuffer/sky.vsh")
         .fragment("program/gbuffer/sky.fsh")
         .define("SKY_BASIC", "1")
-        .target(0, sceneTex)
+        .target(0, sceneTex.target)
         .build()
     );
 
@@ -445,7 +367,7 @@ export function setupShader(dimension : NamespacedId) {
         .vertex("program/gbuffer/sky.vsh")
         .fragment("program/gbuffer/sky.fsh")
         .define("SKY_TEXTURED", "2")
-        .target(0, sceneTex)
+        .target(0, sceneTex.target)
         .build()
     );
 
@@ -477,7 +399,7 @@ export function setupShader(dimension : NamespacedId) {
             new ObjectShader("terrain", program)
             .vertex("program/gbuffer/main.vsh")
             .fragment("program/gbuffer/main.fsh")
-            .target(0, sceneTex)
+            .target(0, sceneTex.target)
             .target(1, gbufferDataTex1)
             .target(2, gbufferDataTex2)
             // .blendOff(1)
@@ -528,7 +450,7 @@ export function setupShader(dimension : NamespacedId) {
         new Composite("deferredShading")
         .vertex("program/fullscreen.vsh")
         .fragment("program/composite/deferredShading.fsh")
-        .target(0, sceneTex)
+        .target(0, sceneTex.target)
         .ssbo(0, sceneData)
         .build()
     );
@@ -549,7 +471,7 @@ export function setupShader(dimension : NamespacedId) {
             new Composite("compositeGlobalIllumination")
             .vertex("program/fullscreen.vsh")
             .fragment("program/composite/compositeSSGI.fsh")
-            .target(0, sceneTex)
+            .target(0, sceneTex.target)
             .ssbo(0, sceneData)
             .build()
         )
@@ -561,11 +483,11 @@ export function setupShader(dimension : NamespacedId) {
         new Composite("compositeSky")
         .vertex("program/fullscreen.vsh")
         .fragment("program/composite/compositeSky.fsh")
-        .target(0, sceneTex)
+        .target(0, sceneTex.target)
         .build()
     );
 
-    const cloudScatterTex = new Texture("cloudScatterTex")
+    const cloudScatterTex = new FlippableTexture("cloudScatterTex")
         .format(Format.RGB16F)
         .clear(false)
         .width(parseInt(screenWidth))
@@ -573,33 +495,25 @@ export function setupShader(dimension : NamespacedId) {
         .mipmap(true)
         .build();
 
-    const cloudTransmitTex = new Texture("cloudTransmitTex")
+    const cloudTransmitTex = new FlippableTexture("cloudTransmitTex")
         .format(Format.RGB16F)
         .clear(false)
         .width(parseInt(screenWidth))
         .height(parseInt(screenHeight))
         .mipmap(true)
         .build();
+
+    
 
     registerShader(
         Stage.PRE_TRANSLUCENT,
         new Composite("renderClouds")
         .vertex("program/fullscreen.vsh")
         .fragment("program/composite/renderClouds.fsh")
-        .target(0, cloudScatterTex)
-        .target(1, cloudTransmitTex)
+        .target(0, cloudScatterTex.target)
+        .target(1, cloudTransmitTex.target)
         .ssbo(0, sceneData)
         .build()
-    );
-
-    registerShader(
-        Stage.PRE_TRANSLUCENT,
-        new GenerateMips(cloudScatterTex),
-    );
-
-    registerShader(
-        Stage.PRE_TRANSLUCENT,
-        new GenerateMips(cloudTransmitTex)
     );
 
 
@@ -608,7 +522,7 @@ export function setupShader(dimension : NamespacedId) {
         new Composite("compositeClouds")
         .vertex("program/fullscreen.vsh")
         .fragment("program/composite/compositeClouds.fsh")
-        .target(0, sceneTex)
+        .target(0, sceneTex.target)
         .ssbo(0, sceneData)
         .build()
     );
@@ -617,22 +531,24 @@ export function setupShader(dimension : NamespacedId) {
 
     // ======================= COMPOSITES =======================
 
+    sceneTex.flip();
     registerShader(
         Stage.POST_RENDER,
         new Composite("compositeTranslucents")
         .vertex("program/fullscreen.vsh")
         .fragment("program/composite/compositeTranslucents.fsh")
-        .target(0, sceneTex)
+        .target(0, sceneTex.target)
         .ssbo(0, sceneData)
         .build()
     );
+    sceneTex.unflip();
 
     registerShader(
         Stage.POST_RENDER,
         new Composite("cloudyFog")
         .vertex("program/fullscreen.vsh")
         .fragment("program/composite/cloudyFog.fsh")
-        .target(0, sceneTex)
+        .target(0, sceneTex.target)
         .ssbo(0, sceneData)
         .build()
     );
@@ -673,7 +589,7 @@ export function setupShader(dimension : NamespacedId) {
             new Composite("DoFBlend")
             .vertex("program/fullscreen.vsh")
             .fragment("program/post/DoFBlend.fsh")
-            .target(0, sceneTex)
+            .target(0, sceneTex.target)
             .build()
         );
     }
@@ -684,7 +600,7 @@ export function setupShader(dimension : NamespacedId) {
         new Composite("temporalFilter")
             .vertex("program/fullscreen.vsh")
             .fragment("program/post/temporalFilter.fsh")
-            .target(0, sceneTex)
+            .target(0, sceneTex.target)
             .build()
     );
 
@@ -711,7 +627,6 @@ export function setupShader(dimension : NamespacedId) {
     //     );
     // }
 
-
     if(getBoolSetting("BLOOM_ENABLE")){
         const bloomTex = new Texture("bloomTex")
             .format(Format.RGB16F)
@@ -719,7 +634,7 @@ export function setupShader(dimension : NamespacedId) {
             .mipmap(true)
             .build();
 
-        for(let i = 0; i < 8; i++){
+        for(let i = 0; i < 5; i++){
             registerShader(
                 Stage.POST_RENDER,
                 new Composite(`bloomDownsample${i}-${i+1}`)
@@ -731,7 +646,7 @@ export function setupShader(dimension : NamespacedId) {
             )
         }
     
-        for(let i = 8; i > 0; i -= 1){
+        for(let i = 5; i > 0; i -= 1){
             registerShader(
                 Stage.POST_RENDER,
                 new Composite(`bloomUpsample${i}-${i-1}`)
@@ -743,9 +658,9 @@ export function setupShader(dimension : NamespacedId) {
             )
         }
     }
-
     setCombinationPass(
         new CombinationPass("program/final.fsh")
+        .define(sceneTex.name, sceneTex.sampler)
         .build()
     );
 }

@@ -50,6 +50,7 @@ void main(){
     return;
   }
 
+
   vec3 viewPos = screenSpaceToViewSpace(vec3(uv, depth));
   vec3 feetPlayerPos = (ap.camera.viewInv * vec4(viewPos, 1.0)).xyz;
   vec3 worldDir = normalize(feetPlayerPos);

@@ -40,9 +40,12 @@ layout(location = 0) out vec3 bloomColor;
 void main(){
   #if BLOOM_INDEX == 1
   bloomColor = texture(sceneTex, uv).rgb;
+
   #else
   bloomColor = textureLod(bloomTex, uv, BLOOM_INDEX - 1).rgb;
   #endif
 
   bloomColor += upSample(bloomTex, uv);
+    show(bloomColor);
+      
 }

@@ -22,12 +22,16 @@ declare class WorldSettings {
      * Default: 1024
      */
   shadowMapResolution: number;
+  cascadeCount: number;
+  cascadeSafeZones: number[];
   shadowMapDistance: number;
   shadowNearPlane: number;
   shadowFarPlane: number;
   sunPathRotation: number;
   ambientOcclusionLevel: number;
   renderSun: boolean;
+  renderWaterOverlay: boolean;
+  mergedHandDepth: boolean;
   renderMoon: boolean;
   renderStars: boolean;
   renderEntityShadow: boolean;
@@ -108,6 +112,7 @@ interface BlendModeFunction {}
 declare function getStringSetting(name: string): string;
 declare function getBoolSetting(name: string): boolean;
 declare function getIntSetting(name: string): number;
+declare function getFloatSetting(name: string): number;
 
 declare class IntSetting {
   needsReload(reload: boolean): IntSetting;
@@ -133,6 +138,8 @@ declare class BuiltPage {}
 
 declare function asInt(name: string, ...values: number[]): IntSetting;
 declare function asFloat(name: string, ...values: number[]): FloatSetting;
+declare function putTextLabel(id : string, text : string) : BuiltSetting
+declare function putTranslationLabel(id : string, text : string) : BuiltSetting
 declare function asString(name: string, ...values: string[]): StringSetting;
 declare function asBool(name: string, defaultValue: boolean, reload: boolean): BuiltSetting;
 
@@ -166,20 +173,9 @@ declare function setLightColor(name: NamespacedId, hex: number): void;
 
 // Uniforms
 
-/**
- * Registers uniforms.
- *
- * @throws IllegalStateException
- * if {@link finalizeUniforms} has already been called
- *
- * @param uniforms A list of uniforms to register.
- */
-declare function registerUniforms(...uniforms: string[]): void;
+declare function addTag(index : number, tag : NamespacedId) : void;
 
-/**
- * Finalizes uniforms.
- */
-declare function finalizeUniforms(): void;
+declare function createTag(tag : NamespacedId, ...blocks : NamespacedId[]) : NamespacedId;
 
 /**
  * Registers a define for all future shaders. Behavior for shaders already made is undefined.
@@ -587,7 +583,31 @@ interface InternalTextureFormat {}
  * A built texture. This is the result of making an {@link Texture} or {@link ArrayTexture}.
  * This is also automatically implemented by {@link PNGTexture} and {@link RawTexture}.
  */
-interface BuiltTexture {}
+interface BuiltTexture {
+    readBack() : ArrayBuffer;
+
+    name() : string;
+    imageName() : string;
+    width() : number;
+    height() : number;
+    depth() : number;
+}
+
+declare class TextureReference {
+    constructor(samplerName : string, imageName : string);
+
+    format(internalFormat: InternalTextureFormat): TextureReference;
+
+    width(width: number): TextureReference;
+    height(height: number): TextureReference;
+    depth(depth: number): TextureReference;
+
+    build() : ActiveTextureReference;
+}
+
+interface ActiveTextureReference extends BuiltTexture {
+    pointTo(t : BuiltTexture) : ActiveTextureReference;
+}
 
 /**
  * A basic, non-array read/write texture.
@@ -604,6 +624,7 @@ declare class Texture {
   width(width: number): Texture;
   height(height: number): Texture;
   depth(depth: number): Texture;
+  readBack(read: boolean): Texture;
 
   build(): BuiltTexture;
 }

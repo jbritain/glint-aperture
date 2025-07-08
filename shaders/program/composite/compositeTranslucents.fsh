@@ -61,23 +61,23 @@ void main(){
 
   // refraction
   // TODO: enable refraction once there is buffer flipping helper (please IMS)
-  // if(gbufferData.materialMask.isFluid){
-  //   vec3 refractionNormal = gbufferData.faceNormal - gbufferData.mappedNormal;
-  //   show(gbufferData.faceNormal);
+  if(gbufferData.materialMask.isFluid){
+    vec3 refractionNormal = gbufferData.faceNormal - gbufferData.mappedNormal;
+    // show(gbufferData.faceNormal);
 
-  //   vec3 refractedDir = normalize(refract(normalize(opaqueViewPos), refractionNormal, !inWater ? rcp(1.33) : 1.33));
-  //   vec3 refractedViewPos = translucentViewPos + refractedDir * distance(translucentViewPos, opaqueViewPos);
-  //   vec3 refractedPos = viewSpaceToScreenSpace(refractedViewPos);
+    vec3 refractedDir = normalize(refract(normalize(opaqueViewPos), refractionNormal, !inWater ? rcp(1.33) : 1.33));
+    vec3 refractedViewPos = translucentViewPos + refractedDir * distance(translucentViewPos, opaqueViewPos);
+    vec3 refractedPos = viewSpaceToScreenSpace(refractedViewPos);
 
-  //   float refractedDepth = texture(solidDepthTex, refractedPos.xy).r;
-  //   refractedViewPos = screenSpaceToViewSpace(vec3(refractedPos.xy, refractedDepth));
+    float refractedDepth = texture(solidDepthTex, refractedPos.xy).r;
+    refractedViewPos = screenSpaceToViewSpace(vec3(refractedPos.xy, refractedDepth));
 
-  //   if(clamp01(refractedPos.xy) == refractedPos.xy && refractedDepth > translucentDepth){
-  //     color = texture(sceneTex, refractedPos.xy).rgb;
-  //     opaqueDepth = texture(solidDepthTex, refractedPos.xy).r;
-  //     opaqueViewPos = refractedViewPos;
-  //   } 
-  // }
+    if(clamp01(refractedPos.xy) == refractedPos.xy && refractedDepth > translucentDepth){
+      color = texture(sceneTex, refractedPos.xy).rgb;
+      opaqueDepth = texture(solidDepthTex, refractedPos.xy).r;
+      opaqueViewPos = refractedViewPos;
+    } 
+  }
 
   if(!inWater && isWater){
     LightInteraction waterInteraction = waterFog(translucentPlayerPos, opaquePlayerPos);

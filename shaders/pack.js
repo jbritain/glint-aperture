@@ -1,58 +1,147 @@
-// pack.ts
+var __defProp = Object.defineProperty;
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+
+// tslib/FlippableTexture.ts
 var FlippableTexture = class {
   constructor(name) {
-    this.textureA = new Texture(name + "_a");
-    this.textureB = new Texture(name + "_b");
-    this.referenceRead = new TextureReference(name);
-    this.referenceWrite = new TextureReference(name + "_w");
+    __publicField(this, "name");
+    __publicField(this, "_imageName");
+    __publicField(this, "_format");
+    __publicField(this, "_width");
+    __publicField(this, "_height");
+    __publicField(this, "_depth");
+    __publicField(this, "clearColorR");
+    __publicField(this, "clearColorG");
+    __publicField(this, "clearColorB");
+    __publicField(this, "clearColorA");
+    __publicField(this, "_clear");
+    __publicField(this, "_mipmap");
+    __publicField(this, "flipped", false);
+    __publicField(this, "unflipped", true);
+    __publicField(this, "textureA");
+    __publicField(this, "textureB");
+    this.name = name;
   }
   format(internalFormat) {
-    this.textureA.format(internalFormat);
-    this.textureB.format(internalFormat);
-    this.reference.format(internalFormat);
+    this._format = internalFormat;
     return this;
   }
   width(width) {
-    this.textureA.width(width);
-    this.textureB.width(width);
-    this.reference.width(width);
+    this._width = width;
     return this;
   }
   height(height) {
-    this.textureA.height(height);
-    this.textureB.height(height);
-    this.reference.height(height);
+    this._height = height;
     return this;
   }
   depth(depth) {
-    this.textureA.depth(depth);
-    this.textureB.depth(depth);
-    this.reference.depth(depth);
+    this._depth = depth;
     return this;
   }
   clearColor(r, g, b, a) {
-    this.textureA.clearColor(r, g, b, a);
-    this.textureB.clearColor(r, g, b, a);
+    this.clearColorR = r;
+    this.clearColorG = g;
+    this.clearColorB = b;
+    this.clearColorA = a;
     return this;
   }
   clear(clear) {
-    this.textureA.clear(clear);
-    this.textureB.clear(clear);
+    this._clear = clear;
     return this;
   }
   mipmap(mipmap) {
-    this.textureA.mipmap(mipmap);
-    this.textureB.mipmap(mipmap);
+    this._mipmap = mipmap;
+    return this;
+  }
+  imageName(imageName) {
+    this._imageName = imageName;
     return this;
   }
   build() {
-    this.textureA.build();
-    this.textureB.build();
-    this.referenceRead.pointTo(this.textureA);
-    this.referenceWrite.pointTo(this.textureB);
+    this.textureA = new Texture(this.name + "_a");
+    this.textureB = new Texture(this.name + "_b");
+    if (this._format) {
+      this.textureA.format(this._format);
+      this.textureB.format(this._format);
+    }
+    if (this._width) {
+      this.textureA.width(this._width);
+      this.textureB.width(this._width);
+    }
+    if (this._height) {
+      this.textureA.height(this._height);
+      this.textureB.height(this._height);
+    }
+    if (this._depth) {
+      this.textureA.depth(this._depth);
+      this.textureB.depth(this._depth);
+    }
+    if (this._imageName) {
+      this.textureA.imageName(this._imageName + "_a");
+      this.textureB.imageName(this._imageName + "_b");
+    }
+    if (this.clearColorR) {
+      this.textureA.clearColor(
+        this.clearColorR,
+        this.clearColorG,
+        this.clearColorB,
+        this.clearColorA
+      );
+      this.textureB.clearColor(
+        this.clearColorR,
+        this.clearColorG,
+        this.clearColorB,
+        this.clearColorA
+      );
+    }
+    if (this._clear) {
+      this.textureA.clear(this._clear);
+      this.textureB.clear(this._clear);
+    }
+    if (this._mipmap) {
+      this.textureA.mipmap(this._mipmap);
+      this.textureB.mipmap(this._mipmap);
+    }
+    this.textureA = this.textureA.build();
+    this.textureB = this.textureB.build();
+    defineGlobally(this.name, this.sampler);
     return this;
   }
+  get sampler() {
+    return this.name + (this.flipped ? "_a" : "_b");
+  }
+  get target() {
+    return this.flipped != this.unflipped ? this.textureB : this.textureA;
+  }
+  // Swaps the sampler and rendertarget buffers. If the texture is currently "unflipped", this will cause the rendertarget to move, but the sampler to remain the same, meaning whatever was last written is still accessable in the sampler.
+  flip() {
+    if (this.unflipped) print("unflipped, disabling");
+    if (!this.unflipped) this.flipped = !this.flipped;
+    print("flipped: " + this.flipped);
+    this.unflipped = false;
+    defineGlobally(this.name, this.sampler);
+    print("sampler is now " + this.sampler);
+    print(
+      "target is now " + this.name + (this.flipped != this.unflipped ? "_b" : "_a")
+    );
+    print("---");
+  }
+  // Causes the rendertarget to point to the same buffer as the sampler until the next flip operation. This is the default state.
+  unflip() {
+    if (this.unflipped) return;
+    this.flipped = !this.flipped;
+    this.unflipped = true;
+    defineGlobally(this.name, this.sampler);
+    print("sampler is now " + this.sampler);
+    print(
+      "target is now " + this.name + (this.flipped != this.unflipped ? "_b" : "_a")
+    );
+    print("---");
+  }
 };
+
+// pack.ts
 function setLightColors() {
   setLightColor(new NamespacedId("campfire"), 255, 102, 0, 255);
   setLightColor(new NamespacedId("candle"), 245, 127, 68, 255);
@@ -201,15 +290,15 @@ function setupShader(dimension) {
     new Compute("floodfillPropagate").location("program/composite/floodfillPropagate.csh").workGroups(voxelMapWidth / 4, voxelMapHeight / 4, voxelMapWidth / 4).build()
   );
   registerShader(Stage.POST_SHADOW, new MemoryBarrier(IMAGE_BIT));
-  const sceneTex = new Texture("sceneTex").format(Format.RGB16F).clear(true).clearColor(0, 0, 0, 1).build();
+  const sceneTex = new FlippableTexture("sceneTex").format(Format.RGB16F).clear(true).clearColor(0, 0, 0, 1).build();
   const translucentsTex = new Texture("translucentsTex").format(Format.RGBA16F).clear(true).clearColor(0, 0, 0, 0).build();
   const gbufferDataTex1 = new Texture("gbufferDataTex1").format(Format.RGBA16).clear(true).build();
   const gbufferDataTex2 = new Texture("gbufferDataTex2").format(Format.RGBA16).clear(true).build();
   registerShader(
-    new ObjectShader("sky", Usage.SKYBOX).vertex("program/gbuffer/sky.vsh").fragment("program/gbuffer/sky.fsh").define("SKY_BASIC", "1").target(0, sceneTex).build()
+    new ObjectShader("sky", Usage.SKYBOX).vertex("program/gbuffer/sky.vsh").fragment("program/gbuffer/sky.fsh").define("SKY_BASIC", "1").target(0, sceneTex.target).build()
   );
   registerShader(
-    new ObjectShader("sky", Usage.SKY_TEXTURES).vertex("program/gbuffer/sky.vsh").fragment("program/gbuffer/sky.fsh").define("SKY_TEXTURED", "2").target(0, sceneTex).build()
+    new ObjectShader("sky", Usage.SKY_TEXTURES).vertex("program/gbuffer/sky.vsh").fragment("program/gbuffer/sky.fsh").define("SKY_TEXTURED", "2").target(0, sceneTex.target).build()
   );
   const deferredGbuffers = [
     Usage.TERRAIN_SOLID,
@@ -233,7 +322,7 @@ function setupShader(dimension) {
   ];
   deferredGbuffers.forEach((program) => {
     registerShader(
-      new ObjectShader("terrain", program).vertex("program/gbuffer/main.vsh").fragment("program/gbuffer/main.fsh").target(0, sceneTex).target(1, gbufferDataTex1).target(2, gbufferDataTex2).ssbo(0, sceneData).build()
+      new ObjectShader("terrain", program).vertex("program/gbuffer/main.vsh").fragment("program/gbuffer/main.fsh").target(0, sceneTex.target).target(1, gbufferDataTex1).target(2, gbufferDataTex2).ssbo(0, sceneData).build()
     );
   });
   forwardGbuffers.forEach((program) => {
@@ -248,7 +337,7 @@ function setupShader(dimension) {
   const globalIlluminationTex = new Texture("globalIlluminationTex").format(Format.R11F_G11F_B10F).clear(false).width(parseInt(screenWidth * 0.5)).height(parseInt(screenHeight * 0.5)).build();
   registerShader(
     Stage.PRE_TRANSLUCENT,
-    new Composite("deferredShading").vertex("program/fullscreen.vsh").fragment("program/composite/deferredShading.fsh").target(0, sceneTex).ssbo(0, sceneData).build()
+    new Composite("deferredShading").vertex("program/fullscreen.vsh").fragment("program/composite/deferredShading.fsh").target(0, sceneTex.target).ssbo(0, sceneData).build()
   );
   if (getBoolSetting("SSGI_ENABLE")) {
     registerShader(
@@ -257,38 +346,32 @@ function setupShader(dimension) {
     );
     registerShader(
       Stage.PRE_TRANSLUCENT,
-      new Composite("compositeGlobalIllumination").vertex("program/fullscreen.vsh").fragment("program/composite/compositeSSGI.fsh").target(0, sceneTex).ssbo(0, sceneData).build()
+      new Composite("compositeGlobalIllumination").vertex("program/fullscreen.vsh").fragment("program/composite/compositeSSGI.fsh").target(0, sceneTex.target).ssbo(0, sceneData).build()
     );
   }
   registerShader(
     Stage.PRE_TRANSLUCENT,
-    new Composite("compositeSky").vertex("program/fullscreen.vsh").fragment("program/composite/compositeSky.fsh").target(0, sceneTex).build()
+    new Composite("compositeSky").vertex("program/fullscreen.vsh").fragment("program/composite/compositeSky.fsh").target(0, sceneTex.target).build()
   );
-  const cloudScatterTex = new Texture("cloudScatterTex").format(Format.RGB16F).clear(false).width(parseInt(screenWidth)).height(parseInt(screenHeight)).mipmap(true).build();
-  const cloudTransmitTex = new Texture("cloudTransmitTex").format(Format.RGB16F).clear(false).width(parseInt(screenWidth)).height(parseInt(screenHeight)).mipmap(true).build();
+  const cloudScatterTex = new FlippableTexture("cloudScatterTex").format(Format.RGB16F).clear(false).width(parseInt(screenWidth)).height(parseInt(screenHeight)).mipmap(true).build();
+  const cloudTransmitTex = new FlippableTexture("cloudTransmitTex").format(Format.RGB16F).clear(false).width(parseInt(screenWidth)).height(parseInt(screenHeight)).mipmap(true).build();
   registerShader(
     Stage.PRE_TRANSLUCENT,
-    new Composite("renderClouds").vertex("program/fullscreen.vsh").fragment("program/composite/renderClouds.fsh").target(0, cloudScatterTex).target(1, cloudTransmitTex).ssbo(0, sceneData).build()
-  );
-  registerShader(
-    Stage.PRE_TRANSLUCENT,
-    new GenerateMips(cloudScatterTex)
+    new Composite("renderClouds").vertex("program/fullscreen.vsh").fragment("program/composite/renderClouds.fsh").target(0, cloudScatterTex.target).target(1, cloudTransmitTex.target).ssbo(0, sceneData).build()
   );
   registerShader(
     Stage.PRE_TRANSLUCENT,
-    new GenerateMips(cloudTransmitTex)
+    new Composite("compositeClouds").vertex("program/fullscreen.vsh").fragment("program/composite/compositeClouds.fsh").target(0, sceneTex.target).ssbo(0, sceneData).build()
   );
-  registerShader(
-    Stage.PRE_TRANSLUCENT,
-    new Composite("compositeClouds").vertex("program/fullscreen.vsh").fragment("program/composite/compositeClouds.fsh").target(0, sceneTex).ssbo(0, sceneData).build()
-  );
+  sceneTex.flip();
   registerShader(
     Stage.POST_RENDER,
-    new Composite("compositeTranslucents").vertex("program/fullscreen.vsh").fragment("program/composite/compositeTranslucents.fsh").target(0, sceneTex).ssbo(0, sceneData).build()
+    new Composite("compositeTranslucents").vertex("program/fullscreen.vsh").fragment("program/composite/compositeTranslucents.fsh").target(0, sceneTex.target).ssbo(0, sceneData).build()
   );
+  sceneTex.unflip();
   registerShader(
     Stage.POST_RENDER,
-    new Composite("cloudyFog").vertex("program/fullscreen.vsh").fragment("program/composite/cloudyFog.fsh").target(0, sceneTex).ssbo(0, sceneData).build()
+    new Composite("cloudyFog").vertex("program/fullscreen.vsh").fragment("program/composite/cloudyFog.fsh").target(0, sceneTex.target).ssbo(0, sceneData).build()
   );
   if (getBoolSetting("DOF_ENABLE")) {
     const DoFCoCTex = new Texture("DoFCoCTex").format(Format.R16F).build();
@@ -303,12 +386,12 @@ function setupShader(dimension) {
     );
     registerShader(
       Stage.POST_RENDER,
-      new Composite("DoFBlend").vertex("program/fullscreen.vsh").fragment("program/post/DoFBlend.fsh").target(0, sceneTex).build()
+      new Composite("DoFBlend").vertex("program/fullscreen.vsh").fragment("program/post/DoFBlend.fsh").target(0, sceneTex.target).build()
     );
   }
   registerShader(
     Stage.POST_RENDER,
-    new Composite("temporalFilter").vertex("program/fullscreen.vsh").fragment("program/post/temporalFilter.fsh").target(0, sceneTex).build()
+    new Composite("temporalFilter").vertex("program/fullscreen.vsh").fragment("program/post/temporalFilter.fsh").target(0, sceneTex.target).build()
   );
   registerShader(
     Stage.POST_RENDER,
@@ -316,13 +399,13 @@ function setupShader(dimension) {
   );
   if (getBoolSetting("BLOOM_ENABLE")) {
     const bloomTex = new Texture("bloomTex").format(Format.RGB16F).clear(true).mipmap(true).build();
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 5; i++) {
       registerShader(
         Stage.POST_RENDER,
         new Composite(`bloomDownsample${i}-${i + 1}`).vertex("program/fullscreen.vsh").fragment("program/post/bloomDownsample.fsh").target(0, bloomTex, i + 1).define("BLOOM_INDEX", i.toString()).build()
       );
     }
-    for (let i = 8; i > 0; i -= 1) {
+    for (let i = 5; i > 0; i -= 1) {
       registerShader(
         Stage.POST_RENDER,
         new Composite(`bloomUpsample${i}-${i - 1}`).vertex("program/fullscreen.vsh").fragment("program/post/bloomUpsample.fsh").target(0, bloomTex, i - 1).define("BLOOM_INDEX", i.toString()).build()
@@ -330,7 +413,7 @@ function setupShader(dimension) {
     }
   }
   setCombinationPass(
-    new CombinationPass("program/final.fsh").build()
+    new CombinationPass("program/final.fsh").define(sceneTex.name, sceneTex.sampler).build()
   );
 }
 export {
