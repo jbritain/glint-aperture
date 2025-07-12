@@ -1,12 +1,3 @@
 {
-  "problems.visibility": false,
-  "emeraldwalk.runonsave": {
-    "message": "yo",
-    "commands": [
-      {
-        "match": "\\pack.js",
-        "cmd": "del ${file}"
-      }
-    ]
-  }
+  "problems.visibility": false
 }
