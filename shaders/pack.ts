@@ -51,12 +51,20 @@ export function setupShader(dimension: NamespacedId) {
       .build(),
   );
 
+  registerBarrier(
+    Stage.SCREEN_SETUP, new MemoryBarrier(IMAGE_BIT)
+  );
+
   registerShader(
     Stage.SCREEN_SETUP,
     new Compute("generateMultipleScatteringLUT")
       .location("program/atmosphere/generate_multiple_scattering_lut.csh")
       .workGroups(4, 4, 1)
       .build(),
+  );
+
+  registerBarrier(
+    Stage.SCREEN_SETUP, new MemoryBarrier(IMAGE_BIT)
   );
   
   registerShader(
@@ -66,6 +74,10 @@ export function setupShader(dimension: NamespacedId) {
       .workGroups(25, 25, 1)
       .ssbo(0, sceneData)
       .build(),
+  );
+
+  registerBarrier(
+    Stage.PRE_RENDER, new MemoryBarrier(IMAGE_BIT)
   );
 
   const skyIrradianceLUT = new Texture("sky_irradiance_lut_tex")
@@ -84,6 +96,10 @@ export function setupShader(dimension: NamespacedId) {
       .workGroups(4, 4, 1)
       .ssbo(0, sceneData)
       .build(),
+  );
+
+  registerBarrier(
+    Stage.PRE_RENDER, new MemoryBarrier(IMAGE_BIT)
   );
 
   // GEOMETRY

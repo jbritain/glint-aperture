@@ -16,18 +16,34 @@ function setupShader(dimension) {
     Stage.SCREEN_SETUP,
     new Compute("generateSunTransmittanceLUT").location("program/atmosphere/generate_sun_transmittance_lut.csh").workGroups(32, 8, 1).build()
   );
+  registerBarrier(
+    Stage.SCREEN_SETUP,
+    new MemoryBarrier(IMAGE_BIT)
+  );
   registerShader(
     Stage.SCREEN_SETUP,
     new Compute("generateMultipleScatteringLUT").location("program/atmosphere/generate_multiple_scattering_lut.csh").workGroups(4, 4, 1).build()
+  );
+  registerBarrier(
+    Stage.SCREEN_SETUP,
+    new MemoryBarrier(IMAGE_BIT)
   );
   registerShader(
     Stage.PRE_RENDER,
     new Compute("generateSkyViewLUT").location("program/atmosphere/generate_sky_view_lut.csh").workGroups(25, 25, 1).ssbo(0, sceneData).build()
   );
+  registerBarrier(
+    Stage.PRE_RENDER,
+    new MemoryBarrier(IMAGE_BIT)
+  );
   const skyIrradianceLUT = new Texture("sky_irradiance_lut_tex").format(Format.RGBA16F).imageName("sky_irradiance_lut").width(32).height(32).clear(true).mipmap(true).build();
   registerShader(
     Stage.PRE_RENDER,
     new Compute("generateSkyIrradianceLUT").location("program/render_setup/generate_sky_irradiance_lut.csh").workGroups(4, 4, 1).ssbo(0, sceneData).build()
+  );
+  registerBarrier(
+    Stage.PRE_RENDER,
+    new MemoryBarrier(IMAGE_BIT)
   );
   registerShader(
     new ObjectShader("shadow", Usage.SHADOW).vertex("program/geometry/shadow.vsh").fragment("program/geometry/shadow.fsh").build()
