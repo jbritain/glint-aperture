@@ -1,6 +1,10 @@
 #ifndef COMMON_GLSL
 #define COMMON_GLSL
 
+layout(rgba8) uniform image2D debug;
+
+#define show(x) imageStore(debug, ivec2(gl_FragCoord.xy), x)
+
 const float PI = radians(180);
 const float TAU = PI * 2.0;
 

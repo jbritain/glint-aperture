@@ -10,6 +10,7 @@
 in vec2 uv;
 
 uniform sampler2D final_color_tex;
+uniform sampler2D shadow_tex;
 
 uniform sampler2D gbuffer_tex_1;
 uniform sampler2D gbuffer_tex_2;
@@ -40,7 +41,7 @@ void main() {
     sunlight_color *
     material.albedo *
     saturate(dot(material.geometry_normal, light_dir)) *
-    float(material.lightmap.y > 14.0 / 15);
+    texture(shadow_tex, uv).rgb;
 
   vec2 irradiance_uv =
     cartesian_to_spherical(mat3(ap.camera.viewInv) * material.geometry_normal) /
@@ -48,7 +49,7 @@ void main() {
 
   color +=
     material.albedo *
-    texture(sky_irradiance_lut_tex, irradiance_uv).rgb *
+    textureLod(sky_irradiance_lut_tex, irradiance_uv, 0).rgb *
     material.lightmap.y;
 
   // color = texture(

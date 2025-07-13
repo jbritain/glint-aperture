@@ -70,4 +70,14 @@ vec3 rotate(vec3 vector, vec3 from, vec3 to) {
 
 // <==================
 
+vec2 vogel_disc_sample(int step_index, int step_count, float jitter) {
+  float rotation = jitter * 2 * PI;
+  const float golden_angle = 2.4;
+
+  float r = sqrt(step_index + 0.5) / sqrt(float(step_count));
+  float theta = step_index * golden_angle + rotation;
+
+  return r * vec2(cos(theta), sin(theta));
+}
+
 #endif // MISC_GLSL

@@ -173,4 +173,29 @@ Material decode_material_from_gbuffer(vec4 data_1, vec4 data_2) {
   return material;
 }
 
+struct Reduced_Gbuffer {
+  vec3 geometry_normal;
+  vec2 lightmap;
+  vec3 albedo;
+  float material_ao;
+};
+
+Reduced_Gbuffer decode_reduced_gbuffer(vec4 data_1) {
+  Reduced_Gbuffer gbuffer;
+
+  vec2 decode_1x = unpack2x8F(data_1.x);
+  vec2 decode_1y = unpack2x8F(data_1.y);
+  vec2 decode_1z = unpack2x8F(data_1.z);
+  vec2 decode_1w = unpack2x8F(data_1.w);
+
+  gbuffer.albedo = pow(vec3(decode_1x.x, decode_1x.y, decode_1y.x), vec3(2.2));
+  gbuffer.material_ao = decode_1y.y;
+
+  gbuffer.geometry_normal =
+    mat3(ap.camera.view) * decode_unit_vector(decode_1z);
+  gbuffer.lightmap = decode_1w;
+
+  return gbuffer;
+}
+
 #endif

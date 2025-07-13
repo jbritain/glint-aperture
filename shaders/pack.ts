@@ -1,19 +1,27 @@
 import type {} from "./iris";
 
-export function setupShader(dimension: NamespacedId) {
+export function configureRenderer(renderer : RendererConfig) {
   // These settings tell Aperture to render the world identically to Vanilla, except with the sun tilted.
-  worldSettings.disableShade = true;
-  worldSettings.sunPathRotation = 40.0;
+  renderer.disableShade = true;
+  renderer.sunPathRotation = 40.0;
 
-  worldSettings.shadow.resolution = 1592;
-  worldSettings.shadow.far = 120;
-  worldSettings.shadow.distance = 120;
-  worldSettings.shadow.enable();
+  renderer.shadow.resolution = 1592;
+  renderer.shadow.far = 120;
+  renderer.shadow.distance = 120;
+  renderer.shadow.enabled = true;
 
   // This setting merges hand depth, as is behavior in Vanilla/Optifine. Without this, the hand's depth will be stored in a separate 'handDepth' texture.
-  worldSettings.mergedHandDepth = true;
+  renderer.mergedHandDepth = true;
+}
 
+export function configurePipeline(pipeline: PipelineConfig) {
   const sceneData = new GPUBuffer(16).clear(true).build();
+
+  const debugTex = new Texture("debug_tex")
+    .format(Format.RGBA8)
+    .imageName("debug")
+    .clear(true)
+    .build();
 
   const sunTransmittanceLUT = new Texture("sun_transmittance_lut_tex")
     .format(Format.RGBA16F)
@@ -43,7 +51,7 @@ export function setupShader(dimension: NamespacedId) {
     .build();
   defineGlobally("SKY_VIEW_RES", "ivec2(200, 200)");// + multipleScatteringLUT.width.toString() + "," + multipleScatteringLUT.height.toString() + ")");
 
-  registerShader(
+  pipeline.registerPostPass(
     Stage.SCREEN_SETUP,
     new Compute("generateSunTransmittanceLUT")
       .location("program/atmosphere/generate_sun_transmittance_lut.csh")
@@ -51,11 +59,9 @@ export function setupShader(dimension: NamespacedId) {
       .build(),
   );
 
-  registerBarrier(
-    Stage.SCREEN_SETUP, new MemoryBarrier(IMAGE_BIT)
-  );
+  pipeline.addBarrier(Stage.SCREEN_SETUP, IMAGE_BIT);
 
-  registerShader(
+  pipeline.registerPostPass(
     Stage.SCREEN_SETUP,
     new Compute("generateMultipleScatteringLUT")
       .location("program/atmosphere/generate_multiple_scattering_lut.csh")
@@ -63,11 +69,9 @@ export function setupShader(dimension: NamespacedId) {
       .build(),
   );
 
-  registerBarrier(
-    Stage.SCREEN_SETUP, new MemoryBarrier(IMAGE_BIT)
-  );
+  pipeline.addBarrier(Stage.SCREEN_SETUP, IMAGE_BIT);
   
-  registerShader(
+  pipeline.registerPostPass(
     Stage.PRE_RENDER,
     new Compute("generateSkyViewLUT")
       .location("program/atmosphere/generate_sky_view_lut.csh")
@@ -76,9 +80,7 @@ export function setupShader(dimension: NamespacedId) {
       .build(),
   );
 
-  registerBarrier(
-    Stage.PRE_RENDER, new MemoryBarrier(IMAGE_BIT)
-  );
+  pipeline.addBarrier(Stage.PRE_RENDER, IMAGE_BIT);
 
   const skyIrradianceLUT = new Texture("sky_irradiance_lut_tex")
     .format(Format.RGBA16F)
@@ -86,10 +88,9 @@ export function setupShader(dimension: NamespacedId) {
     .width(32)
     .height(32)
     .clear(true)
-    .mipmap(true)
     .build();
 
-  registerShader(
+  pipeline.registerPostPass(
     Stage.PRE_RENDER,
     new Compute("generateSkyIrradianceLUT")
       .location("program/render_setup/generate_sky_irradiance_lut.csh")
@@ -98,13 +99,11 @@ export function setupShader(dimension: NamespacedId) {
       .build(),
   );
 
-  registerBarrier(
-    Stage.PRE_RENDER, new MemoryBarrier(IMAGE_BIT)
-  );
+  pipeline.addBarrier(Stage.PRE_RENDER, IMAGE_BIT);
 
   // GEOMETRY
   // =======================================================================================
-  registerShader(
+  pipeline.registerObjectShader(
     new ObjectShader("shadow", Usage.SHADOW)
       .vertex("program/geometry/shadow.vsh")
       .fragment("program/geometry/shadow.fsh")
@@ -121,7 +120,7 @@ export function setupShader(dimension: NamespacedId) {
     .clear(true)
     .build();
 
-  registerShader(
+  pipeline.registerObjectShader(
     new ObjectShader("terrain", Usage.TEXTURED)
       .vertex("program/geometry/opaque.vsh")
       .fragment("program/geometry/opaque.fsh")
@@ -132,12 +131,31 @@ export function setupShader(dimension: NamespacedId) {
 
   // BEFORE TRANSLUCENTS
   // =======================================================================================
+  const shadowTex = new Texture("shadow_tex")
+    .format(Format.RGB8)
+    .clear(true)
+    .build();
+  
+  const subsurfaceScatterTex = new Texture("subsurface_scatter_tex")
+    .format(Format.RGB8)
+    .clear(true)
+    .build();
+
+  pipeline.registerPostPass(Stage.PRE_TRANSLUCENT,
+    new Composite("opaque_shadowing")
+      .vertex("program/fullscreen_pass.vsh")
+      .fragment("program/before_translucents/opaque_shadowing.fsh")
+      .target(0, shadowTex)
+      .target(1, subsurfaceScatterTex)
+      .build()
+  );
+  
   const finalColorTex = new Texture("final_color_tex")
     .format(Format.RGBA32F)
     .clear(true)
     .build();
 
-  registerShader(
+  pipeline.registerPostPass(
     Stage.PRE_TRANSLUCENT,
     new Composite("sky")
       .vertex("program/fullscreen_pass.vsh")
@@ -146,7 +164,7 @@ export function setupShader(dimension: NamespacedId) {
       .build(),
   );
 
-  registerShader(
+  pipeline.registerPostPass(
     Stage.PRE_TRANSLUCENT,
     new Composite("opaqueDiffuse")
       .vertex("program/fullscreen_pass.vsh")
@@ -156,5 +174,5 @@ export function setupShader(dimension: NamespacedId) {
       .build(),
   );
 
-  setCombinationPass(new CombinationPass("program/combination.fsh").build());
+  pipeline.setCombinationPass(new CombinationPass("program/combination.fsh").build());
 }
