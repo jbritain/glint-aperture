@@ -55,7 +55,7 @@ Shadow_Subsurface_Scatter compute_shadowing_and_subsurface_scattering(
   );
 
   float blocker_depth = get_blocker_depth(shadow_screen_pos, cascade);
-  show(texture(shadowMap, gl_FragCoord.xy / vec2(1920, 1080)));
+  show(texture(shadowMap, shadow_screen_pos.xy));
 
   result.shadow = sample_shadow_map(shadow_screen_pos, cascade);
 

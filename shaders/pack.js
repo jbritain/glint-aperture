@@ -50,15 +50,32 @@ function configurePipeline(pipeline) {
     Stage.PRE_TRANSLUCENT,
     new Composite("opaque_shadowing").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_shadowing.fsh").target(0, shadowTex).target(1, subsurfaceScatterTex).build()
   );
-  const finalColorTex = new Texture("final_color_tex").format(Format.RGBA32F).clear(true).build();
+  const sceneTex = new Texture("scene_tex").format(Format.RGBA32F).clear(true).build();
   pipeline.registerPostPass(
     Stage.PRE_TRANSLUCENT,
-    new Composite("sky").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/render_sky.fsh").target(0, finalColorTex).build()
+    new Composite("sky").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/render_sky.fsh").target(0, sceneTex).build()
   );
   pipeline.registerPostPass(
     Stage.PRE_TRANSLUCENT,
-    new Composite("opaqueDiffuse").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/combine_diffuse.fsh").target(0, finalColorTex).ssbo(0, sceneData).build()
+    new Composite("opaqueDiffuse").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_diffuse.fsh").target(0, sceneTex).ssbo(0, sceneData).build()
   );
+  pipeline.registerPostPass(
+    Stage.POST_RENDER,
+    new Composite("exposure").vertex("program/fullscreen_pass.vsh").fragment("program/post/exposure.fsh").target(0, sceneTex).build()
+  );
+  const bloomTex = new Texture("bloom_tex").format(Format.RGBA16F).clear(true).mipmap(true).build();
+  for (let i = 0; i < 5; i++) {
+    pipeline.registerPostPass(
+      Stage.POST_RENDER,
+      new Composite(`bloomDownsample${i}-${i + 1}`).vertex("program/fullscreen_pass.vsh").fragment("program/post/bloom_downsample.fsh").target(0, bloomTex, i + 1).define("BLOOM_INDEX", i.toString()).build()
+    );
+  }
+  for (let i = 5; i > 0; i -= 1) {
+    pipeline.registerPostPass(
+      Stage.POST_RENDER,
+      new Composite(`bloomUpsample${i}-${i - 1}`).vertex("program/fullscreen_pass.vsh").fragment("program/post/bloom_upsample.fsh").target(0, bloomTex, i - 1).define("BLOOM_INDEX", i.toString()).build()
+    );
+  }
   pipeline.setCombinationPass(new CombinationPass("program/combination.fsh").build());
 }
 export {

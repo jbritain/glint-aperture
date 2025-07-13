@@ -3,7 +3,27 @@
 
 layout(rgba8) uniform image2D debug;
 
-#define show(x) imageStore(debug, ivec2(gl_FragCoord.xy), x)
+void _show(vec4 x, ivec2 fragCoord){
+  imageStore(debug, fragCoord, x);
+}
+
+void _show(vec3 x, ivec2 fragCoord){
+  _show(vec4(x, 1.0), fragCoord);
+}
+
+void _show(vec2 x, ivec2 fragCoord){
+  _show(vec3(x, 0.0), fragCoord);
+}
+
+void _show(float x, ivec2 fragCoord){
+  _show(vec3(x), fragCoord);
+}
+
+void _show(bool x, ivec2 fragCoord){
+  _show(float(x), fragCoord);
+}
+
+#define show(x) _show(x, ivec2(gl_FragCoord.xy))
 
 const float PI = radians(180);
 const float TAU = PI * 2.0;

@@ -6,10 +6,11 @@
 #include "/lib/atmospherics/atmosphere.glsl"
 #include "/lib/util/misc.glsl"
 #include "/lib/util/space_conversions.glsl"
+#include "/lib/lighting/brdf.glsl"
 
 in vec2 uv;
 
-uniform sampler2D final_color_tex;
+uniform sampler2D scene_tex;
 uniform sampler2D shadow_tex;
 
 uniform sampler2D gbuffer_tex_1;
@@ -22,7 +23,7 @@ uniform sampler2D mainDepthTex;
 layout(location = 0) out vec3 color;
 
 void main() {
-  color = texture(final_color_tex, uv).rgb;
+  color = texture(scene_tex, uv).rgb;
 
   float depth = texture(mainDepthTex, uv).r;
   if (depth == 1.0) {
@@ -36,25 +37,26 @@ void main() {
     texture(gbuffer_tex_2, uv)
   );
 
-  color = vec3(0.0);
-  color +=
+  vec3 V = -normalize(view_pos);
+  vec3 F = schlick(material, saturate(dot(material.texture_normal, V)));
+
+  vec3 specular =
+    brdf_specular_area(material, light_dir, V, sun_angular_radius) *
     sunlight_color *
-    material.albedo *
-    saturate(dot(material.geometry_normal, light_dir)) *
-    texture(shadow_tex, uv).rgb;
+    texture(shadow_tex, uv).r;
 
   vec2 irradiance_uv =
-    cartesian_to_spherical(mat3(ap.camera.viewInv) * material.geometry_normal) /
+    cartesian_to_spherical(mat3(ap.camera.viewInv) * material.texture_normal) /
     TAU;
 
-  color +=
-    material.albedo *
+  specular +=
     textureLod(sky_irradiance_lut_tex, irradiance_uv, 0).rgb *
-    material.lightmap.y;
+    material.lightmap.y *
+    material.albedo; // until we get ssr and sky reflections
 
-  // color = texture(
-  //   sky_irradiance_lut_tex,
-  //   cartesian_to_spherical(mat3(ap.camera.viewInv) * normalize(view_pos)) / TAU
-  // ).rgb;
-
+  if (material.metal_id == NO_METAL) {
+    color = mix(color, specular, F);
+  } else {
+    color = specular * F;
+  }
 }

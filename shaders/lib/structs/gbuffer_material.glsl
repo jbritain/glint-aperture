@@ -5,18 +5,18 @@
 #include "/lib/util/encoding.glsl"
 
 // enums for metal IDs
-#define NO_METAL 0
-#define IRON 1
-#define GOLD 2
-#define ALUMINIUM 3
-#define CHROME 4
-#define COPPER 5
-#define LEAD 6
-#define PLATINUM 7
-#define SILVER 8
-#define OTHER_METAL 9
+#define NO_METAL 0u
+#define IRON 1u
+#define GOLD 2u
+#define ALUMINIUM 3u
+#define CHROME 4u
+#define COPPER 5u
+#define LEAD 6u
+#define PLATINUM 7u
+#define SILVER 8u
+#define OTHER_METAL 9u
 
-vec3 get_metal_f0(uint metal_id, vec3 albedo) {
+vec3 get_metal_f0(uint metal_id) {
   switch (metal_id) {
     case IRON:
       return vec3(0.78, 0.77, 0.74);
@@ -35,10 +35,10 @@ vec3 get_metal_f0(uint metal_id, vec3 albedo) {
     case SILVER:
       return vec3(1.0, 1.0, 0.91);
   }
-  return albedo;
+  return vec3(0.0);
 }
 
-vec3 get_metal_f82(uint metal_id, vec3 albedo) {
+vec3 get_metal_f82(uint metal_id) {
   switch (metal_id) {
     case IRON:
       return vec3(0.74, 0.76, 0.76);
@@ -57,7 +57,7 @@ vec3 get_metal_f82(uint metal_id, vec3 albedo) {
     case SILVER:
       return vec3(1.0, 1.0, 0.95);
   }
-  return albedo;
+  return vec3(0.0);
 }
 
 // this is only used for encoding purposes
@@ -157,7 +157,11 @@ Material decode_material_from_gbuffer(vec4 data_1, vec4 data_2) {
   material.roughness = pow2(1.0 - specular_map.r);
   material.f0 = specular_map.g;
 
-  material.metal_id = uint(specular_map.g * 255 + 0.5) - 229;
+  material.metal_id = clamp(
+    uint(specular_map.g * 255 + 0.5) - 229,
+    NO_METAL,
+    OTHER_METAL
+  );
   if (material.metal_id != NO_METAL) {
     material.f0 = -1.0;
   }
