@@ -24,56 +24,48 @@ void main() {
   uv.x = clamp(texel_coord.x, 0.0, lut_res.x - 1.0) / lut_res.x;
   uv.y = clamp(texel_coord.y, 0.0, lut_res.y - 1.0) / lut_res.y;
   
-  Ray sun_vector = un_parameterise_multiple_scattering(uv);
+  Ray ray = un_parameterise_multiple_scattering(uv);
 
-  #define MULTIPLE_SCATTERING_STEPS 20u
+  #define MULTIPLE_SCATTERING_STEPS 20.0
   #define MULTIPLE_SCATTERING_SQRT_SAMPLES 8u
 
   vec3 total_luminance = vec3(0.0);
   vec3 psi_ms = vec3(0.0);
+  
+  float inverse_samples = 1.0/pow2(float(MULTIPLE_SCATTERING_SQRT_SAMPLES));
+  for (int i = 0; i < MULTIPLE_SCATTERING_SQRT_SAMPLES; i++) {
+    for (int j = 0; j < MULTIPLE_SCATTERING_SQRT_SAMPLES; j++) {
+      float theta = PI * (float(i) + 0.5) / float(MULTIPLE_SCATTERING_SQRT_SAMPLES);
+      float phi = acos(clamp(1.0 - 2.0*(float(j) + 0.5) / float(MULTIPLE_SCATTERING_SQRT_SAMPLES), -1.0, 1.0));
+      vec3 ray_dir = spherical_to_cartesian(vec2(theta, phi));
 
-  float inverse_samples = 1.0 / pow2(MULTIPLE_SCATTERING_SQRT_SAMPLES);
-
-  // basically, we march in a bunch of directions around the sample point to gather second order scattering values
-  // we also gather third order scattering by taking samples with no phase function (I think?)
-  for (uint i = 0u; i < MULTIPLE_SCATTERING_SQRT_SAMPLES; i++){
-    for (uint j = 0u; j < MULTIPLE_SCATTERING_SQRT_SAMPLES; j++){
-      Ray ray;
-
-      float theta = PI * (float(i) + 0.5) / float(MULTIPLE_SCATTERING_SQRT_SAMPLES); // only integrating over a hemisphere because the integral is symmetric
-      float phi = acos(saturate(1.0 - 2.0 * (float(j) + 0.5) / float(MULTIPLE_SCATTERING_SQRT_SAMPLES)));
-
-      ray.direction = spherical_to_cartesian(theta, phi);
-      ray.origin = sun_vector.origin;
-
-      vec3 test_point;
-
-      // TODO: handle outside atmosphere case
-
-      bool intersects_ground = ray_sphere_intersection(ray, vec3(0.0), earth_radius, test_point);
-      float t_max = distance(ray.origin, test_point);
-      if(t_max <= 0.0){
-        ray_sphere_intersection(ray, vec3(0.0), atmosphere_radius, test_point);
-        t_max = distance(ray.origin, test_point);
+      Ray t_ray = Ray(ray.origin, ray_dir);
+      bool intersects_ground = true;
+      vec3 t_pos;
+      ray_sphere_intersection(t_ray, vec3(0.0), earth_radius, t_pos);
+      float t_max = distance(t_ray.origin, t_pos);
+      if(t_max <= 0.0) {
+        intersects_ground = false;
+        ray_sphere_intersection(t_ray, vec3(0.0), atmosphere_radius, t_pos);
+        t_max = distance(t_ray.origin, t_pos);
       }
+      
+      float cos_theta = dot(ray_dir, world_sun_dir);
 
-      vec3 luminance = vec3(0.0);
+      float mie_phase = mie_phase(cos_theta);
+      float rayleigh_phase = rayleigh_phase(-cos_theta);
+      
+      vec3 luminance = vec3(0.0); 
       vec3 luminance_factor = vec3(0.0);
       vec3 transmittance = vec3(1.0);
       float t = 0.0;
-
-      float cos_theta = dot(ray.direction, world_sun_dir);
-      float rayleigh_phase = rayleigh_phase(cos_theta);
-      float mie_phase = mie_phase(cos_theta);
-
-      for (float step_i = 0.0; step_i < float(MULTIPLE_SCATTERING_STEPS); step_i += 1.0){
-        float new_t = ((step_i + 0.3) / MULTIPLE_SCATTERING_STEPS) * t_max;
-        float d_t = new_t - t;
-
+      for (float step_i = 0.0; step_i < MULTIPLE_SCATTERING_STEPS; step_i += 1.0) {
+        float new_t = ((step_i + 0.3)/MULTIPLE_SCATTERING_STEPS)*t_max;
+        float dt = new_t - t;
         t = new_t;
 
-        vec3 new_pos = ray.origin + t * ray.direction;
-        float altitude = max0(length(new_pos));
+        vec3 new_pos = ray.origin + t*ray_dir;
+        float altitude = max0(length(new_pos) - earth_radius);
 
         float rayleigh_density = rayleigh_density(altitude);
         float mie_density = mie_density(altitude);
@@ -87,47 +79,38 @@ void main() {
         extinction += rayleigh_absorption_coeff * rayleigh_density;
         extinction += mie_absorption_coeff * mie_density;
         extinction += ozone_absorption_coeff * ozone_density;
-
-        vec3 sample_transmittance = exp(-extinction * d_t);
-
-        // second order sca
+        vec3 sample_transmittance = exp(-extinction * dt);
+        
         vec3 scattering_no_phase = rayleigh_scattering + mie_scattering;
-        vec3 scattering_no_phase_integral = (scattering_no_phase - scattering_no_phase * sample_transmittance) / extinction;
-        luminance_factor += transmittance * scattering_no_phase_integral;
+        vec3 scattering_f = scattering_no_phase;//(scattering_no_phase - scattering_no_phase * sample_transmittance) / max(extinction, 1e-6);
+        luminance_factor += transmittance*scattering_f;
+        
+        vec3 sun_transmittance = texture(sun_transmittance_lut_tex, parameterise_sun_transmittance(Ray(new_pos, world_sun_dir))).rgb;
 
-        Ray sample_sun_ray;
-        sample_sun_ray.origin = new_pos;
-        sample_sun_ray.direction = world_sun_dir;
-        vec3 sun_transmittance = texture(sun_transmittance_lut_tex, parameterise_sun_transmittance(sample_sun_ray)).rgb;
+        vec3 rayleigh_in_scattering = rayleigh_scattering*rayleigh_phase;
+        vec3 mie_in_scattering = mie_scattering*mie_phase;
+        vec3 in_scattering = (rayleigh_in_scattering + mie_in_scattering)*sun_transmittance*sun_irradiance;
 
-        vec3 scattering = rayleigh_scattering * rayleigh_phase + mie_scattering * mie_phase;
-        vec3 scattering_integral = (scattering - scattering * sample_transmittance) / max(extinction, 1e-8);
+        vec3 scattering_integral = in_scattering;// (in_scattering - in_scattering * sample_transmittance) / max(extinction, 1e-6);
 
-        luminance += scattering_integral;
+        luminance += scattering_integral*transmittance;
         transmittance *= sample_transmittance;
       }
-
-      if(intersects_ground) {
-        vec3 hit_pos = ray.origin + t_max * ray.direction;
-        if(dot(ray.origin, world_sun_dir) > 0.0) {
-          Ray hit_ray;
-          hit_ray.origin = hit_pos;
-          hit_ray.direction = world_sun_dir;
-          luminance += max0(transmittance * earth_albedo * texture(sun_transmittance_lut_tex, parameterise_sun_transmittance(hit_ray)).rgb);
+      
+      if (intersects_ground) {
+        vec3 hit_pos = ray.origin + t_max*ray_dir;
+        if (dot(ray.origin, world_sun_dir) > 0.0) {
+          hit_pos = normalize(hit_pos)*earth_radius;
+          luminance += transmittance*earth_albedo*texture(sun_transmittance_lut_tex, parameterise_sun_transmittance(Ray(hit_pos, world_sun_dir))).rgb;;
         }
       }
-
-      psi_ms += luminance_factor * inverse_samples;
-      total_luminance += luminance * inverse_samples;
+      
+      psi_ms += luminance_factor*inverse_samples;
+      total_luminance += luminance*inverse_samples;
     }
   }
-
-  vec3 psi = total_luminance;
-  if(any(isnan(psi))){
-    psi = vec3(1.0);
-  } else {
-    psi = vec3(0.0);
-  }
-
-  imageStore(multiple_scattering_lut, texel_coord, vec4(psi * 1000.0, 1.0));
+  
+  vec3 psi = total_luminance  / (1.0 - psi_ms);
+  
+  imageStore(multiple_scattering_lut, texel_coord, vec4(psi * 10000.0, 1.0));
 }

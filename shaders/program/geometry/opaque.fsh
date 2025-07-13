@@ -20,6 +20,8 @@ void iris_emitFragment() {
   gbuffer.albedo = pow(albedo.rgb, vec3(2.2));
 
   gbuffer.geometry_normal = tbn_matrix[2];
+  gbuffer.texture_normal = tbn_matrix[2];
+
   gbuffer.lightmap = lightmap;
 
   encode_gbuffer(gbuffer_1, gbuffer_2, gbuffer);

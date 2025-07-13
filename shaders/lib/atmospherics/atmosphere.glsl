@@ -100,7 +100,7 @@ Ray un_parameterise_sky_view(vec2 uv) {
   l = sign(l) * pow2(l);
   ray.direction.y = sin(l) * (PI / 2);
 
-  ray.origin = vec3(0.0, ap.camera.pos.y + earth_radius, 0.0);
+  ray.origin = vec3(0.0, ap.camera.pos.y + earth_radius + 64, 0.0);
 
   return ray;
 }

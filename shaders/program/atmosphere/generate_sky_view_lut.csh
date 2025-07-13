@@ -30,7 +30,10 @@ void main() {
   vec3 ray_pos = ray.origin;
   vec3 end_pos;
   if(!ray_sphere_intersection(ray, vec3(0.0), earth_radius, end_pos)){ // if we did not hit the earth
-    ray_sphere_intersection(ray, vec3(0.0), atmosphere_radius, end_pos);
+    if(!ray_sphere_intersection(ray, vec3(0.0), atmosphere_radius, end_pos)){
+      imageStore(sky_view_lut, texel_coord, vec4(vec3(0.0), 1.0));
+      return;
+    }
   }
 
   #define SKY_VIEW_TRANSMITTANCE_STEPS 32u
@@ -41,10 +44,10 @@ void main() {
   vec3 transmittance = vec3(1.0);
 
   float cos_theta = dot(ray.direction, world_sun_dir);
-  float rayleigh_phase = rayleigh_phase(cos_theta);
+  float rayleigh_phase = rayleigh_phase(-cos_theta);
   float mie_phase = mie_phase(cos_theta);
 
-  ray_pos -= ray_step * 0.5; // to centre us in each step
+  ray_pos += ray_step * 0.5; // to centre us in each step
 
   for(uint i = 0u; i < SKY_VIEW_TRANSMITTANCE_STEPS; i++){
     float altitude = max0(length(ray_pos) - earth_radius);
@@ -77,14 +80,15 @@ void main() {
     ray_pos += ray_step;
   }
 
+
   imageStore(sky_view_lut, texel_coord, vec4(luminance, 1.0));
 
   Ray sun_ray;
   sun_ray.direction = world_sun_dir;
-  sun_ray.origin = vec3(0.0, ap.camera.pos.y + earth_radius, 0.0);
+  sun_ray.origin = vec3(0.0, ap.camera.pos.y + earth_radius + 64, 0.0);
 
   if(gl_GlobalInvocationID == ivec3(0)){
-    sunlight_color = sun_radiance;
+    sunlight_color = texture(sun_transmittance_lut_tex, parameterise_sun_transmittance(Ray(vec3(0.0, ap.camera.pos.y + earth_radius + 64, 0.0), world_light_dir))).rgb * sun_irradiance;
   }
   
 
