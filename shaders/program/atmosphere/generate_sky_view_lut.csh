@@ -29,8 +29,9 @@ void main() {
 
   vec3 ray_pos = ray.origin;
   vec3 end_pos;
-  if(!ray_sphere_intersection(ray, vec3(0.0), earth_radius, end_pos)){ // if we did not hit the earth
-    if(!ray_sphere_intersection(ray, vec3(0.0), atmosphere_radius, end_pos)){
+  if (!ray_sphere_intersection(ray, vec3(0.0), earth_radius, end_pos)) {
+    // if we did not hit the earth
+    if (!ray_sphere_intersection(ray, vec3(0.0), atmosphere_radius, end_pos)) {
       imageStore(sky_view_lut, texel_coord, vec4(vec3(0.0), 1.0));
       return;
     }
@@ -49,7 +50,7 @@ void main() {
 
   ray_pos += ray_step * 0.5; // to centre us in each step
 
-  for(uint i = 0u; i < SKY_VIEW_TRANSMITTANCE_STEPS; i++){
+  for (uint i = 0u; i < SKY_VIEW_TRANSMITTANCE_STEPS; i++) {
     float altitude = max0(length(ray_pos) - earth_radius);
 
     float rayleigh_density = rayleigh_density(altitude);
@@ -69,17 +70,22 @@ void main() {
     Ray sun_ray;
     sun_ray.origin = ray_pos;
     sun_ray.direction = world_sun_dir;
-    vec3 sun_transmittance = texture(sun_transmittance_lut_tex, parameterise_sun_transmittance(sun_ray)).rgb;
+    vec3 sun_transmittance = texture(
+      sun_transmittance_lut_tex,
+      parameterise_sun_transmittance(sun_ray)
+    ).rgb;
 
-    vec3 scattering = (rayleigh_scattering * rayleigh_phase + mie_scattering * mie_phase) * sun_transmittance;
+    vec3 scattering =
+      (rayleigh_scattering * rayleigh_phase + mie_scattering * mie_phase) *
+      sun_transmittance;
 
-    vec3 scattering_integral = (scattering - scattering * sample_transmittance) / max(extinction, 1e-6);
+    vec3 scattering_integral =
+      (scattering - scattering * sample_transmittance) / max(extinction, 1e-6);
     luminance += scattering_integral * transmittance;
     transmittance *= sample_transmittance;
 
     ray_pos += ray_step;
   }
-
 
   imageStore(sky_view_lut, texel_coord, vec4(luminance, 1.0));
 
@@ -87,9 +93,18 @@ void main() {
   sun_ray.direction = world_sun_dir;
   sun_ray.origin = vec3(0.0, ap.camera.pos.y + earth_radius + 64, 0.0);
 
-  if(gl_GlobalInvocationID == ivec3(0)){
-    sunlight_color = texture(sun_transmittance_lut_tex, parameterise_sun_transmittance(Ray(vec3(0.0, ap.camera.pos.y + earth_radius + 64, 0.0), world_light_dir))).rgb * sun_irradiance;
+  if (gl_GlobalInvocationID == ivec3(0)) {
+    sunlight_color =
+      texture(
+        sun_transmittance_lut_tex,
+        parameterise_sun_transmittance(
+          Ray(
+            vec3(0.0, ap.camera.pos.y + earth_radius + 64, 0.0),
+            world_light_dir
+          )
+        )
+      ).rgb *
+      sun_irradiance;
   }
-  
 
 }

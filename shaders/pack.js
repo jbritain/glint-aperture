@@ -9,74 +9,51 @@ function configureRenderer(renderer) {
   renderer.mergedHandDepth = true;
 }
 function configurePipeline(pipeline) {
-  const sceneData = new GPUBuffer(16).clear(true).build();
-  const debugTex = new Texture("debug_tex").format(Format.RGBA8).imageName("debug").clear(true).build();
-  const sunTransmittanceLUT = new Texture("sun_transmittance_lut_tex").format(Format.RGBA16F).imageName("sun_transmittance_lut").width(256).height(64).clear(false).build();
-  const multipleScatteringLUT = new Texture("multiple_scattering_lut_tex").format(Format.RGBA16F).imageName("multiple_scattering_lut").width(32).height(32).clear(false).build();
-  const skyViewLUT = new Texture("sky_view_lut_tex").format(Format.RGBA16F).imageName("sky_view_lut").width(200).height(200).clear(true).mipmap(true).build();
+  const screenSetup = pipeline.createCommandList();
+  const preRender = pipeline.createCommandList();
+  const preTranslucent = pipeline.createCommandList();
+  const postRender = pipeline.createCommandList();
+  const sceneData = pipeline.createBuffer(16, true);
+  const debugTex = pipeline.createImageTexture("debug_tex", "debug").format(Format.RGBA8).clear(true).build();
+  const sunTransmittanceLUT = pipeline.createImageTexture("sun_transmittance_lut_tex", "sun_transmittance_lut").format(Format.RGBA16F).width(256).height(64).clear(false).build();
+  const multipleScatteringLUT = pipeline.createImageTexture(
+    "multiple_scattering_lut_tex",
+    "multiple_scattering_lut"
+  ).format(Format.RGBA16F).width(32).height(32).clear(false).build();
+  const skyViewLUT = pipeline.createImageTexture("sky_view_lut_tex", "sky_view_lut").format(Format.RGBA16F).width(200).height(200).clear(true).mipmap(true).build();
   defineGlobally("SKY_VIEW_RES", "ivec2(200, 200)");
-  pipeline.registerPostPass(
-    Stage.SCREEN_SETUP,
-    new Compute("generateSunTransmittanceLUT").location("program/atmosphere/generate_sun_transmittance_lut.csh").workGroups(32, 8, 1).build()
-  );
-  pipeline.addBarrier(Stage.SCREEN_SETUP, IMAGE_BIT);
-  pipeline.registerPostPass(
-    Stage.SCREEN_SETUP,
-    new Compute("generateMultipleScatteringLUT").location("program/atmosphere/generate_multiple_scattering_lut.csh").workGroups(4, 4, 1).build()
-  );
-  pipeline.addBarrier(Stage.SCREEN_SETUP, IMAGE_BIT);
-  pipeline.registerPostPass(
-    Stage.PRE_RENDER,
-    new Compute("generateSkyViewLUT").location("program/atmosphere/generate_sky_view_lut.csh").workGroups(25, 25, 1).ssbo(0, sceneData).build()
-  );
-  pipeline.addBarrier(Stage.PRE_RENDER, IMAGE_BIT);
-  const skyIrradianceLUT = new Texture("sky_irradiance_lut_tex").format(Format.RGBA16F).imageName("sky_irradiance_lut").width(32).height(32).clear(true).build();
-  pipeline.registerPostPass(
-    Stage.PRE_RENDER,
-    new Compute("generateSkyIrradianceLUT").location("program/render_setup/generate_sky_irradiance_lut.csh").workGroups(4, 4, 1).ssbo(0, sceneData).build()
-  );
-  pipeline.addBarrier(Stage.PRE_RENDER, IMAGE_BIT);
-  pipeline.registerObjectShader(
-    new ObjectShader("shadow", Usage.SHADOW).vertex("program/geometry/shadow.vsh").fragment("program/geometry/shadow.fsh").build()
-  );
-  const gbufferTex1 = new Texture("gbuffer_tex_1").format(Format.RGBA16).clear(true).build();
-  const gbufferTex2 = new Texture("gbuffer_tex_2").format(Format.RGBA16).clear(true).build();
-  pipeline.registerObjectShader(
-    new ObjectShader("terrain", Usage.TEXTURED).vertex("program/geometry/opaque.vsh").fragment("program/geometry/opaque.fsh").target(0, gbufferTex1).target(1, gbufferTex2).build()
-  );
-  const shadowTex = new Texture("shadow_tex").format(Format.RGB8).clear(true).build();
-  const subsurfaceScatterTex = new Texture("subsurface_scatter_tex").format(Format.RGB8).clear(true).build();
-  pipeline.registerPostPass(
-    Stage.PRE_TRANSLUCENT,
-    new Composite("opaque_shadowing").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_shadowing.fsh").target(0, shadowTex).target(1, subsurfaceScatterTex).build()
-  );
-  const sceneTex = new Texture("scene_tex").format(Format.RGBA32F).clear(true).build();
-  pipeline.registerPostPass(
-    Stage.PRE_TRANSLUCENT,
-    new Composite("sky").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/render_sky.fsh").target(0, sceneTex).build()
-  );
-  pipeline.registerPostPass(
-    Stage.PRE_TRANSLUCENT,
-    new Composite("opaqueDiffuse").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_diffuse.fsh").target(0, sceneTex).ssbo(0, sceneData).build()
-  );
-  pipeline.registerPostPass(
-    Stage.POST_RENDER,
-    new Composite("exposure").vertex("program/fullscreen_pass.vsh").fragment("program/post/exposure.fsh").target(0, sceneTex).build()
-  );
-  const bloomTex = new Texture("bloom_tex").format(Format.RGBA16F).clear(true).mipmap(true).build();
+  const skyIrradianceLUT = pipeline.createImageTexture("sky_irradiance_lut_tex", "sky_irradiance_lut").format(Format.RGBA16F).width(32).height(32).clear(true).build();
+  screenSetup.createCompute("generate_sun_transmittance_lut").location("program/atmosphere/generate_sun_transmittance_lut.csh").workGroups(32, 8, 1).compile();
+  screenSetup.barrier(IMAGE_BIT);
+  screenSetup.createCompute("generate_multiple_scattering_lut").location("program/atmosphere/generate_multiple_scattering_lut.csh").workGroups(4, 4, 1).compile();
+  preRender.barrier(IMAGE_BIT);
+  preRender.createCompute("generate_sky_view_lut").location("program/atmosphere/generate_sky_view_lut.csh").workGroups(25, 25, 1).ssbo(0, sceneData).compile();
+  preRender.barrier(IMAGE_BIT);
+  preRender.createCompute("generateSkyIrradianceLUT").location("program/render_setup/generate_sky_irradiance_lut.csh").workGroups(4, 4, 1).ssbo(0, sceneData).compile();
+  preRender.barrier(IMAGE_BIT);
+  pipeline.createObjectShader("shadow", Usage.SHADOW).vertex("program/geometry/shadow.vsh").fragment("program/geometry/shadow.fsh").compile();
+  const gbufferTex1 = pipeline.createTexture("gbuffer_tex_1").format(Format.RGBA16).clear(true).build();
+  const gbufferTex2 = pipeline.createTexture("gbuffer_tex_2").format(Format.RGBA16).clear(true).build();
+  pipeline.createObjectShader("terrain", Usage.TEXTURED).vertex("program/geometry/opaque.vsh").fragment("program/geometry/opaque.fsh").target(0, gbufferTex1).target(1, gbufferTex2).compile();
+  const shadowTex = pipeline.createTexture("shadow_tex").format(Format.RGB8).clear(true).build();
+  const subsurfaceScatterTex = pipeline.createTexture("subsurface_scatter_tex").format(Format.RGB8).clear(true).build();
+  preTranslucent.createComposite("opaque_shadowing").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_shadowing.fsh").target(0, shadowTex).target(1, subsurfaceScatterTex).compile();
+  const sceneTex = pipeline.createTexture("scene_tex").format(Format.RGBA32F).clear(true).build();
+  preTranslucent.createComposite("sky").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/render_sky.fsh").target(0, sceneTex).compile();
+  preTranslucent.createComposite("opaque_shading").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_shading.fsh").target(0, sceneTex).ssbo(0, sceneData).compile();
+  postRender.createComposite("exposure").vertex("program/fullscreen_pass.vsh").fragment("program/post/exposure.fsh").target(0, sceneTex).compile();
+  const bloomTex = pipeline.createTexture("bloom_tex").format(Format.RGBA16F).clear(true).mipmap(true).build();
   for (let i = 0; i < 5; i++) {
-    pipeline.registerPostPass(
-      Stage.POST_RENDER,
-      new Composite(`bloomDownsample${i}-${i + 1}`).vertex("program/fullscreen_pass.vsh").fragment("program/post/bloom_downsample.fsh").target(0, bloomTex, i + 1).define("BLOOM_INDEX", i.toString()).build()
-    );
+    postRender.createComposite(`bloom_ownsample${i}-${i + 1}`).vertex("program/fullscreen_pass.vsh").fragment("program/post/bloom_downsample.fsh").target(0, bloomTex, i + 1).define("BLOOM_INDEX", i.toString()).compile();
   }
   for (let i = 5; i > 0; i -= 1) {
-    pipeline.registerPostPass(
-      Stage.POST_RENDER,
-      new Composite(`bloomUpsample${i}-${i - 1}`).vertex("program/fullscreen_pass.vsh").fragment("program/post/bloom_upsample.fsh").target(0, bloomTex, i - 1).define("BLOOM_INDEX", i.toString()).build()
-    );
+    postRender.createComposite(`bloomUpsample${i}-${i - 1}`).vertex("program/fullscreen_pass.vsh").fragment("program/post/bloom_upsample.fsh").target(0, bloomTex, i - 1).define("BLOOM_INDEX", i.toString()).compile();
   }
-  pipeline.setCombinationPass(new CombinationPass("program/combination.fsh").build());
+  pipeline.setCommandList(Stage.SCREEN_SETUP, screenSetup.end());
+  pipeline.setCommandList(Stage.PRE_RENDER, preRender.end());
+  pipeline.setCommandList(Stage.PRE_TRANSLUCENT, preTranslucent.end());
+  pipeline.setCommandList(Stage.POST_RENDER, postRender.end());
+  pipeline.createCombinationPass("program/combination.fsh").compile();
 }
 export {
   configurePipeline,

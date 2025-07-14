@@ -23,18 +23,18 @@ void main() {
 
   vec3 col = vec3(0.0);
 
-  for(int i = 0; i < SKY_IRRADIANCE_SQRT_SAMPLES; i++){
-    for(int j = 0; j < SKY_IRRADIANCE_SQRT_SAMPLES; j++){
+  for (int i = 0; i < SKY_IRRADIANCE_SQRT_SAMPLES; i++) {
+    for (int j = 0; j < SKY_IRRADIANCE_SQRT_SAMPLES; j++) {
       vec2 coeffs = (vec2(i, j) + 0.5) / float(SKY_IRRADIANCE_SQRT_SAMPLES);
       float cos_theta = sqrt(coeffs.x);
       float sin_theta = sqrt(1.0 - pow2(cos_theta));
       float phi = coeffs.y * TAU;
 
-      vec3 sample_dir = rotate(vec3(
-        cos(phi) * sin_theta,
-        sin(phi) * sin_theta,
-        cos_theta
-      ), vec3(0.0, 0.0, 1.0), dir);
+      vec3 sample_dir = rotate(
+        vec3(cos(phi) * sin_theta, sin(phi) * sin_theta, cos_theta),
+        vec3(0.0, 0.0, 1.0),
+        dir
+      );
 
       col += get_sky(sample_dir, false);
     }
@@ -42,7 +42,6 @@ void main() {
 
   col /= float(pow2(SKY_IRRADIANCE_SQRT_SAMPLES));
   col;
-  
 
   imageStore(sky_irradiance_lut, texel_coord, vec4(col, 1.0));
 }

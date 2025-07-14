@@ -29,10 +29,9 @@ void main() {
   vec3 target_pos;
 
   // the sun cannot shine through the planet
-  if(ray_sphere_intersection(ray, vec3(0.0), earth_radius, target_pos)){
+  if (ray_sphere_intersection(ray, vec3(0.0), earth_radius, target_pos)) {
     imageStore(sun_transmittance_lut, texel_coord, vec4(vec3(0.0), 1.0));
   }
-
 
   ray_sphere_intersection(ray, vec3(0.0), atmosphere_radius, target_pos);
 
@@ -43,7 +42,7 @@ void main() {
 
   ray_pos -= ray_step * 0.5; // to centre us in each step
 
-  for(uint i = 0u; i < SUN_TRANSMITTANCE_STEPS; i++){
+  for (uint i = 0u; i < SUN_TRANSMITTANCE_STEPS; i++) {
     float altitude = max0(length(ray_pos) - earth_radius);
 
     float rayleigh_density = rayleigh_density(altitude);
@@ -64,7 +63,5 @@ void main() {
   }
 
   imageStore(sun_transmittance_lut, texel_coord, vec4(transmittance, 1.0));
-
-
 
 }
