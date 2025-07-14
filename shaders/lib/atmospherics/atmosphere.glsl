@@ -1,6 +1,8 @@
 #ifndef HILLAIRE_GLSL
 #define HILLAIRE_GLSL
 
+#include "/lib/util/phase_functions.glsl"
+
 /*
     Hillaire, S. (2020). A Scalable and Production Ready Sky and Atmosphere Rendering Technique.  https://sebh.github.io/publications/egsr2020.pdf
 */
@@ -24,21 +26,6 @@ const vec3 mie_scattering_coeff = vec3(3.996) * 1e-6;
 const vec3 rayleigh_absorption_coeff = vec3(0.0) * 1e-6;
 const vec3 mie_absorption_coeff = vec3(4.4) * 1e-6;
 const vec3 ozone_absorption_coeff = vec3(0.65, 1.881, 0.085) * 1e-6;
-
-float rayleigh_phase(float cos_theta) {
-  return 3.0 * (1.0 + pow2(cos_theta)) / 16.0 * PI;
-}
-
-float cornette_shanks_phase(float cos_theta, float g) {
-  return 3.0 /
-  (8.0 * PI) *
-  ((1.0 - pow2(g)) * (1.0 + pow2(cos_theta))) /
-  ((2.0 + pow2(g)) * pow(1.0 + pow2(g) - 2.0 * g * cos_theta, 3.0 / 2.0));
-}
-
-float mie_phase(float cos_theta) {
-  return cornette_shanks_phase(cos_theta, 0.8);
-}
 
 float rayleigh_density(float altitude) {
   return max0(exp(-altitude / 8.0e3));

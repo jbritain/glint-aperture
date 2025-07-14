@@ -3,8 +3,11 @@
 
 #include "/lib/util/shadow_space.glsl"
 #include "/lib/util/misc.glsl"
+#include "/lib/util/dither.glsl"
 
 #define PCSS_MAX_RADIUS 1.0 // 1 block
+
+#define PCF_SAMPLES 8
 #define BLOCKER_DISTANCE_SAMPLES 4
 
 vec3 sample_shadow_map(vec3 shadow_screen_pos, int cascade) {
@@ -16,36 +19,64 @@ vec3 sample_shadow_map(vec3 shadow_screen_pos, int cascade) {
   );
 }
 
-float get_blocker_depth(vec3 shadow_screen_pos, int cascade) {
+float get_blocker_distance(
+  vec3 shadow_screen_pos,
+  int cascade,
+  vec2 radius,
+  float jitter
+) {
   float average_blocker_depth = 0.0;
   int samples = 0;
-  vec2 cascade_size = 2.0 / vec2(ap.celestial.projection[cascade][0].x, ap.celestial.projection[cascade][1].y);
 
   for (int i = 0; i < BLOCKER_DISTANCE_SAMPLES; i++) {
-    vec2 offset = vogel_disc_sample(i, BLOCKER_DISTANCE_SAMPLES, 0.0) * PCSS_MAX_RADIUS * cascade_size;
+    vec2 offset =
+      vogel_disc_sample(i, BLOCKER_DISTANCE_SAMPLES, jitter) * radius;
 
-    float blocker_depth = texture(shadowMap, shadow_screen_pos.xz + offset).r;
+    float blocker_depth = texture(
+      shadowMap,
+      vec3(shadow_screen_pos.xy + offset, cascade)
+    ).r;
 
-    if(blocker_depth < shadow_screen_pos.z) {
+    if (blocker_depth < shadow_screen_pos.z) {
       average_blocker_depth += blocker_depth;
       samples++;
     }
   }
 
-  return average_blocker_depth / float(samples);
+  return shadow_screen_pos.z - average_blocker_depth / float(samples);
 }
 
-struct Shadow_Subsurface_Scatter {
-  vec3 shadow;
-  vec3 subsurface_scatter;
-};
-
-Shadow_Subsurface_Scatter compute_shadowing_and_subsurface_scattering(
-  vec3 player_pos,
-  vec3 world_normal,
-  float subsurface_scattering
+vec3 sample_pcf(
+  vec3 shadow_screen_pos,
+  int cascade,
+  vec2 radius,
+  float jitter
 ) {
-  Shadow_Subsurface_Scatter result;
+  vec3 shadow = vec3(0.0);
+
+  for (int i = 0; i < PCF_SAMPLES; i++) {
+    vec2 offset =
+      vogel_disc_sample(i, BLOCKER_DISTANCE_SAMPLES, jitter) * radius;
+
+    shadow += sample_shadow_map(shadow_screen_pos + vec3(offset, 0.0), cascade);
+  }
+
+  return shadow / float(PCF_SAMPLES);
+}
+
+/*
+  The blocker distance is stored in the alpha channel, stored as a 0-1
+*/
+vec4 compute_shadowing_and_blocker_distance(
+  vec3 player_pos,
+  vec3 world_normal
+) {
+  vec4 shadow;
+
+  float jitter = interleaved_gradient_noise(
+    floor(gl_FragCoord.xy),
+    ap.time.frames
+  );
 
   int cascade;
   vec3 shadow_screen_pos = get_shadow_screen_pos(
@@ -54,12 +85,28 @@ Shadow_Subsurface_Scatter compute_shadowing_and_subsurface_scattering(
     cascade
   );
 
-  float blocker_depth = get_blocker_depth(shadow_screen_pos, cascade);
-  show(texture(shadowMap, shadow_screen_pos.xy));
+  vec3 shadow_map_pixel_size = get_shadow_map_pixel_size(cascade);
+  vec3 shadow_map_max_pixel_size = get_shadow_map_pixel_size(3);
 
-  result.shadow = sample_shadow_map(shadow_screen_pos, cascade);
+  float blocker_distance =
+    get_blocker_distance(
+      shadow_screen_pos,
+      cascade,
+      PCSS_MAX_RADIUS * shadow_map_pixel_size.xy,
+      jitter
+    ) *
+    shadow_map_pixel_size.z /
+    shadow_map_max_pixel_size.z;
 
-  return result;
+  vec2 sample_radius =
+    PCSS_MAX_RADIUS *
+    saturate(blocker_distance * 4.0) *
+    shadow_map_pixel_size.xy;
+  shadow.rgb = sample_pcf(shadow_screen_pos, cascade, sample_radius, jitter);
+
+  shadow.a = blocker_distance;
+
+  return shadow;
 }
 
 #endif // SHADOWS_GLSL

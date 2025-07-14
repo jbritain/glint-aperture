@@ -2,10 +2,10 @@
 #define BRDF_GLSL
 
 vec3 brdf_diffuse(Material material, vec3 L) {
-  float NoL = dot(material.texture_normal, L);
+  float NoL = saturate(dot(material.texture_normal, L));
   NoL *= step(0.0, dot(material.geometry_normal, L));
 
-  return material.albedo * saturate(NoL);
+  return material.albedo * NoL;
 }
 
 // https://advances.realtimerendering.com/s2017/DecimaSiggraph2017.pdf

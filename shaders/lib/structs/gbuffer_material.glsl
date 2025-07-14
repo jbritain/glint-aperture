@@ -105,9 +105,8 @@ Gbuffer decode_gbuffer(vec4 data_1, vec4 data_2) {
   gbuffer.albedo = pow(vec3(decode_1x.x, decode_1x.y, decode_1y.x), vec3(2.2));
   gbuffer.material_ao = decode_1y.y;
 
-  gbuffer.geometry_normal =
-    mat3(ap.camera.view) * decode_unit_vector(decode_1z);
-  gbuffer.texture_normal = mat3(ap.camera.view) * decode_unit_vector(decode_2x);
+  gbuffer.geometry_normal = decode_unit_vector(decode_1z);
+  gbuffer.texture_normal = decode_unit_vector(decode_2x);
   gbuffer.lightmap = decode_1w;
 
   gbuffer.specular_map = vec4(decode_2y, decode_2z);
@@ -125,7 +124,7 @@ struct Material {
   float f0;
   float roughness;
   float porosity;
-  float subsurface;
+  float subsurface_scattering;
   float ambient_occlusion;
   float emission;
 };
@@ -146,10 +145,8 @@ Material decode_material_from_gbuffer(vec4 data_1, vec4 data_2) {
   material.albedo = pow(vec3(decode_1x.x, decode_1x.y, decode_1y.x), vec3(2.2));
   material.ambient_occlusion = decode_1y.y;
 
-  material.geometry_normal =
-    mat3(ap.camera.view) * decode_unit_vector(decode_1z);
-  material.texture_normal =
-    mat3(ap.camera.view) * decode_unit_vector(decode_2x);
+  material.geometry_normal = decode_unit_vector(decode_1z);
+  material.texture_normal = decode_unit_vector(decode_2x);
   material.lightmap = decode_1w;
 
   vec4 specular_map = vec4(decode_2y, decode_2z);
@@ -157,21 +154,16 @@ Material decode_material_from_gbuffer(vec4 data_1, vec4 data_2) {
   material.roughness = pow2(1.0 - specular_map.r);
   material.f0 = specular_map.g;
 
-  material.metal_id = clamp(
-    uint(specular_map.g * 255 + 0.5) - 229,
-    NO_METAL,
-    OTHER_METAL
-  );
-  if (material.metal_id != NO_METAL) {
-    material.f0 = -1.0;
-  }
+  material.metal_id = max(0, int(0.04 * 255.0 - 228.5));
+
+  show(material.metal_id == NO_METAL);
 
   if (specular_map.b <= 0.25) {
     material.porosity = specular_map.b * 4.0;
-    material.subsurface = 0.0;
+    material.subsurface_scattering = 0.0;
   } else {
     material.porosity = (1.0 - specular_map.r) * specular_map.g; // fall back to using roughness and base reflectance for porosity
-    material.subsurface = (specular_map.b - 0.25) * 4.0 / 3.0;
+    material.subsurface_scattering = (specular_map.b - 0.25) * 4.0 / 3.0;
   }
 
   return material;
@@ -195,8 +187,7 @@ Reduced_Gbuffer decode_reduced_gbuffer(vec4 data_1) {
   gbuffer.albedo = pow(vec3(decode_1x.x, decode_1x.y, decode_1y.x), vec3(2.2));
   gbuffer.material_ao = decode_1y.y;
 
-  gbuffer.geometry_normal =
-    mat3(ap.camera.view) * decode_unit_vector(decode_1z);
+  gbuffer.geometry_normal = decode_unit_vector(decode_1z);
   gbuffer.lightmap = decode_1w;
 
   return gbuffer;

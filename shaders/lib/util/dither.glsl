@@ -37,4 +37,14 @@ float direct_bayer(uvec2 p, uint level) {
   return float(i >> 32u - 2u * level) / float(1 << 2u * level);
 }
 
+// https://blog.demofox.org/2022/01/01/interleaved-gradient-noise-a-different-kind-of-low-discrepancy-sequence/
+// adapted with help from balint and hardester
+float interleaved_gradient_noise(vec2 coord) {
+  return fract(52.9829189 * fract(0.06711056 * coord.x + 0.00583715 * coord.y));
+}
+
+float interleaved_gradient_noise(vec2 coord, int frame) {
+  return interleaved_gradient_noise(coord + 5.588238 * (frame & 63));
+}
+
 #endif // DITHER_GLSL

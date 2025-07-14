@@ -1,7 +1,7 @@
 #version 460 core
 
 uniform sampler2DArrayShadow shadowMapFiltered;
-uniform sampler2D shadowMap;
+uniform sampler2DArray shadowMap;
 
 #include "/lib/common.glsl"
 #include "/lib/structs/gbuffer_material.glsl"
@@ -9,6 +9,7 @@ uniform sampler2D shadowMap;
 #include "/lib/util/misc.glsl"
 #include "/lib/util/space_conversions.glsl"
 #include "/lib/lighting/shadows.glsl"
+#include "/lib/lighting/subsurface_scattering.glsl"
 
 in vec2 uv;
 
@@ -16,8 +17,7 @@ uniform sampler2D gbuffer_tex_1;
 
 uniform sampler2D mainDepthTex;
 
-layout(location = 0) out vec3 shadowing;
-layout(location = 1) out vec3 subsurface_scattering;
+layout(location = 0) out vec4 shadowing_and_blocker_distance;
 
 void main() {
   float depth = texture(mainDepthTex, uv).r;
@@ -30,14 +30,11 @@ void main() {
 
   Reduced_Gbuffer gbuffer = decode_reduced_gbuffer(texture(gbuffer_tex_1, uv));
 
-  Shadow_Subsurface_Scatter result =
-    compute_shadowing_and_subsurface_scattering(
-      player_pos,
-      mat3(ap.camera.viewInv) * gbuffer.geometry_normal,
-      0.0
-    );
+  shadowing_and_blocker_distance = compute_shadowing_and_blocker_distance(
+    player_pos,
+    gbuffer.geometry_normal
+  );
 
-  shadowing = result.shadow;
-  subsurface_scattering = result.subsurface_scatter;
+  shadowing_and_blocker_distance.a *= 100.0; // otherwise it gets quantised to fuck
 
 }

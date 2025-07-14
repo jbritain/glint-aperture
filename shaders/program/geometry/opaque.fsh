@@ -22,9 +22,9 @@ void iris_emitFragment() {
   gbuffer.geometry_normal = tbn_matrix[2];
 
   vec4 normal_data = iris_sampleNormalMap(uv);
-  vec3 texture_normal = normal_data.xyz;
+  vec3 texture_normal = normal_data.xyz * 2.0 - 1.0;
   texture_normal.z = sqrt(1.0 - dot(texture_normal.xy, texture_normal.xy));
-  gbuffer.texture_normal = tbn_matrix[2] * texture_normal;
+  gbuffer.texture_normal = tbn_matrix * texture_normal;
   gbuffer.material_ao = normal_data.z;
 
   gbuffer.specular_map = iris_sampleSpecularMap(uv);

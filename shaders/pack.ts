@@ -128,7 +128,7 @@ export function configurePipeline(pipeline: PipelineConfig) {
   // =======================================================================================
   const shadowTex = pipeline
     .createTexture("shadow_tex")
-    .format(Format.RGB8)
+    .format(Format.RGBA8)
     .clear(true)
     .build();
 

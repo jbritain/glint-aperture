@@ -7,6 +7,7 @@
 #include "/lib/util/misc.glsl"
 #include "/lib/util/space_conversions.glsl"
 #include "/lib/lighting/brdf.glsl"
+#include "/lib/lighting/subsurface_scattering.glsl"
 
 in vec2 uv;
 
@@ -32,16 +33,40 @@ void main() {
 
   vec3 view_pos = screen_space_to_view_space(vec3(uv, depth));
 
+  vec4 shadow = texture(shadow_tex, uv);
+
   Material material = decode_material_from_gbuffer(
     texture(gbuffer_tex_1, uv),
     texture(gbuffer_tex_2, uv)
   );
 
+  vec3 V = -normalize(view_pos);
+  vec3 world_V = mat3(ap.camera.viewInv) * V;
+
   color = vec3(0.0);
   color +=
-    brdf_diffuse(material, light_dir) *
+    brdf_diffuse(material, world_light_dir) * sunlight_color * shadow.rgb;
+
+  color += compute_subsurface_scattering(
+    material.albedo,
+    material.subsurface_scattering,
+    shadow.a,
+    -V,
+    light_dir
+  );
+
+  vec3 specular =
+    brdf_specular_area(material, world_light_dir, world_V, sun_angular_radius) *
     sunlight_color *
-    texture(shadow_tex, uv).rgb;
+    shadow.rgb;
+
+  vec3 fresnel = schlick(material, dot(material.texture_normal, world_V));
+
+  if (material.metal_id == NO_METAL) {
+    color = mix(color, specular, fresnel);
+  } else {
+    color = specular * fresnel;
+  }
 
   vec2 irradiance_uv =
     cartesian_to_spherical(mat3(ap.camera.viewInv) * material.texture_normal) /

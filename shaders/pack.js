@@ -35,7 +35,7 @@ function configurePipeline(pipeline) {
   const gbufferTex1 = pipeline.createTexture("gbuffer_tex_1").format(Format.RGBA16).clear(true).build();
   const gbufferTex2 = pipeline.createTexture("gbuffer_tex_2").format(Format.RGBA16).clear(true).build();
   pipeline.createObjectShader("terrain", Usage.TEXTURED).vertex("program/geometry/opaque.vsh").fragment("program/geometry/opaque.fsh").target(0, gbufferTex1).target(1, gbufferTex2).compile();
-  const shadowTex = pipeline.createTexture("shadow_tex").format(Format.RGB8).clear(true).build();
+  const shadowTex = pipeline.createTexture("shadow_tex").format(Format.RGBA8).clear(true).build();
   const subsurfaceScatterTex = pipeline.createTexture("subsurface_scatter_tex").format(Format.RGB8).clear(true).build();
   preTranslucent.createComposite("opaque_shadowing").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_shadowing.fsh").target(0, shadowTex).target(1, subsurfaceScatterTex).compile();
   const sceneTex = pipeline.createTexture("scene_tex").format(Format.RGBA32F).clear(true).build();
