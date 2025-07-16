@@ -10,7 +10,7 @@
 const float sun_radius = 6.9634e8;
 const float sun_distance = 1.496e11;
 const float sun_angular_radius = sun_radius / sun_distance;
-const vec3 sun_irradiance = vec3(1.0, 0.949, 0.937) * 126e3;
+const vec3 sun_irradiance = vec3(1.0, 0.949, 0.937) * 126;
 const vec3 sun_radiance =
   sun_irradiance / (TAU * (1.0 - cos(sun_angular_radius)));
 

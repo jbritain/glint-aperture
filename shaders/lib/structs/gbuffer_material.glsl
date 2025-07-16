@@ -156,8 +156,6 @@ Material decode_material_from_gbuffer(vec4 data_1, vec4 data_2) {
 
   material.metal_id = max(0, int(0.04 * 255.0 - 228.5));
 
-  show(material.metal_id == NO_METAL);
-
   if (specular_map.b <= 0.25) {
     material.porosity = specular_map.b * 4.0;
     material.subsurface_scattering = 0.0;

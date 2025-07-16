@@ -13,6 +13,7 @@ in vec2 uv;
 
 uniform sampler2D scene_tex;
 uniform sampler2D shadow_tex;
+uniform sampler2D global_illumination_tex;
 
 uniform sampler2D gbuffer_tex_1;
 uniform sampler2D gbuffer_tex_2;
@@ -21,13 +22,14 @@ uniform sampler2D sky_irradiance_lut_tex;
 
 uniform sampler2D mainDepthTex;
 
-layout(location = 0) out vec3 color;
+layout(location = 0) out vec3 shaded_color;
+layout(location = 1) out vec3 diffuse;
 
 void main() {
-  color = texture(scene_tex, uv).rgb;
-
   float depth = texture(mainDepthTex, uv).r;
   if (depth == 1.0) {
+    shaded_color = texture(scene_tex, uv).rgb;
+    diffuse = vec3(0.0);
     return;
   }
 
@@ -43,17 +45,18 @@ void main() {
   vec3 V = -normalize(view_pos);
   vec3 world_V = mat3(ap.camera.viewInv) * V;
 
-  color = vec3(0.0);
-  color +=
+  diffuse =
     brdf_diffuse(material, world_light_dir) * sunlight_color * shadow.rgb;
 
-  color += compute_subsurface_scattering(
+  diffuse += compute_subsurface_scattering(
     material.albedo,
     material.subsurface_scattering,
     shadow.a,
     -V,
     light_dir
   );
+
+  vec4 GI = texture(global_illumination_tex, uv);
 
   vec3 specular =
     brdf_specular_area(material, world_light_dir, world_V, sun_angular_radius) *
@@ -63,18 +66,20 @@ void main() {
   vec3 fresnel = schlick(material, dot(material.texture_normal, world_V));
 
   if (material.metal_id == NO_METAL) {
-    color = mix(color, specular, fresnel);
+    shaded_color = mix(diffuse, specular, fresnel);
   } else {
-    color = specular * fresnel;
+    shaded_color = specular * fresnel;
   }
 
+  // TODO: add indirect specular
   vec2 irradiance_uv =
     cartesian_to_spherical(mat3(ap.camera.viewInv) * material.texture_normal) /
     TAU;
 
-  color +=
+  shaded_color +=
     material.albedo *
     textureLod(sky_irradiance_lut_tex, irradiance_uv, 0).rgb *
-    material.lightmap.y;
+    material.lightmap.y *
+    GI.a;
 
 }

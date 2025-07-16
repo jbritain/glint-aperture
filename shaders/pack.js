@@ -36,11 +36,13 @@ function configurePipeline(pipeline) {
   const gbufferTex2 = pipeline.createTexture("gbuffer_tex_2").format(Format.RGBA16).clear(true).build();
   pipeline.createObjectShader("terrain", Usage.TEXTURED).vertex("program/geometry/opaque.vsh").fragment("program/geometry/opaque.fsh").target(0, gbufferTex1).target(1, gbufferTex2).compile();
   const shadowTex = pipeline.createTexture("shadow_tex").format(Format.RGBA8).clear(true).build();
-  const subsurfaceScatterTex = pipeline.createTexture("subsurface_scatter_tex").format(Format.RGB8).clear(true).build();
-  preTranslucent.createComposite("opaque_shadowing").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_shadowing.fsh").target(0, shadowTex).target(1, subsurfaceScatterTex).compile();
-  const sceneTex = pipeline.createTexture("scene_tex").format(Format.RGBA32F).clear(true).build();
+  preTranslucent.createComposite("opaque_shadowing").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_shadowing.fsh").target(0, shadowTex).compile();
+  const sceneTex = pipeline.createTexture("scene_tex").format(Format.RGBA16F).clear(true).build();
   preTranslucent.createComposite("sky").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/render_sky.fsh").target(0, sceneTex).compile();
-  preTranslucent.createComposite("opaque_shading").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_shading.fsh").target(0, sceneTex).ssbo(0, sceneData).compile();
+  const previousFrameDiffuseTex = pipeline.createTexture("previous_frame_diffuse_tex").format(Format.R11F_G11F_B10F).clear(false).build();
+  const globalIlluminationTex = pipeline.createTexture("global_illumination_tex").format(Format.RGBA16F).clear(false).build();
+  preTranslucent.createComposite("global_illumination").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/gtao.fsh").target(0, globalIlluminationTex).ssbo(0, sceneData).compile();
+  preTranslucent.createComposite("opaque_shading").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_shading.fsh").target(0, sceneTex).target(1, previousFrameDiffuseTex).ssbo(0, sceneData).compile();
   postRender.createComposite("exposure").vertex("program/fullscreen_pass.vsh").fragment("program/post/exposure.fsh").target(0, sceneTex).compile();
   const bloomTex = pipeline.createTexture("bloom_tex").format(Format.RGBA16F).clear(true).mipmap(true).build();
   for (let i = 0; i < 5; i++) {

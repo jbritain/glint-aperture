@@ -132,23 +132,16 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .clear(true)
     .build();
 
-  const subsurfaceScatterTex = pipeline
-    .createTexture("subsurface_scatter_tex")
-    .format(Format.RGB8)
-    .clear(true)
-    .build();
-
   preTranslucent
     .createComposite("opaque_shadowing")
     .vertex("program/fullscreen_pass.vsh")
     .fragment("program/before_translucents/opaque_shadowing.fsh")
     .target(0, shadowTex)
-    .target(1, subsurfaceScatterTex)
     .compile();
 
   const sceneTex = pipeline
     .createTexture("scene_tex")
-    .format(Format.RGBA32F)
+    .format(Format.RGBA16F)
     .clear(true)
     .build();
 
@@ -159,13 +152,35 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .target(0, sceneTex)
     .compile();
 
+  const previousFrameDiffuseTex = pipeline
+    .createTexture("previous_frame_diffuse_tex")
+    .format(Format.R11F_G11F_B10F)
+    .clear(false)
+    .build();
+
+  const globalIlluminationTex = pipeline
+    .createTexture("global_illumination_tex")
+    .format(Format.RGBA16F)
+    .clear(false)
+    .build();
+
+  preTranslucent
+    .createComposite("global_illumination")
+    .vertex("program/fullscreen_pass.vsh")
+    .fragment("program/before_translucents/gtao.fsh")
+    .target(0, globalIlluminationTex)
+    .ssbo(0, sceneData)
+    .compile();
+
   preTranslucent
     .createComposite("opaque_shading")
     .vertex("program/fullscreen_pass.vsh")
     .fragment("program/before_translucents/opaque_shading.fsh")
     .target(0, sceneTex)
+    .target(1, previousFrameDiffuseTex)
     .ssbo(0, sceneData)
     .compile();
+
   postRender
     .createComposite("exposure")
     .vertex("program/fullscreen_pass.vsh")
