@@ -4,7 +4,7 @@
 #include "/lib/atmospherics/atmosphere.glsl"
 
 uniform sampler2D sky_view_lut_tex;
-uniform sampler2D sky_transmittance_lut_tex;
+uniform sampler2D sun_transmittance_lut_tex;
 
 vec3 getValFromSkyLUT(vec3 ray_dir, int lod) {
   return vec3(0.0);
@@ -20,12 +20,12 @@ vec3 get_sky(vec3 color, vec3 ray_dir, bool include_sun) {
   sky_ray.direction = ray_dir;
 
   vec3 transmittance = texture(
-    sky_transmittance_lut_tex,
+    sun_transmittance_lut_tex,
     parameterise_sun_transmittance(sky_ray)
   ).xyz;
 
   vec3 luminance =
-    texture(sky_view_lut_tex, parameterise_sky_view(sky_ray)).rgb *
+    max0(texture(sky_view_lut_tex, parameterise_sky_view(sky_ray)).rgb) *
     sun_irradiance;
 
   if (include_sun && dot(ray_dir, world_light_dir) > cos(sun_angular_radius)) {

@@ -13,12 +13,19 @@ export function configureRenderer(renderer: RendererConfig) {
 }
 
 export function configurePipeline(pipeline: PipelineConfig) {
-  const screenSetup = pipeline.createCommandList();
-  const preRender = pipeline.createCommandList();
-  const preTranslucent = pipeline.createCommandList();
-  const postRender = pipeline.createCommandList();
+  const screenSetup = pipeline.forStage(Stage.SCREEN_SETUP);
+  const preRender = pipeline.forStage(Stage.PRE_RENDER);
+  const preTranslucent = pipeline.forStage(Stage.PRE_TRANSLUCENT);
+  const postRender = pipeline.forStage(Stage.POST_RENDER);
 
   const sceneData = pipeline.createBuffer(16, true);
+
+  const blueNoiseTex = pipeline.importPNGTexture(
+    "blue_noise_tex",
+    "textures/blue_noise.png",
+    false,
+    true,
+  );
 
   const debugTex = pipeline
     .createImageTexture("debug_tex", "debug")
@@ -152,23 +159,43 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .target(0, sceneTex)
     .compile();
 
-  const previousFrameDiffuseTex = pipeline
-    .createTexture("previous_frame_diffuse_tex")
+  const diffuseTex = pipeline
+    .createTexture("diffuse_tex")
     .format(Format.R11F_G11F_B10F)
     .clear(false)
     .build();
 
-  const globalIlluminationTex = pipeline
-    .createTexture("global_illumination_tex")
+  const specularTex = pipeline
+    .createTexture("specular_tex")
+    .format(Format.RGBA16F)
+    .clear(false)
+    .build();
+
+  // const globalIlluminationTex = pipeline
+  //   .createTexture("global_illumination_tex")
+  //   .format(Format.RGBA16F)
+  //   .clear(false)
+  //   .build();
+
+  // preTranslucent
+  //   .createComposite("global_illumination")
+  //   .vertex("program/fullscreen_pass.vsh")
+  //   .fragment("program/before_translucents/gtao.fsh")
+  //   .target(0, globalIlluminationTex)
+  //   .ssbo(0, sceneData)
+  //   .compile();
+
+  const ssrTex = pipeline
+    .createTexture("ssr_tex")
     .format(Format.RGBA16F)
     .clear(false)
     .build();
 
   preTranslucent
-    .createComposite("global_illumination")
+    .createComposite("opaque_ssr")
     .vertex("program/fullscreen_pass.vsh")
-    .fragment("program/before_translucents/gtao.fsh")
-    .target(0, globalIlluminationTex)
+    .fragment("program/before_translucents/opaque_ssr.fsh")
+    .target(0, ssrTex)
     .ssbo(0, sceneData)
     .compile();
 
@@ -177,7 +204,7 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .vertex("program/fullscreen_pass.vsh")
     .fragment("program/before_translucents/opaque_shading.fsh")
     .target(0, sceneTex)
-    .target(1, previousFrameDiffuseTex)
+    .target(1, diffuseTex)
     .ssbo(0, sceneData)
     .compile();
 
@@ -215,10 +242,10 @@ export function configurePipeline(pipeline: PipelineConfig) {
       .compile();
   }
 
-  pipeline.setCommandList(Stage.SCREEN_SETUP, screenSetup.end());
-  pipeline.setCommandList(Stage.PRE_RENDER, preRender.end());
-  pipeline.setCommandList(Stage.PRE_TRANSLUCENT, preTranslucent.end());
-  pipeline.setCommandList(Stage.POST_RENDER, postRender.end());
+  screenSetup.end();
+  preRender.end();
+  preTranslucent.end();
+  postRender.end();
 
   pipeline.createCombinationPass("program/combination.fsh").compile();
 }

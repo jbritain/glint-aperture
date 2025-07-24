@@ -9,11 +9,17 @@ function configureRenderer(renderer) {
   renderer.mergedHandDepth = true;
 }
 function configurePipeline(pipeline) {
-  const screenSetup = pipeline.createCommandList();
-  const preRender = pipeline.createCommandList();
-  const preTranslucent = pipeline.createCommandList();
-  const postRender = pipeline.createCommandList();
+  const screenSetup = pipeline.forStage(Stage.SCREEN_SETUP);
+  const preRender = pipeline.forStage(Stage.PRE_RENDER);
+  const preTranslucent = pipeline.forStage(Stage.PRE_TRANSLUCENT);
+  const postRender = pipeline.forStage(Stage.POST_RENDER);
   const sceneData = pipeline.createBuffer(16, true);
+  const blueNoiseTex = pipeline.importPNGTexture(
+    "blue_noise_tex",
+    "textures/blue_noise.png",
+    false,
+    true
+  );
   const debugTex = pipeline.createImageTexture("debug_tex", "debug").format(Format.RGBA8).clear(true).build();
   const sunTransmittanceLUT = pipeline.createImageTexture("sun_transmittance_lut_tex", "sun_transmittance_lut").format(Format.RGBA16F).width(256).height(64).clear(false).build();
   const multipleScatteringLUT = pipeline.createImageTexture(
@@ -39,10 +45,11 @@ function configurePipeline(pipeline) {
   preTranslucent.createComposite("opaque_shadowing").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_shadowing.fsh").target(0, shadowTex).compile();
   const sceneTex = pipeline.createTexture("scene_tex").format(Format.RGBA16F).clear(true).build();
   preTranslucent.createComposite("sky").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/render_sky.fsh").target(0, sceneTex).compile();
-  const previousFrameDiffuseTex = pipeline.createTexture("previous_frame_diffuse_tex").format(Format.R11F_G11F_B10F).clear(false).build();
-  const globalIlluminationTex = pipeline.createTexture("global_illumination_tex").format(Format.RGBA16F).clear(false).build();
-  preTranslucent.createComposite("global_illumination").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/gtao.fsh").target(0, globalIlluminationTex).ssbo(0, sceneData).compile();
-  preTranslucent.createComposite("opaque_shading").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_shading.fsh").target(0, sceneTex).target(1, previousFrameDiffuseTex).ssbo(0, sceneData).compile();
+  const diffuseTex = pipeline.createTexture("diffuse_tex").format(Format.R11F_G11F_B10F).clear(false).build();
+  const specularTex = pipeline.createTexture("specular_tex").format(Format.RGBA16F).clear(false).build();
+  const ssrTex = pipeline.createTexture("ssr_tex").format(Format.RGBA16F).clear(false).build();
+  preTranslucent.createComposite("opaque_ssr").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_ssr.fsh").target(0, ssrTex).ssbo(0, sceneData).compile();
+  preTranslucent.createComposite("opaque_shading").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_shading.fsh").target(0, sceneTex).target(1, diffuseTex).ssbo(0, sceneData).compile();
   postRender.createComposite("exposure").vertex("program/fullscreen_pass.vsh").fragment("program/post/exposure.fsh").target(0, sceneTex).compile();
   const bloomTex = pipeline.createTexture("bloom_tex").format(Format.RGBA16F).clear(true).mipmap(true).build();
   for (let i = 0; i < 5; i++) {
@@ -51,10 +58,10 @@ function configurePipeline(pipeline) {
   for (let i = 5; i > 0; i -= 1) {
     postRender.createComposite(`bloomUpsample${i}-${i - 1}`).vertex("program/fullscreen_pass.vsh").fragment("program/post/bloom_upsample.fsh").target(0, bloomTex, i - 1).define("BLOOM_INDEX", i.toString()).compile();
   }
-  pipeline.setCommandList(Stage.SCREEN_SETUP, screenSetup.end());
-  pipeline.setCommandList(Stage.PRE_RENDER, preRender.end());
-  pipeline.setCommandList(Stage.PRE_TRANSLUCENT, preTranslucent.end());
-  pipeline.setCommandList(Stage.POST_RENDER, postRender.end());
+  screenSetup.end();
+  preRender.end();
+  preTranslucent.end();
+  postRender.end();
   pipeline.createCombinationPass("program/combination.fsh").compile();
 }
 export {

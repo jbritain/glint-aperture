@@ -115,6 +115,30 @@ DEFINE_genFType(pow8_)
 #define sum3(v) ((v).x + (v).y + (v).z)
 #define sum4(v) ((v).x + (v).y + (v).z + (v).w)
 
+float max_vec2(vec2 v){
+  return max(v.x, v.y);
+}
+
+float max_vec3(vec3 v){
+  return max(v.x, max_vec2(v.yz));
+}
+
+float max_vec4(vec4 v){
+  return max(max_vec2(v.xy), max_vec2(v.zw));
+}
+
+float min_vec2(vec2 v){
+  return min(v.x, v.y);
+}
+
+float min_vec3(vec3 v){
+  return min(v.x, min_vec2(v.yx));
+}
+
+float min_vec4(vec3 v){
+  return min(min_vec2(v.xy), min_vec2(v.yz));
+}
+
 float mean2(vec2 v) {
   return sum2(v) / 2.0;
 }

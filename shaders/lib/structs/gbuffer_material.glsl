@@ -3,6 +3,7 @@
 
 #include "/lib/common.glsl"
 #include "/lib/util/encoding.glsl"
+#include "/lib/structs/material_mask.glsl"
 
 // enums for metal IDs
 #define NO_METAL 0u
@@ -68,6 +69,7 @@ struct Gbuffer {
   vec3 albedo;
   vec4 specular_map;
   float material_ao;
+  MaterialMask material_mask;
 };
 
 void encode_gbuffer(out vec4 data_1, out vec4 data_2, Gbuffer gbuffer) {
@@ -85,7 +87,7 @@ void encode_gbuffer(out vec4 data_1, out vec4 data_2, Gbuffer gbuffer) {
   );
   data_2.y = pack2x8F(gbuffer.specular_map.rg);
   data_2.z = pack2x8F(gbuffer.specular_map.ba);
-  data_2.w = 0.0;
+  data_2.w = encode_material_mask(gbuffer.material_mask);
 }
 
 // not sure I will ever use this but it's here for posterity
@@ -110,6 +112,7 @@ Gbuffer decode_gbuffer(vec4 data_1, vec4 data_2) {
   gbuffer.lightmap = decode_1w;
 
   gbuffer.specular_map = vec4(decode_2y, decode_2z);
+  gbuffer.material_mask = decode_material_mask(data_2.w);
 
   return gbuffer;
 }
@@ -127,6 +130,7 @@ struct Material {
   float subsurface_scattering;
   float ambient_occlusion;
   float emission;
+  MaterialMask mask;
 };
 
 Material decode_material_from_gbuffer(vec4 data_1, vec4 data_2) {
@@ -154,7 +158,7 @@ Material decode_material_from_gbuffer(vec4 data_1, vec4 data_2) {
   material.roughness = pow2(1.0 - specular_map.r);
   material.f0 = specular_map.g;
 
-  material.metal_id = max(0, int(0.04 * 255.0 - 228.5));
+  material.metal_id = max(0, int(specular_map.g * 255.0 - 228.5));
 
   if (specular_map.b <= 0.25) {
     material.porosity = specular_map.b * 4.0;
@@ -162,6 +166,12 @@ Material decode_material_from_gbuffer(vec4 data_1, vec4 data_2) {
   } else {
     material.porosity = (1.0 - specular_map.r) * specular_map.g; // fall back to using roughness and base reflectance for porosity
     material.subsurface_scattering = (specular_map.b - 0.25) * 4.0 / 3.0;
+  }
+
+  material.mask = decode_material_mask(data_2.w);
+  if (material.mask.is_fluid && !material.mask.is_emissive) {
+    material.roughness = 0.0;
+    material.f0 = 0.02;
   }
 
   return material;

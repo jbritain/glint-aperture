@@ -47,4 +47,33 @@ float interleaved_gradient_noise(vec2 coord, int frame) {
   return interleaved_gradient_noise(coord + 5.588238 * (frame & 63));
 }
 
+uniform sampler2D blue_noise_tex;
+
+// Spatiotemporal Blue Noise by NVIDIA
+// https://github.com/NVIDIA-RTX/STBN
+vec4 blue_noise(vec2 coord) {
+  return texelFetch(
+    blue_noise_tex,
+    ivec2(coord) % ivec2(textureSize(blue_noise_tex, 0)),
+    0
+  );
+}
+
+// generates offsets using the R2 sequence
+// https://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
+vec4 blue_noise(vec2 coord, int i) {
+  const float g = 1.6180339887498948482;
+  float a1 = rcp(g);
+  float a2 = rcp(pow2(g));
+
+  vec2 offset = vec2(fract(0.5 + a1 * i), fract(0.5 + a2 * i));
+
+  return texelFetch(
+    blue_noise_tex,
+    ivec2(coord + offset * textureSize(blue_noise_tex, 0)) %
+      ivec2(textureSize(blue_noise_tex, 0)),
+    0
+  );
+}
+
 #endif // DITHER_GLSL

@@ -1,0 +1,80 @@
+#ifndef SCREEN_SPACE_RAY_TRACE_GLSL
+#define SCREEN_SPACE_RAY_TRACE_GLSL
+
+#define BINARY_REFINEMENTS 6
+#define BINARY_REDUCTION 0.5
+
+const float hand_depth = 0.0; //MC_HAND_DEPTH * 0.5 + 0.5;
+
+float get_depth(vec2 pos, sampler2D depth_sampler) {
+  return texelFetch(depth_sampler, ivec2(pos * ap.game.screenSize), 0).r;
+}
+
+void binary_search(inout vec3 ray_pos, vec3 ray_dir, sampler2D depth_sampler) {
+  vec3 last_good_pos = ray_pos;
+  for (int i = 0; i < BINARY_REFINEMENTS; i++) {
+    float depth = get_depth(ray_pos.xy, depth_sampler);
+    float intersect = sign(depth - ray_pos.z);
+    last_good_pos = intersect == 1.0 ? ray_pos : last_good_pos;
+
+    ray_pos += intersect * ray_dir;
+    ray_dir *= BINARY_REDUCTION;
+  }
+  ray_pos = last_good_pos;
+}
+
+// traces through screen space to find intersection point
+// thanks, belmu!!
+// https://gist.github.com/BelmuTM/af0fe99ee5aab386b149a53775fe94a3
+bool ray_intersects(
+  vec3 view_origin,
+  vec3 view_dir,
+  int max_steps,
+  float jitter,
+  out vec3 ray_pos,
+  sampler2D depth_sampler
+) {
+  if (view_dir.z > 0.0 && view_dir.z >= -view_origin.z) {
+    return false;
+  }
+
+  ray_pos = view_space_to_screen_space(view_origin);
+
+  vec3 ray_dir;
+  ray_dir = view_space_to_screen_space(view_origin + view_dir);
+
+  ray_dir -= ray_pos;
+  ray_dir = normalize(ray_dir);
+
+  vec3 temp = abs(sign(ray_dir) - ray_pos) / max(abs(ray_dir), 0.00001);
+  float ray_length = min_vec3(temp);
+  float step_length = ray_length * rcp(float(max_steps));
+
+  vec3 ray_step = ray_dir * step_length;
+  ray_pos += ray_step * jitter;
+
+  float depth_lenience = max(abs(ray_step.z) * 3.0, 0.02 / pow2(view_origin.z));
+
+  bool intersect = false;
+
+  for (int i = 0; i < max_steps; ++i, ray_pos += ray_step) {
+    if (saturate(ray_pos) != ray_pos) return false;
+
+    float depth = get_depth(ray_pos.xy, depth_sampler);
+
+    if (
+      abs(depth_lenience - (ray_pos.z - depth)) < depth_lenience &&
+      ray_pos.z > hand_depth
+    ) {
+      intersect = true;
+      break;
+    }
+  }
+
+  if (intersect) {
+    binary_search(ray_pos, ray_step, depth_sampler);
+  }
+
+  return intersect;
+}
+#endif // SCREEN_SPACE_RAY_TRACE_GLSL

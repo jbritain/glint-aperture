@@ -4,6 +4,7 @@ out vec2 uv;
 out vec4 color;
 out vec2 lightmap;
 out vec3 view_pos;
+flat out uint block_id;
 
 out mat3 tbn_matrix;
 
@@ -27,4 +28,6 @@ void iris_sendParameters(VertexData data) {
   );
 
   view_pos = (iris_modelViewMatrix * data.modelPos).xyz;
+
+  block_id = data.blockId;
 }

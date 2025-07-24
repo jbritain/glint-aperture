@@ -9,6 +9,7 @@ layout(location = 1) out vec4 gbuffer_2;
 in vec2 uv;
 in vec4 color;
 in vec2 lightmap;
+flat in uint block_id;
 
 in mat3 tbn_matrix;
 
@@ -28,6 +29,8 @@ void iris_emitFragment() {
   gbuffer.material_ao = normal_data.z;
 
   gbuffer.specular_map = iris_sampleSpecularMap(uv);
+
+  gbuffer.material_mask = build_material_mask(block_id);
 
   gbuffer.lightmap = lightmap;
 
