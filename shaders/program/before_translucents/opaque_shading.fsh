@@ -46,14 +46,15 @@ void main() {
   vec3 V = -normalize(view_pos);
   vec3 world_V = mat3(ap.camera.viewInv) * V;
 
-  vec3 direct_fresnel = schlick(
-    material,
-    dot(world_V, normalize(world_V + world_light_dir))
-  );
+  vec3 direct_fresnel = vec3(1.0);
+  // schlick(
+  //   material,
+  //   dot(world_V, normalize(world_V + world_light_dir))
+  // );
 
   vec4 ssr = texture(ssr_tex, uv);
 
-  vec3 indirect_fresnel = schlick(material, ssr.a);
+  vec3 indirect_fresnel = vec3(1.0); //schlick(material, ssr.a);
 
   diffuse =
     brdf_diffuse(material, world_light_dir) *

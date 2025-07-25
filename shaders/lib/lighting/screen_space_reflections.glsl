@@ -25,15 +25,15 @@ vec4 ssr_sample(
 
   float NoV = dot(normal, -view_dir);
 
-  vec3 screen_ray_pos;
-  if (
-    ray_intersects(view_pos, ray_dir, 32, jitter, screen_ray_pos, depth_sampler)
-  ) {
-    return vec4(texture(color_sampler, screen_ray_pos.xy).rgb, NoV);
-  }
+  // vec3 screen_ray_pos;
+  // if (
+  //   ray_intersects(view_pos, ray_dir, 32, jitter, screen_ray_pos, depth_sampler)
+  // ) {
+  //   return vec4(texture(color_sampler, screen_ray_pos.xy).rgb, NoV);
+  // }
 
   return vec4(
-    get_sky(mat3(ap.camera.viewInv) * ray_dir, false) * sky_factor,
+    get_sky(normalize(mat3(ap.camera.viewInv) * ray_dir), false) * sky_factor,
     NoV
   );
 }
@@ -47,10 +47,8 @@ vec4 compute_rough_reflections(
   sampler2D depth_sampler,
   sampler2D color_sampler
 ) {
-  mat3 tbn; // = generate_tbn(normal);
-  tbn[2] = normal;
-  tbn[1] = normalize(cross(normal, view_dir));
-  tbn[0] = cross(normal, tbn[1]);
+  mat3 tbn = generate_tbn(normal);
+
   vec3 tangent_view_dir = normalize(-view_dir * tbn);
 
   vec4 average_ssr;
@@ -64,6 +62,10 @@ vec4 compute_rough_reflections(
 
     vec3 vndf_normal =
       tbn * sample_vndf_ggx(tangent_view_dir, vec2(roughness), noise.xy);
+
+    if (dot(reflect(normalize(view_pos), vndf_normal), vndf_normal) < 0.0) {
+      continue;
+    }
 
     average_ssr += ssr_sample(
       view_pos,

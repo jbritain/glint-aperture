@@ -29,9 +29,13 @@ void main() {
 
   vec3 ray_pos = ray.origin;
   vec3 end_pos;
-  if (!ray_sphere_intersection(ray, vec3(0.0), earth_radius, end_pos)) {
+
+  bool intersects_earth = ray_sphere_intersection(ray, vec3(0.0), earth_radius, end_pos);
+
+  if (!intersects_earth) {
     // if we did not hit the earth
     if (!ray_sphere_intersection(ray, vec3(0.0), atmosphere_radius, end_pos)) {
+      // and we did not here the atmosphere
       imageStore(sky_view_lut, texel_coord, vec4(vec3(0.0), 1.0));
       return;
     }
@@ -87,11 +91,20 @@ void main() {
     ray_pos += ray_step;
   }
 
-  imageStore(sky_view_lut, texel_coord, vec4(luminance, 1.0));
-
   Ray sun_ray;
   sun_ray.direction = world_sun_dir;
   sun_ray.origin = vec3(0.0, ap.camera.pos.y + earth_radius + 64, 0.0);
+
+  // if(intersects_earth){
+  //   luminance += earth_albedo  * texture(
+  //     sun_transmittance_lut_tex,
+  //     parameterise_sun_transmittance(sun_ray)
+  //   ).rgb * transmittance;
+  // }
+
+  imageStore(sky_view_lut, texel_coord, vec4(luminance, 1.0));
+
+
 
   if (gl_GlobalInvocationID == ivec3(0)) {
     sunlight_color =

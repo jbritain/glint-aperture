@@ -15,7 +15,7 @@ export function configureRenderer(renderer: RendererConfig) {
 export function configurePipeline(pipeline: PipelineConfig) {
   const screenSetup = pipeline.forStage(Stage.SCREEN_SETUP);
   const preRender = pipeline.forStage(Stage.PRE_RENDER);
-  const preTranslucent = pipeline.forStage(Stage.PRE_TRANSLUCENT);
+  // const preTranslucent = pipeline.forStage(Stage.PRE_TRANSLUCENT);
   const postRender = pipeline.forStage(Stage.POST_RENDER);
 
   const sceneData = pipeline.createBuffer(16, true);
