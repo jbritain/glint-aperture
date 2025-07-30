@@ -35,6 +35,4 @@ void main() {
     gbuffer.geometry_normal
   );
 
-  shadowing_and_blocker_distance.a *= 100.0; // otherwise it gets quantised to fuck
-
 }

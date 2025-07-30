@@ -7,7 +7,7 @@ vec3 get_shadow_screen_pos(vec3 player_pos, vec3 world_normal, out int cascade){
   vec4 shadow_view_pos = (ap.celestial.view * vec4(player_pos, 1.0));
   vec4 shadow_clip_pos;
   
-  for(cascade = 0; cascade <= 4; cascade++){
+  for(cascade = 0; cascade <= CASCADES; cascade++){
     shadow_clip_pos = ap.celestial.projection[cascade] * shadow_view_pos;
 
     if(clamp(shadow_clip_pos.xy, vec2(-0.95), vec2(0.95)) == shadow_clip_pos.xy) break;
@@ -23,7 +23,7 @@ vec4 get_shadow_clip_pos(vec3 player_pos, out int cascade){
   vec4 shadow_view_pos = (ap.celestial.view * vec4(player_pos, 1.0));
   vec4 shadow_clip_pos;
   
-  for(cascade = 0; cascade < 4; cascade++){
+  for(cascade = 0; cascade < CASCADES; cascade++){
     shadow_clip_pos = ap.celestial.projection[cascade] * shadow_view_pos;
     
     if(clamp(shadow_clip_pos.xy, vec2(-0.95), vec2(0.95)) == shadow_clip_pos.xy) break;
@@ -35,7 +35,7 @@ vec3 get_shadow_screen_pos(vec3 player_pos, out int cascade){
   vec4 shadow_view_pos = (ap.celestial.view * vec4(player_pos, 1.0));
   vec4 shadow_clip_pos;
   
-  for(cascade = 0; cascade < 4; cascade++){
+  for(cascade = 0; cascade < CASCADES; cascade++){
     shadow_clip_pos = ap.celestial.projection[cascade] * shadow_view_pos;
 
     if(clamp(shadow_clip_pos.xy, vec2(-0.95), vec2(0.95)) == shadow_clip_pos.xy) break;

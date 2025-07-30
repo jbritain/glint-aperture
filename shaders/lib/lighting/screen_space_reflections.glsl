@@ -25,12 +25,18 @@ vec4 ssr_sample(
 
   float NoV = dot(normal, -view_dir);
 
-  // vec3 screen_ray_pos;
-  // if (
-  //   ray_intersects(view_pos, ray_dir, 32, jitter, screen_ray_pos, depth_sampler)
-  // ) {
-  //   return vec4(texture(color_sampler, screen_ray_pos.xy).rgb, NoV);
-  // }
+  vec3 screen_ray_pos;
+  if (
+    ray_intersects(view_pos, ray_dir, 32, jitter, screen_ray_pos, depth_sampler)
+  ) {
+    vec3 previous_pos = screen_space_to_view_space(screen_ray_pos);
+    previous_pos = (ap.camera.viewInv * vec4(previous_pos, 1.0)).xyz;
+    previous_pos += ap.camera.pos;
+    previous_pos -= ap.temporal.pos;
+    previous_pos = (ap.temporal.view * vec4(previous_pos, 1.0)).xyz;
+    previous_pos = previous_view_space_to_previous_screen_space(previous_pos);
+    return vec4(texture(color_sampler, previous_pos.xy).rgb, NoV);
+  }
 
   return vec4(
     get_sky(normalize(mat3(ap.camera.viewInv) * ray_dir), false) * sky_factor,
@@ -106,7 +112,7 @@ vec4 compute_screen_space_reflections(
       depth_sampler,
       color_sampler
     );
-  } else {
+  } else if (roughness < 0.5) {
     return compute_rough_reflections(
       view_pos,
       view_dir,
@@ -116,6 +122,8 @@ vec4 compute_screen_space_reflections(
       depth_sampler,
       color_sampler
     );
+  } else {
+    return vec4(vec3(0.0), 1.0);
   }
 }
 

@@ -1,6 +1,8 @@
 #ifndef MISC_GLSL
 #define MISC_GLSL
 
+#include "/lib/util/jessie_utils.glsl"
+
 vec3 spherical_to_cartesian(vec2 coord) {
   float sin_theta = sin(coord.x);
 
@@ -34,41 +36,6 @@ mat3 generate_tbn(vec3 n) {
   }
   return tbn;
 }
-
-// ===================>
-// https://github.com/Jessie-LC/open-source-utility-code/blob/main/simple/misc.glsl
-
-vec2 sincos(float x) {
-  return vec2(sin(x), cos(x));
-}
-
-vec3 rotate(vec3 vector, vec3 axis, float angle) {
-  // https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
-  vec2 sc = sincos(angle);
-  return sc.y * vector +
-  sc.x * cross(axis, vector) +
-  (1.0 - sc.y) * dot(axis, vector) * axis;
-}
-
-vec3 rotate(vec3 vector, vec3 from, vec3 to) {
-  // where "from" and "to" are two unit vectors determining how far to rotate
-  // adapted version of https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
-
-  float cosTheta = dot(from, to);
-  if (abs(cosTheta) >= 0.9999) {
-    return cosTheta < 0.0
-      ? -vector
-      : vector;
-  }
-  vec3 axis = normalize(cross(from, to));
-
-  vec2 sc = vec2(sqrt(1.0 - cosTheta * cosTheta), cosTheta);
-  return sc.y * vector +
-  sc.x * cross(axis, vector) +
-  (1.0 - sc.y) * dot(axis, vector) * axis;
-}
-
-// <==================
 
 vec2 vogel_disc_sample(int step_index, int step_count, float jitter) {
   float rotation = jitter * 2 * PI;

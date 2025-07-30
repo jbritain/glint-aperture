@@ -25,7 +25,7 @@ float get_blocker_distance(
   vec2 radius,
   float jitter
 ) {
-  float average_blocker_depth = 0.0;
+  float average_blocker_distance = 0.0;
   int samples = 0;
 
   for (int i = 0; i < BLOCKER_DISTANCE_SAMPLES; i++) {
@@ -38,12 +38,12 @@ float get_blocker_distance(
     ).r;
 
     if (blocker_depth < shadow_screen_pos.z) {
-      average_blocker_depth += blocker_depth;
+      average_blocker_distance += shadow_screen_pos.z - blocker_depth;
       samples++;
     }
   }
 
-  return shadow_screen_pos.z - average_blocker_depth / float(samples);
+  return average_blocker_distance / float(samples);
 }
 
 vec3 sample_pcf(

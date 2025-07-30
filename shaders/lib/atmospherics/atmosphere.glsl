@@ -14,7 +14,7 @@ const vec3 sun_irradiance = vec3(1.0, 0.949, 0.937) * 126;
 const vec3 sun_radiance =
   sun_irradiance / (TAU * (1.0 - cos(sun_angular_radius)));
 
-const float earth_albedo = 0.25;
+const vec3 earth_albedo = vec3(0.0, 0.03, 0.06);
 
 const float earth_radius = 6378e3;
 const float atmosphere_height = 100e3;
@@ -70,9 +70,9 @@ vec2 parameterise_sky_view(Ray ray) {
   vec2 uv;
 
   uv.x = asin(ray.direction.x) / TAU;
-
   float l = asin(ray.direction.y);
   uv.y = 0.5 + 0.5 * sign(l) * sqrt(abs(l) / (PI / 2));
+  // uv.y = asin(ray.direction.y) / TAU;
 
   return saturate(uv);
 }
@@ -85,7 +85,11 @@ Ray un_parameterise_sky_view(vec2 uv) {
 
   float l = uv.y * 2.0 - 1.0;
   l = sign(l) * pow2(l);
-  ray.direction.y = sin(l) * (PI / 2);
+  ray.direction.y = abs(uv.y - 0.5) < 0.01 ? 0.0 : sin(l) * (PI / 2);
+
+  // ray.direction.y = sin(uv.y * TAU);
+
+  ray.direction = normalize(ray.direction);
 
   ray.origin = vec3(0.0, ap.camera.pos.y + earth_radius + 64, 0.0);
 

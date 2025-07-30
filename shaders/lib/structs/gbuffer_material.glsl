@@ -158,6 +158,8 @@ Material decode_material_from_gbuffer(vec4 data_1, vec4 data_2) {
   material.roughness = pow2(1.0 - specular_map.r);
   material.f0 = specular_map.g;
 
+  material.emission = specular_map.a == 1.0 ? 0.0 : specular_map.a;
+
   material.metal_id = max(0, int(specular_map.g * 255.0 - 228.5));
 
   if (specular_map.b <= 0.25) {

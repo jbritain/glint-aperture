@@ -1,21 +1,58 @@
 import type {} from "./iris";
+import { setLightColors } from "./tslib/lightColors";
+
+const maxPointLights = 64;
+const cascades = 4;
 
 export function configureRenderer(renderer: RendererConfig) {
   renderer.disableShade = true;
   renderer.sunPathRotation = 40.0;
 
   renderer.shadow.resolution = 1592;
-  renderer.shadow.far = 120;
-  renderer.shadow.distance = 120;
+  renderer.shadow.far = 192;
+  renderer.shadow.distance = 192;
   renderer.shadow.enabled = true;
+  renderer.shadow.cascades = cascades;
+
+  renderer.shadow.entityCascadeCount = 1;
+
+  renderer.pointLight.nearPlane = 0.1;
+  renderer.pointLight.cacheRealTimeTerrain = true;
+  renderer.pointLight.farPlane = 16.0;
+
+  renderer.pointLight.maxCount = maxPointLights;
+  renderer.pointLight.realTimeCount = 4;
+  renderer.pointLight.maxUpdates = 4;
+  renderer.pointLight.updateThreshold = 0.3;
 
   renderer.mergedHandDepth = true;
+
+  setLightColors();
 }
 
 export function configurePipeline(pipeline: PipelineConfig) {
+  const lightListBinSize = 16;
+  defineGlobally("LIGHT_LIST_BIN_SIZE", lightListBinSize);
+  const lightListVolumeSize = 128;
+  defineGlobally("LIGHT_LIST_VOLUME_SIZE", lightListVolumeSize);
+  const lightListBinCount = Math.pow(lightListVolumeSize / lightListBinSize, 3);
+  defineGlobally("LIGHT_LIST_BIN_COUNT", lightListBinCount);
+  const maxLightsPerBin = 64;
+  defineGlobally("MAX_LIGHTS_PER_BIN", maxLightsPerBin);
+
+  defineGlobally("CASCADES", cascades.toString());
+
+  // we store maxLightsPerBin + 1 uints per bin, each representing an ID, plus the counter for how many lights occupy that bin
+  const lightLists = pipeline.createBuffer(
+    (maxLightsPerBin + 1) * lightListBinCount,
+    false,
+  );
+
+  defineGlobally("EMISSION_STRENGTH", 100.0);
+
   const screenSetup = pipeline.forStage(Stage.SCREEN_SETUP);
   const preRender = pipeline.forStage(Stage.PRE_RENDER);
-  // const preTranslucent = pipeline.forStage(Stage.PRE_TRANSLUCENT);
+  const preTranslucent = pipeline.forStage(Stage.PRE_TRANSLUCENT);
   const postRender = pipeline.forStage(Stage.POST_RENDER);
 
   const sceneData = pipeline.createBuffer(16, true);
@@ -32,6 +69,9 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .format(Format.RGBA8)
     .clear(true)
     .build();
+
+  // SKY
+  // =======================================================================================
 
   const sunTransmittanceLUT = pipeline
     .createImageTexture("sun_transmittance_lut_tex", "sun_transmittance_lut")
@@ -91,6 +131,7 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .location("program/atmosphere/generate_sky_view_lut.csh")
     .workGroups(25, 25, 1)
     .ssbo(0, sceneData)
+    .define("SCENE_DATA_BINDING", "0")
     .compile();
 
   preRender.barrier(IMAGE_BIT);
@@ -99,9 +140,24 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .location("program/render_setup/generate_sky_irradiance_lut.csh")
     .workGroups(4, 4, 1)
     .ssbo(0, sceneData)
+    .define("SCENE_DATA_BINDING", "0")
     .compile();
 
   preRender.barrier(IMAGE_BIT);
+
+  // LIGHT LIST BINS
+  // =======================================================================================
+  preRender
+    .createCompute("clearLightList")
+    .location("program/render_setup/clear_light_lists.csh")
+    .workGroups(Math.ceil(lightListBinCount / 64), 1, 1)
+    .ssbo(0, lightLists);
+
+  preRender
+    .createCompute("generateLightList")
+    .location("program/render_setup/generate_light_lists.csh")
+    .workGroups(Math.ceil(maxPointLights / 64), 1, 1)
+    .ssbo(0, lightLists);
 
   // GEOMETRY
   // =======================================================================================
@@ -109,6 +165,12 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .createObjectShader("shadow", Usage.SHADOW)
     .vertex("program/geometry/shadow.vsh")
     .fragment("program/geometry/shadow.fsh")
+    .compile();
+
+  pipeline
+    .createObjectShader("point_shadow", Usage.POINT)
+    .vertex("program/geometry/point_shadow.vsh")
+    .fragment("program/geometry/point_shadow.fsh")
     .compile();
 
   const gbufferTex1 = pipeline
@@ -197,6 +259,7 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .fragment("program/before_translucents/opaque_ssr.fsh")
     .target(0, ssrTex)
     .ssbo(0, sceneData)
+    .define("SCENE_DATA_BINDING", "0")
     .compile();
 
   preTranslucent
@@ -206,7 +269,19 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .target(0, sceneTex)
     .target(1, diffuseTex)
     .ssbo(0, sceneData)
+    .define("SCENE_DATA_BINDING", "0")
     .compile();
+
+  preTranslucent
+    .createComposite("opaque_point_lights")
+    .vertex("program/fullscreen_pass.vsh")
+    .fragment("program/before_translucents/opaque_point_lights.fsh")
+    .target(0, sceneTex)
+    .target(1, diffuseTex)
+    .compile();
+
+  // POST RENDER
+  // =======================================================================================
 
   postRender
     .createComposite("exposure")

@@ -46,15 +46,14 @@ void main() {
   vec3 V = -normalize(view_pos);
   vec3 world_V = mat3(ap.camera.viewInv) * V;
 
-  vec3 direct_fresnel = vec3(1.0);
-  // schlick(
-  //   material,
-  //   dot(world_V, normalize(world_V + world_light_dir))
-  // );
+  vec3 direct_fresnel = schlick(
+    material,
+    dot(world_V, normalize(world_V + world_light_dir))
+  );
 
   vec4 ssr = texture(ssr_tex, uv);
 
-  vec3 indirect_fresnel = vec3(1.0); //schlick(material, ssr.a);
+  vec3 indirect_fresnel = schlick(material, ssr.a);
 
   diffuse =
     brdf_diffuse(material, world_light_dir) *
@@ -62,9 +61,7 @@ void main() {
     shadow.rgb *
     (1.0 - direct_fresnel);
 
-  vec2 irradiance_uv =
-    cartesian_to_spherical(mat3(ap.camera.viewInv) * material.texture_normal) /
-    TAU;
+  vec2 irradiance_uv = cartesian_to_spherical(material.texture_normal) / TAU;
 
   diffuse +=
     material.albedo *
@@ -99,6 +96,9 @@ void main() {
   } else {
     shaded_color = specular;
   }
+
+  shaded_color +=
+    material.emission * material.albedo * EMISSION_STRENGTH * 20.0;
 
   // *
   // global_illumination.a;

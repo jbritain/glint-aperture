@@ -1,14 +1,291 @@
+// tslib/lightColors.ts
+function setLightColors() {
+  setLightColor(new NamespacedId("campfire"), 255, 102, 0, 255);
+  setLightColor(new NamespacedId("candle"), 245, 127, 68, 255);
+  setLightColor(new NamespacedId("cave_vines"), 243, 133, 59, 255);
+  setLightColor(new NamespacedId("cave_vines_plant"), 243, 133, 59, 255);
+  setLightColor(new NamespacedId("glow_lichen"), 107, 238, 172, 255);
+  setLightColor(new NamespacedId("lantern"), 243, 158, 73, 255);
+  setLightColor(new NamespacedId("jack_o_lantern"), 193, 100, 38, 255);
+  setLightColor(new NamespacedId("magma_block"), 193, 100, 38, 255);
+  setLightColor(new NamespacedId("ochre_froglight"), 223, 172, 71, 255);
+  setLightColor(new NamespacedId("pearlescent_froglight"), 224, 117, 232, 255);
+  setLightColor(new NamespacedId("redstone_torch"), 249, 50, 28, 255);
+  setLightColor(new NamespacedId("redstone_wall_torch"), 249, 50, 28, 255);
+  setLightColor(new NamespacedId("soul_campfire"), 51, 204, 255, 255);
+  setLightColor(new NamespacedId("verdant_froglight"), 99, 229, 60, 255);
+  setLightColor(new NamespacedId("torch"), 255, 119, 0, 255);
+  setLightColor(new NamespacedId("wall_torch"), 255, 119, 0, 255);
+  setLightColor(new NamespacedId("nether_portal"), 100, 0, 255, 255);
+  setLightColor(new NamespacedId("small_amethyst_bud"), 184, 88, 221, 255);
+  setLightColor(new NamespacedId("medium_amethyst_bud"), 184, 88, 221, 255);
+  setLightColor(new NamespacedId("large_amethyst_bud"), 184, 88, 221, 255);
+  setLightColor(new NamespacedId("amethyst_cluster"), 184, 88, 221, 255);
+  const glassOpacity = 255;
+  setLightColor(new NamespacedId("tinted_glass"), 50, 38, 56, glassOpacity);
+  setLightColor(
+    new NamespacedId("white_stained_glass"),
+    255,
+    255,
+    255,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("white_stained_glass_pane"),
+    255,
+    255,
+    255,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("light_gray_stained_glass"),
+    153,
+    153,
+    153,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("light_gray_stained_glass_pane"),
+    153,
+    153,
+    153,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("gray_stained_glass"),
+    76,
+    76,
+    76,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("gray_stained_glass_pane"),
+    76,
+    76,
+    76,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("black_stained_glass"),
+    25,
+    25,
+    25,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("black_stained_glass_pane"),
+    25,
+    25,
+    25,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("brown_stained_glass"),
+    102,
+    76,
+    51,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("brown_stained_glass_pane"),
+    102,
+    76,
+    51,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("red_stained_glass"),
+    153,
+    51,
+    51,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("red_stained_glass_pane"),
+    153,
+    51,
+    51,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("orange_stained_glass"),
+    216,
+    127,
+    51,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("orange_stained_glass_pane"),
+    216,
+    127,
+    51,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("yellow_stained_glass"),
+    229,
+    229,
+    51,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("yellow_stained_glass_pane"),
+    229,
+    229,
+    51,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("lime_stained_glass"),
+    127,
+    204,
+    25,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("lime_stained_glass_pane"),
+    127,
+    204,
+    25,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("green_stained_glass"),
+    102,
+    127,
+    51,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("green_stained_glass_pane"),
+    102,
+    127,
+    51,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("cyan_stained_glass"),
+    76,
+    127,
+    153,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("cyan_stained_glass_pane"),
+    76,
+    127,
+    153,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("light_blue_stained_glass"),
+    102,
+    153,
+    216,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("light_blue_stained_glass_pane"),
+    102,
+    153,
+    216,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("blue_stained_glass"),
+    51,
+    76,
+    178,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("blue_stained_glass_pane"),
+    51,
+    76,
+    178,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("purple_stained_glass"),
+    127,
+    63,
+    178,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("purple_stained_glass_pane"),
+    127,
+    63,
+    178,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("magenta_stained_glass"),
+    178,
+    76,
+    216,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("magenta_stained_glass_pane"),
+    178,
+    76,
+    216,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("pink_stained_glass"),
+    242,
+    127,
+    165,
+    glassOpacity
+  );
+  setLightColor(
+    new NamespacedId("pink_stained_glass_pane"),
+    242,
+    127,
+    165,
+    glassOpacity
+  );
+}
+
 // pack.ts
+var maxPointLights = 64;
+var cascades = 4;
 function configureRenderer(renderer) {
   renderer.disableShade = true;
   renderer.sunPathRotation = 40;
   renderer.shadow.resolution = 1592;
-  renderer.shadow.far = 120;
-  renderer.shadow.distance = 120;
+  renderer.shadow.far = 192;
+  renderer.shadow.distance = 192;
   renderer.shadow.enabled = true;
+  renderer.shadow.cascades = cascades;
+  renderer.shadow.entityCascadeCount = 1;
+  renderer.pointLight.nearPlane = 0.1;
+  renderer.pointLight.cacheRealTimeTerrain = true;
+  renderer.pointLight.farPlane = 16;
+  renderer.pointLight.maxCount = maxPointLights;
+  renderer.pointLight.realTimeCount = 4;
+  renderer.pointLight.maxUpdates = 4;
+  renderer.pointLight.updateThreshold = 0.3;
   renderer.mergedHandDepth = true;
+  setLightColors();
 }
 function configurePipeline(pipeline) {
+  const lightListBinSize = 16;
+  defineGlobally("LIGHT_LIST_BIN_SIZE", lightListBinSize);
+  const lightListVolumeSize = 128;
+  defineGlobally("LIGHT_LIST_VOLUME_SIZE", lightListVolumeSize);
+  const lightListBinCount = Math.pow(lightListVolumeSize / lightListBinSize, 3);
+  defineGlobally("LIGHT_LIST_BIN_COUNT", lightListBinCount);
+  const maxLightsPerBin = 64;
+  defineGlobally("MAX_LIGHTS_PER_BIN", maxLightsPerBin);
+  defineGlobally("CASCADES", cascades.toString());
+  const lightLists = pipeline.createBuffer(
+    (maxLightsPerBin + 1) * lightListBinCount,
+    false
+  );
+  defineGlobally("EMISSION_STRENGTH", 100);
   const screenSetup = pipeline.forStage(Stage.SCREEN_SETUP);
   const preRender = pipeline.forStage(Stage.PRE_RENDER);
   const preTranslucent = pipeline.forStage(Stage.PRE_TRANSLUCENT);
@@ -33,11 +310,14 @@ function configurePipeline(pipeline) {
   screenSetup.barrier(IMAGE_BIT);
   screenSetup.createCompute("generate_multiple_scattering_lut").location("program/atmosphere/generate_multiple_scattering_lut.csh").workGroups(4, 4, 1).compile();
   preRender.barrier(IMAGE_BIT);
-  preRender.createCompute("generate_sky_view_lut").location("program/atmosphere/generate_sky_view_lut.csh").workGroups(25, 25, 1).ssbo(0, sceneData).compile();
+  preRender.createCompute("generate_sky_view_lut").location("program/atmosphere/generate_sky_view_lut.csh").workGroups(25, 25, 1).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
   preRender.barrier(IMAGE_BIT);
-  preRender.createCompute("generateSkyIrradianceLUT").location("program/render_setup/generate_sky_irradiance_lut.csh").workGroups(4, 4, 1).ssbo(0, sceneData).compile();
+  preRender.createCompute("generateSkyIrradianceLUT").location("program/render_setup/generate_sky_irradiance_lut.csh").workGroups(4, 4, 1).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
   preRender.barrier(IMAGE_BIT);
+  preRender.createCompute("clearLightList").location("program/render_setup/clear_light_lists.csh").workGroups(Math.ceil(lightListBinCount / 64), 1, 1).ssbo(0, lightLists);
+  preRender.createCompute("generateLightList").location("program/render_setup/generate_light_lists.csh").workGroups(Math.ceil(maxPointLights / 64), 1, 1).ssbo(0, lightLists);
   pipeline.createObjectShader("shadow", Usage.SHADOW).vertex("program/geometry/shadow.vsh").fragment("program/geometry/shadow.fsh").compile();
+  pipeline.createObjectShader("point_shadow", Usage.POINT).vertex("program/geometry/point_shadow.vsh").fragment("program/geometry/point_shadow.fsh").compile();
   const gbufferTex1 = pipeline.createTexture("gbuffer_tex_1").format(Format.RGBA16).clear(true).build();
   const gbufferTex2 = pipeline.createTexture("gbuffer_tex_2").format(Format.RGBA16).clear(true).build();
   pipeline.createObjectShader("terrain", Usage.TEXTURED).vertex("program/geometry/opaque.vsh").fragment("program/geometry/opaque.fsh").target(0, gbufferTex1).target(1, gbufferTex2).compile();
@@ -48,8 +328,9 @@ function configurePipeline(pipeline) {
   const diffuseTex = pipeline.createTexture("diffuse_tex").format(Format.R11F_G11F_B10F).clear(false).build();
   const specularTex = pipeline.createTexture("specular_tex").format(Format.RGBA16F).clear(false).build();
   const ssrTex = pipeline.createTexture("ssr_tex").format(Format.RGBA16F).clear(false).build();
-  preTranslucent.createComposite("opaque_ssr").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_ssr.fsh").target(0, ssrTex).ssbo(0, sceneData).compile();
-  preTranslucent.createComposite("opaque_shading").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_shading.fsh").target(0, sceneTex).target(1, diffuseTex).ssbo(0, sceneData).compile();
+  preTranslucent.createComposite("opaque_ssr").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_ssr.fsh").target(0, ssrTex).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
+  preTranslucent.createComposite("opaque_shading").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_shading.fsh").target(0, sceneTex).target(1, diffuseTex).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
+  preTranslucent.createComposite("opaque_point_lights").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_point_lights.fsh").target(0, sceneTex).target(1, diffuseTex).compile();
   postRender.createComposite("exposure").vertex("program/fullscreen_pass.vsh").fragment("program/post/exposure.fsh").target(0, sceneTex).compile();
   const bloomTex = pipeline.createTexture("bloom_tex").format(Format.RGBA16F).clear(true).mipmap(true).build();
   for (let i = 0; i < 5; i++) {

@@ -18,4 +18,5 @@ void main() {
   vec3 view_dir = normalize(screen_space_to_view_space(vec3(uv, depth)));
 
   color = get_sky(mat3(ap.camera.viewInv) * view_dir, true);
+
 }

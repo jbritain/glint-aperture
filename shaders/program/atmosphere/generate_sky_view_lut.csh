@@ -31,6 +31,7 @@ void main() {
   vec3 end_pos;
 
   bool intersects_earth = ray_sphere_intersection(ray, vec3(0.0), earth_radius, end_pos);
+  vec3 earth_intersect_pos;
 
   if (!intersects_earth) {
     // if we did not hit the earth
@@ -91,16 +92,18 @@ void main() {
     ray_pos += ray_step;
   }
 
-  Ray sun_ray;
-  sun_ray.direction = world_sun_dir;
-  sun_ray.origin = vec3(0.0, ap.camera.pos.y + earth_radius + 64, 0.0);
+  if(intersects_earth){
+    Ray sun_ray;
+    sun_ray.direction = world_sun_dir;
+    sun_ray.origin = vec3(end_pos);
 
-  // if(intersects_earth){
-  //   luminance += earth_albedo  * texture(
-  //     sun_transmittance_lut_tex,
-  //     parameterise_sun_transmittance(sun_ray)
-  //   ).rgb * transmittance;
-  // }
+    vec3 sun_transmittance = texture(
+      sun_transmittance_lut_tex,
+      parameterise_sun_transmittance(sun_ray)
+    ).rgb;
+
+    luminance += earth_albedo * sun_transmittance * transmittance * dot(world_light_dir, normalize(end_pos));
+  }
 
   imageStore(sky_view_lut, texel_coord, vec4(luminance, 1.0));
 
@@ -113,7 +116,7 @@ void main() {
         parameterise_sun_transmittance(
           Ray(
             vec3(0.0, ap.camera.pos.y + earth_radius + 64, 0.0),
-            world_light_dir
+            world_sun_dir
           )
         )
       ).rgb *

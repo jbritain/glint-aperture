@@ -25,10 +25,10 @@ vec3 get_sky(vec3 color, vec3 ray_dir, bool include_sun) {
   ).xyz;
 
   vec3 luminance =
-    max0(texture(sky_view_lut_tex, parameterise_sky_view(sky_ray)).rgb) *
+    textureLod(sky_view_lut_tex, parameterise_sky_view(sky_ray), 0).rgb *
     sun_irradiance;
 
-  if (include_sun && dot(ray_dir, world_light_dir) > cos(sun_angular_radius)) {
+  if (include_sun && dot(ray_dir, world_sun_dir) > cos(sun_angular_radius)) {
     luminance += sun_radiance;
   }
 

@@ -119,4 +119,25 @@ vec3 brdf_specular_area(
   return vec3(D * G / (4.0 * NoV + 1e-6));
 }
 
+vec3 brdf_specular(Material material, vec3 L, vec3 V) {
+  vec3 N = material.texture_normal;
+  vec3 H = normalize(L + V);
+
+  float NoL = dot(material.texture_normal, L);
+  NoL *= step(0.0, dot(material.geometry_normal, L));
+
+  float NoV = dot(N, V);
+  float VoL = dot(V, L);
+  float HoV = dot(H, V);
+
+  float alpha = max(1e-3, material.roughness);
+  float NoH_squared = pow2(dot(N, H));
+
+  float denominator = NoH_squared * (pow2(alpha) - 1.0) + 1.0;
+  float D = pow2(alpha) / (PI * pow2(denominator));
+  float G = geometry_smith(N, V, L, material.roughness);
+
+  return vec3(D * G / (4.0 * NoV + 1e-6));
+}
+
 #endif // BRDF_GLSL
