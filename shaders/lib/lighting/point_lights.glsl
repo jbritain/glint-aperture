@@ -5,6 +5,8 @@
 #include "/lib/common.glsl"
 #include "/lib/util/dither.glsl"
 #include "/lib/util/misc.glsl"
+#include "/lib/util/light_lists.glsl"
+#include "/lib/buffers/light_lists.glsl"
 
 vec3 sample_point_light(
   uint index,
@@ -73,9 +75,12 @@ vec3 sample_all_point_lights(vec3 player_pos, Material material) {
   );
   vec2 jitter = blue_noise(floor(gl_FragCoord.xy), ap.time.frames).xy;
   vec3 light = vec3(0.0);
-  for (int i = 0; i < 64; i++) {
+
+  uint bin = map_light_list_index(player_pos);
+
+  for (int i = 0; i < light_lists[bin].light_count; i++) {
     light += sample_point_light(
-      i,
+      light_lists[bin].light_indeces[i],
       player_pos + 0.16 * material.geometry_normal,
       fresnel,
       material,

@@ -30,7 +30,12 @@ void main() {
   vec3 ray_pos = ray.origin;
   vec3 end_pos;
 
-  bool intersects_earth = ray_sphere_intersection(ray, vec3(0.0), earth_radius, end_pos);
+  bool intersects_earth = ray_sphere_intersection(
+    ray,
+    vec3(0.0),
+    earth_radius,
+    end_pos
+  );
   vec3 earth_intersect_pos;
 
   if (!intersects_earth) {
@@ -92,7 +97,7 @@ void main() {
     ray_pos += ray_step;
   }
 
-  if(intersects_earth){
+  if (intersects_earth) {
     Ray sun_ray;
     sun_ray.direction = world_sun_dir;
     sun_ray.origin = vec3(end_pos);
@@ -102,12 +107,14 @@ void main() {
       parameterise_sun_transmittance(sun_ray)
     ).rgb;
 
-    luminance += earth_albedo * sun_transmittance * transmittance * dot(world_light_dir, normalize(end_pos));
+    luminance +=
+      earth_albedo *
+      sun_transmittance *
+      transmittance *
+      dot(world_light_dir, normalize(end_pos));
   }
 
   imageStore(sky_view_lut, texel_coord, vec4(luminance, 1.0));
-
-
 
   if (gl_GlobalInvocationID == ivec3(0)) {
     sunlight_color =

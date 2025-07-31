@@ -276,7 +276,11 @@ function configurePipeline(pipeline) {
   defineGlobally("LIGHT_LIST_BIN_SIZE", lightListBinSize);
   const lightListVolumeSize = 128;
   defineGlobally("LIGHT_LIST_VOLUME_SIZE", lightListVolumeSize);
-  const lightListBinCount = Math.pow(lightListVolumeSize / lightListBinSize, 3);
+  const lightListBinCount = Math.pow(lightListVolumeSize / lightListBinSize, 3) >> 0;
+  defineGlobally(
+    "LIGHT_LIST_BIN_COUNT_AXIS",
+    lightListVolumeSize / lightListBinSize
+  );
   defineGlobally("LIGHT_LIST_BIN_COUNT", lightListBinCount);
   const maxLightsPerBin = 64;
   defineGlobally("MAX_LIGHTS_PER_BIN", maxLightsPerBin);
@@ -314,8 +318,9 @@ function configurePipeline(pipeline) {
   preRender.barrier(IMAGE_BIT);
   preRender.createCompute("generateSkyIrradianceLUT").location("program/render_setup/generate_sky_irradiance_lut.csh").workGroups(4, 4, 1).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
   preRender.barrier(IMAGE_BIT);
-  preRender.createCompute("clearLightList").location("program/render_setup/clear_light_lists.csh").workGroups(Math.ceil(lightListBinCount / 64), 1, 1).ssbo(0, lightLists);
-  preRender.createCompute("generateLightList").location("program/render_setup/generate_light_lists.csh").workGroups(Math.ceil(maxPointLights / 64), 1, 1).ssbo(0, lightLists);
+  preRender.createCompute("clearLightList").location("program/render_setup/clear_light_lists.csh").workGroups(Math.ceil(lightListBinCount / 64), 1, 1).ssbo(0, lightLists).define("LIGHT_LIST_BINDING", "0").compile();
+  preRender.barrier(SSBO_BIT);
+  preRender.createCompute("generateLightList").location("program/render_setup/generate_light_lists.csh").workGroups(Math.ceil(maxPointLights / 64), 1, 1).ssbo(0, lightLists).define("LIGHT_LIST_BINDING", "0").compile();
   pipeline.createObjectShader("shadow", Usage.SHADOW).vertex("program/geometry/shadow.vsh").fragment("program/geometry/shadow.fsh").compile();
   pipeline.createObjectShader("point_shadow", Usage.POINT).vertex("program/geometry/point_shadow.vsh").fragment("program/geometry/point_shadow.fsh").compile();
   const gbufferTex1 = pipeline.createTexture("gbuffer_tex_1").format(Format.RGBA16).clear(true).build();
@@ -330,7 +335,7 @@ function configurePipeline(pipeline) {
   const ssrTex = pipeline.createTexture("ssr_tex").format(Format.RGBA16F).clear(false).build();
   preTranslucent.createComposite("opaque_ssr").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_ssr.fsh").target(0, ssrTex).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
   preTranslucent.createComposite("opaque_shading").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_shading.fsh").target(0, sceneTex).target(1, diffuseTex).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
-  preTranslucent.createComposite("opaque_point_lights").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_point_lights.fsh").target(0, sceneTex).target(1, diffuseTex).compile();
+  preTranslucent.createComposite("opaque_point_lights").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_point_lights.fsh").target(0, sceneTex).target(1, diffuseTex).ssbo(0, lightLists).define("LIGHT_LIST_BINDING", "0").compile();
   postRender.createComposite("exposure").vertex("program/fullscreen_pass.vsh").fragment("program/post/exposure.fsh").target(0, sceneTex).compile();
   const bloomTex = pipeline.createTexture("bloom_tex").format(Format.RGBA16F).clear(true).mipmap(true).build();
   for (let i = 0; i < 5; i++) {

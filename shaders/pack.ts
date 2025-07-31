@@ -35,7 +35,12 @@ export function configurePipeline(pipeline: PipelineConfig) {
   defineGlobally("LIGHT_LIST_BIN_SIZE", lightListBinSize);
   const lightListVolumeSize = 128;
   defineGlobally("LIGHT_LIST_VOLUME_SIZE", lightListVolumeSize);
-  const lightListBinCount = Math.pow(lightListVolumeSize / lightListBinSize, 3);
+  const lightListBinCount =
+    Math.pow(lightListVolumeSize / lightListBinSize, 3) >> 0;
+  defineGlobally(
+    "LIGHT_LIST_BIN_COUNT_AXIS",
+    lightListVolumeSize / lightListBinSize,
+  );
   defineGlobally("LIGHT_LIST_BIN_COUNT", lightListBinCount);
   const maxLightsPerBin = 64;
   defineGlobally("MAX_LIGHTS_PER_BIN", maxLightsPerBin);
@@ -151,13 +156,19 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .createCompute("clearLightList")
     .location("program/render_setup/clear_light_lists.csh")
     .workGroups(Math.ceil(lightListBinCount / 64), 1, 1)
-    .ssbo(0, lightLists);
+    .ssbo(0, lightLists)
+    .define("LIGHT_LIST_BINDING", "0")
+    .compile();
+
+  preRender.barrier(SSBO_BIT);
 
   preRender
     .createCompute("generateLightList")
     .location("program/render_setup/generate_light_lists.csh")
     .workGroups(Math.ceil(maxPointLights / 64), 1, 1)
-    .ssbo(0, lightLists);
+    .ssbo(0, lightLists)
+    .define("LIGHT_LIST_BINDING", "0")
+    .compile();
 
   // GEOMETRY
   // =======================================================================================
@@ -278,6 +289,8 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .fragment("program/before_translucents/opaque_point_lights.fsh")
     .target(0, sceneTex)
     .target(1, diffuseTex)
+    .ssbo(0, lightLists)
+    .define("LIGHT_LIST_BINDING", "0")
     .compile();
 
   // POST RENDER

@@ -9,6 +9,7 @@ vec3 apply_range(vec3 color, float min_val, float max_val) {
 
 uniform sampler2D scene_tex;
 uniform sampler2D bloom_tex;
+uniform sampler2D debug_tex;
 
 layout(location = 0) out vec3 color;
 
@@ -20,4 +21,7 @@ void main() {
   vec3 bloom = texture(bloom_tex, uv).rgb;
   color = mix(color, bloom, 0.01);
   color = tonemap(color);
+
+  // color = texture(debug_tex, uv).rgb;
+
 }

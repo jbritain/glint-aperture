@@ -7,9 +7,9 @@ struct LightList {
 };
 
 #ifdef LIGHT_LIST_BINDING
-layout(binding = LIGHT_LIST_BINDING) buffer light_list_buffer {
+layout(std430, binding = LIGHT_LIST_BINDING) buffer light_list_buffer {
   LightList[LIGHT_LIST_BIN_COUNT] light_lists;
-}
+};
 #endif
 
 #endif // LIGHT_LISTS_BUFFER_GLSL
