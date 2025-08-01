@@ -1,7 +1,7 @@
 import type {} from "./iris";
 import { setLightColors } from "./tslib/lightColors";
 
-const maxPointLights = 64;
+const maxPointLights = 128;
 const cascades = 4;
 
 export function configureRenderer(renderer: RendererConfig) {
@@ -23,7 +23,7 @@ export function configureRenderer(renderer: RendererConfig) {
   renderer.pointLight.maxCount = maxPointLights;
   renderer.pointLight.realTimeCount = 4;
   renderer.pointLight.maxUpdates = 4;
-  renderer.pointLight.updateThreshold = 0.3;
+  renderer.pointLight.updateThreshold = 0.1;
 
   renderer.mergedHandDepth = true;
 
@@ -31,9 +31,12 @@ export function configureRenderer(renderer: RendererConfig) {
 }
 
 export function configurePipeline(pipeline: PipelineConfig) {
+  pipeline.addTag(0, new NamespacedId("minecraft", "leaves"));
+  defineGlobally("TAG_LEAVES", "0");
+
   const lightListBinSize = 16;
   defineGlobally("LIGHT_LIST_BIN_SIZE", lightListBinSize);
-  const lightListVolumeSize = 128;
+  const lightListVolumeSize = 256;
   defineGlobally("LIGHT_LIST_VOLUME_SIZE", lightListVolumeSize);
   const lightListBinCount =
     Math.pow(lightListVolumeSize / lightListBinSize, 3) >> 0;
@@ -42,14 +45,14 @@ export function configurePipeline(pipeline: PipelineConfig) {
     lightListVolumeSize / lightListBinSize,
   );
   defineGlobally("LIGHT_LIST_BIN_COUNT", lightListBinCount);
-  const maxLightsPerBin = 64;
+  const maxLightsPerBin = 128;
   defineGlobally("MAX_LIGHTS_PER_BIN", maxLightsPerBin);
 
   defineGlobally("CASCADES", cascades.toString());
 
   // we store maxLightsPerBin + 1 uints per bin, each representing an ID, plus the counter for how many lights occupy that bin
   const lightLists = pipeline.createBuffer(
-    (maxLightsPerBin + 1) * lightListBinCount,
+    (maxLightsPerBin + 1) * lightListBinCount * 4,
     false,
   );
 
@@ -335,5 +338,9 @@ export function configurePipeline(pipeline: PipelineConfig) {
   preTranslucent.end();
   postRender.end();
 
-  pipeline.createCombinationPass("program/combination.fsh").compile();
+  pipeline
+    .createCombinationPass("program/combination.fsh")
+    .ssbo(0, lightLists)
+    .define("LIGHT_LIST_BINDING", "0")
+    .compile();
 }

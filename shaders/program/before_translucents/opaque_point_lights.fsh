@@ -39,6 +39,4 @@ void main() {
   vec3 light = sample_all_point_lights(player_pos, material);
   color += light;
   diffuse += light;
-
-  show(map_light_list_index(player_pos) > LIGHT_LIST_BIN_COUNT);
 }

@@ -18,15 +18,15 @@ void main(){
 
   const int light_radius = 16; // TODO: not hardcode this here
 
+  ivec3 bin_pos = get_light_list_bin_pos(light.pos);
+
   const int extra_bins = light_radius / LIGHT_LIST_BIN_SIZE;
-  // for(int x = -extra_bins; x <= extra_bins; x++){
-  //   for(int y = -extra_bins; y <= extra_bins; y++){
-  //     for(int z = -extra_bins; z <= extra_bins; z++){
-          uint bin_index = map_light_list_index(light.pos);// + vec3(x, y, z) * LIGHT_LIST_BIN_SIZE);
-
-
+  for(int x = -extra_bins; x <= extra_bins; x++){
+    for(int y = -extra_bins; y <= extra_bins; y++){
+      for(int z = -extra_bins; z <= extra_bins; z++){
+          uint bin_index = bin_pos_to_bin_index(bin_pos + ivec3(x, y, z));
           write_to_light_list(bin_index, uint(gl_GlobalInvocationID.x));
-  //     }
-  //   }
-  // }
+      }
+    }
+  }
 }

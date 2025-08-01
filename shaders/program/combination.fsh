@@ -2,6 +2,8 @@
 
 #include "/lib/common.glsl"
 #include "/lib/post/tonemap.glsl"
+#include "/lib/buffers/light_lists.glsl"
+#include "/lib/util/light_lists.glsl"
 
 vec3 apply_range(vec3 color, float min_val, float max_val) {
   return clamp((color - min_val) / (max_val - min_val), 0.0, 1.0);
@@ -21,6 +23,15 @@ void main() {
   vec3 bloom = texture(bloom_tex, uv).rgb;
   color = mix(color, bloom, 0.01);
   color = tonemap(color);
+
+  // if (
+  //   int(gl_FragCoord.y * MAX_LIGHTS_PER_BIN / ap.game.screenSize.y) <
+  //   light_lists[int(
+  //     gl_FragCoord.x * LIGHT_LIST_BIN_COUNT / ap.game.screenSize.x
+  //   )].light_count
+  // ) {
+  //   color = vec3(1.0);
+  // }
 
   // color = texture(debug_tex, uv).rgb;
 

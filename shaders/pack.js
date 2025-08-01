@@ -250,7 +250,7 @@ function setLightColors() {
 }
 
 // pack.ts
-var maxPointLights = 64;
+var maxPointLights = 128;
 var cascades = 4;
 function configureRenderer(renderer) {
   renderer.disableShade = true;
@@ -267,14 +267,16 @@ function configureRenderer(renderer) {
   renderer.pointLight.maxCount = maxPointLights;
   renderer.pointLight.realTimeCount = 4;
   renderer.pointLight.maxUpdates = 4;
-  renderer.pointLight.updateThreshold = 0.3;
+  renderer.pointLight.updateThreshold = 0.1;
   renderer.mergedHandDepth = true;
   setLightColors();
 }
 function configurePipeline(pipeline) {
+  pipeline.addTag(0, new NamespacedId("minecraft", "leaves"));
+  defineGlobally("TAG_LEAVES", "0");
   const lightListBinSize = 16;
   defineGlobally("LIGHT_LIST_BIN_SIZE", lightListBinSize);
-  const lightListVolumeSize = 128;
+  const lightListVolumeSize = 256;
   defineGlobally("LIGHT_LIST_VOLUME_SIZE", lightListVolumeSize);
   const lightListBinCount = Math.pow(lightListVolumeSize / lightListBinSize, 3) >> 0;
   defineGlobally(
@@ -282,11 +284,11 @@ function configurePipeline(pipeline) {
     lightListVolumeSize / lightListBinSize
   );
   defineGlobally("LIGHT_LIST_BIN_COUNT", lightListBinCount);
-  const maxLightsPerBin = 64;
+  const maxLightsPerBin = 128;
   defineGlobally("MAX_LIGHTS_PER_BIN", maxLightsPerBin);
   defineGlobally("CASCADES", cascades.toString());
   const lightLists = pipeline.createBuffer(
-    (maxLightsPerBin + 1) * lightListBinCount,
+    (maxLightsPerBin + 1) * lightListBinCount * 4,
     false
   );
   defineGlobally("EMISSION_STRENGTH", 100);
@@ -348,7 +350,7 @@ function configurePipeline(pipeline) {
   preRender.end();
   preTranslucent.end();
   postRender.end();
-  pipeline.createCombinationPass("program/combination.fsh").compile();
+  pipeline.createCombinationPass("program/combination.fsh").ssbo(0, lightLists).define("LIGHT_LIST_BINDING", "0").compile();
 }
 export {
   configurePipeline,

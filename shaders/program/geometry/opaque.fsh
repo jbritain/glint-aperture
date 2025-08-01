@@ -30,6 +30,10 @@ void iris_emitFragment() {
 
   gbuffer.specular_map = iris_sampleSpecularMap(uv);
 
+  if (iris_hasTag(block_id, TAG_LEAVES)) {
+    gbuffer.specular_map.b = 1.0;
+  }
+
   gbuffer.material_mask = build_material_mask(block_id);
 
   gbuffer.lightmap = lightmap;
