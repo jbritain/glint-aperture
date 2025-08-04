@@ -6,4 +6,5 @@ layout(local_size_x = 64) in;
 
 void main() {
   light_lists[uint(gl_GlobalInvocationID.x)].light_count = 0;
+  light_lists[uint(gl_GlobalInvocationID.x)].final_light_count = 0;
 }

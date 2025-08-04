@@ -1,7 +1,8 @@
 import type {} from "./iris";
 import { setLightColors } from "./tslib/lightColors";
 
-const maxPointLights = 128;
+const maxPointLights = 96;
+const lightRadius = 16;
 const cascades = 4;
 
 export function configureRenderer(renderer: RendererConfig) {
@@ -18,12 +19,12 @@ export function configureRenderer(renderer: RendererConfig) {
 
   renderer.pointLight.nearPlane = 0.1;
   renderer.pointLight.cacheRealTimeTerrain = true;
-  renderer.pointLight.farPlane = 16.0;
+  renderer.pointLight.farPlane = lightRadius;
 
   renderer.pointLight.maxCount = maxPointLights;
   renderer.pointLight.realTimeCount = 4;
   renderer.pointLight.maxUpdates = 4;
-  renderer.pointLight.updateThreshold = 0.1;
+  renderer.pointLight.updateThreshold = 0.08;
 
   renderer.mergedHandDepth = true;
 
@@ -34,25 +35,25 @@ export function configurePipeline(pipeline: PipelineConfig) {
   pipeline.addTag(0, new NamespacedId("minecraft", "leaves"));
   defineGlobally("TAG_LEAVES", "0");
 
-  const lightListBinSize = 16;
+  defineGlobally("LIGHT_RADIUS", lightRadius);
+  defineGlobally("MAX_LIGHTS", maxPointLights);
+  const lightListBinSize = 8;
   defineGlobally("LIGHT_LIST_BIN_SIZE", lightListBinSize);
-  const lightListVolumeSize = 256;
+  const lightListVolumeSize = 128;
   defineGlobally("LIGHT_LIST_VOLUME_SIZE", lightListVolumeSize);
   const lightListBinCount =
     Math.pow(lightListVolumeSize / lightListBinSize, 3) >> 0;
-  defineGlobally(
-    "LIGHT_LIST_BIN_COUNT_AXIS",
-    lightListVolumeSize / lightListBinSize,
-  );
+  const lightLightBinsPerAxis = lightListVolumeSize / lightListBinSize;
+  defineGlobally("LIGHT_LIST_BIN_COUNT_AXIS", lightLightBinsPerAxis);
   defineGlobally("LIGHT_LIST_BIN_COUNT", lightListBinCount);
-  const maxLightsPerBin = 128;
+  const maxLightsPerBin = 64;
   defineGlobally("MAX_LIGHTS_PER_BIN", maxLightsPerBin);
 
   defineGlobally("CASCADES", cascades.toString());
 
-  // we store maxLightsPerBin + 1 uints per bin, each representing an ID, plus the counter for how many lights occupy that bin
+  // we store maxLightsPerBin + 2 uints per bin, each representing an ID, plus the counters for how many lights occupy that bin
   const lightLists = pipeline.createBuffer(
-    (maxLightsPerBin + 1) * lightListBinCount * 4,
+    (maxLightsPerBin + 2) * lightListBinCount * 4,
     false,
   );
 
@@ -156,7 +157,7 @@ export function configurePipeline(pipeline: PipelineConfig) {
   // LIGHT LIST BINS
   // =======================================================================================
   preRender
-    .createCompute("clearLightList")
+    .createCompute("clearLightLists")
     .location("program/render_setup/clear_light_lists.csh")
     .workGroups(Math.ceil(lightListBinCount / 64), 1, 1)
     .ssbo(0, lightLists)
@@ -166,9 +167,23 @@ export function configurePipeline(pipeline: PipelineConfig) {
   preRender.barrier(SSBO_BIT);
 
   preRender
-    .createCompute("generateLightList")
+    .createCompute("generateLightLists")
     .location("program/render_setup/generate_light_lists.csh")
     .workGroups(Math.ceil(maxPointLights / 64), 1, 1)
+    .ssbo(0, lightLists)
+    .define("LIGHT_LIST_BINDING", "0")
+    .compile();
+
+  preRender.barrier(SSBO_BIT);
+
+  preRender
+    .createCompute("propagateLightLists")
+    .location("program/render_setup/propagate_light_lists.csh")
+    .workGroups(
+      Math.ceil(lightLightBinsPerAxis / 4),
+      Math.ceil(lightLightBinsPerAxis / 4),
+      Math.ceil(lightLightBinsPerAxis / 4),
+    )
     .ssbo(0, lightLists)
     .define("LIGHT_LIST_BINDING", "0")
     .compile();

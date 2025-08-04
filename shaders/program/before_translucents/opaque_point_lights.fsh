@@ -39,4 +39,8 @@ void main() {
   vec3 light = sample_all_point_lights(player_pos, material);
   color += light;
   diffuse += light;
+
+  uint point_index = map_light_list_index(player_pos);
+
+  show(light_lists[point_index].light_count / 8.0);
 }

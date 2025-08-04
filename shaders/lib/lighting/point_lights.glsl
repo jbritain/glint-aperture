@@ -5,7 +5,7 @@
 #include "/lib/common.glsl"
 #include "/lib/util/dither.glsl"
 #include "/lib/util/misc.glsl"
-#include "/lib/util/light_lists.glsl"
+#include "/lib/misc/light_lists.glsl"
 #include "/lib/buffers/light_lists.glsl"
 
 vec3 sample_point_light(
@@ -37,7 +37,7 @@ vec3 sample_point_light(
 
   float sample_depth = max_vec3(abs(light.pos - player_pos));
 
-  if (sample_depth > ap.point.farPlane) return vec3(0.0);
+
 
   float ndc_depth =
     (ap.point.farPlane +
@@ -62,8 +62,7 @@ vec3 sample_point_light(
       brdf_specular(material, sample_dir, -normalize(player_pos)),
       fresnel
     ) *
-    shadow *
-    rcp(sample_distance);
+    shadow;
 
   return lighting;
 }
@@ -78,7 +77,7 @@ vec3 sample_all_point_lights(vec3 player_pos, Material material) {
 
   uint bin = map_light_list_index(player_pos);
 
-  for (int i = 0; i < light_lists[bin].light_count; i++) {
+  for (int i = 0; i < light_lists[bin].final_light_count; i++) {
     light += sample_point_light(
       light_lists[bin].light_indeces[i],
       player_pos + 0.16 * material.geometry_normal,

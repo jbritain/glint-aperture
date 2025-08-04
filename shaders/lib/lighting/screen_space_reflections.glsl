@@ -7,8 +7,8 @@
 #include "/lib/util/dither.glsl"
 #include "/lib/util/misc.glsl"
 
-#define ROUGH_REFLECTION_SAMPLES 8
-#define ROUGH_REFLECTION_STEPS 16
+#define ROUGH_REFLECTION_SAMPLES 4
+#define ROUGH_REFLECTION_STEPS 8
 #define SMOOTH_REFLECTION_STEPS 32
 
 vec4 ssr_sample(
@@ -112,7 +112,7 @@ vec4 compute_screen_space_reflections(
       depth_sampler,
       color_sampler
     );
-  } else if (roughness < 0.5) {
+  } else if (roughness < 0.3) {
     return compute_rough_reflections(
       view_pos,
       view_dir,

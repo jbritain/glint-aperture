@@ -6,6 +6,10 @@ out vec2 lightmap;
 out vec3 view_pos;
 flat out uint block_id;
 
+out vec4 texture_bounds;
+out vec2 texture_size;
+out vec3 mid_block;
+
 out mat3 tbn_matrix;
 
 void iris_emitVertex(inout VertexData data) {
@@ -29,5 +33,12 @@ void iris_sendParameters(VertexData data) {
 
   view_pos = (iris_modelViewMatrix * data.modelPos).xyz;
 
+  texture_bounds.xy = iris_getTexture(data.textureId).minCoord;
+  texture_bounds.zw = iris_getTexture(data.textureId).maxCoord;
+
+  texture_size = texture_bounds.zw - texture_bounds.xy;
+
   block_id = data.blockId;
+
+  mid_block = data.midBlock;
 }

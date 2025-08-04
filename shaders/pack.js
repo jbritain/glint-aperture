@@ -250,7 +250,8 @@ function setLightColors() {
 }
 
 // pack.ts
-var maxPointLights = 128;
+var maxPointLights = 96;
+var lightRadius = 16;
 var cascades = 4;
 function configureRenderer(renderer) {
   renderer.disableShade = true;
@@ -263,32 +264,32 @@ function configureRenderer(renderer) {
   renderer.shadow.entityCascadeCount = 1;
   renderer.pointLight.nearPlane = 0.1;
   renderer.pointLight.cacheRealTimeTerrain = true;
-  renderer.pointLight.farPlane = 16;
+  renderer.pointLight.farPlane = lightRadius;
   renderer.pointLight.maxCount = maxPointLights;
   renderer.pointLight.realTimeCount = 4;
   renderer.pointLight.maxUpdates = 4;
-  renderer.pointLight.updateThreshold = 0.1;
+  renderer.pointLight.updateThreshold = 0.08;
   renderer.mergedHandDepth = true;
   setLightColors();
 }
 function configurePipeline(pipeline) {
   pipeline.addTag(0, new NamespacedId("minecraft", "leaves"));
   defineGlobally("TAG_LEAVES", "0");
-  const lightListBinSize = 16;
+  defineGlobally("LIGHT_RADIUS", lightRadius);
+  defineGlobally("MAX_LIGHTS", maxPointLights);
+  const lightListBinSize = 8;
   defineGlobally("LIGHT_LIST_BIN_SIZE", lightListBinSize);
-  const lightListVolumeSize = 256;
+  const lightListVolumeSize = 128;
   defineGlobally("LIGHT_LIST_VOLUME_SIZE", lightListVolumeSize);
   const lightListBinCount = Math.pow(lightListVolumeSize / lightListBinSize, 3) >> 0;
-  defineGlobally(
-    "LIGHT_LIST_BIN_COUNT_AXIS",
-    lightListVolumeSize / lightListBinSize
-  );
+  const lightLightBinsPerAxis = lightListVolumeSize / lightListBinSize;
+  defineGlobally("LIGHT_LIST_BIN_COUNT_AXIS", lightLightBinsPerAxis);
   defineGlobally("LIGHT_LIST_BIN_COUNT", lightListBinCount);
-  const maxLightsPerBin = 128;
+  const maxLightsPerBin = 64;
   defineGlobally("MAX_LIGHTS_PER_BIN", maxLightsPerBin);
   defineGlobally("CASCADES", cascades.toString());
   const lightLists = pipeline.createBuffer(
-    (maxLightsPerBin + 1) * lightListBinCount * 4,
+    (maxLightsPerBin + 2) * lightListBinCount * 4,
     false
   );
   defineGlobally("EMISSION_STRENGTH", 100);
@@ -320,9 +321,15 @@ function configurePipeline(pipeline) {
   preRender.barrier(IMAGE_BIT);
   preRender.createCompute("generateSkyIrradianceLUT").location("program/render_setup/generate_sky_irradiance_lut.csh").workGroups(4, 4, 1).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
   preRender.barrier(IMAGE_BIT);
-  preRender.createCompute("clearLightList").location("program/render_setup/clear_light_lists.csh").workGroups(Math.ceil(lightListBinCount / 64), 1, 1).ssbo(0, lightLists).define("LIGHT_LIST_BINDING", "0").compile();
+  preRender.createCompute("clearLightLists").location("program/render_setup/clear_light_lists.csh").workGroups(Math.ceil(lightListBinCount / 64), 1, 1).ssbo(0, lightLists).define("LIGHT_LIST_BINDING", "0").compile();
   preRender.barrier(SSBO_BIT);
-  preRender.createCompute("generateLightList").location("program/render_setup/generate_light_lists.csh").workGroups(Math.ceil(maxPointLights / 64), 1, 1).ssbo(0, lightLists).define("LIGHT_LIST_BINDING", "0").compile();
+  preRender.createCompute("generateLightLists").location("program/render_setup/generate_light_lists.csh").workGroups(Math.ceil(maxPointLights / 64), 1, 1).ssbo(0, lightLists).define("LIGHT_LIST_BINDING", "0").compile();
+  preRender.barrier(SSBO_BIT);
+  preRender.createCompute("propagateLightLists").location("program/render_setup/propagate_light_lists.csh").workGroups(
+    Math.ceil(lightLightBinsPerAxis / 4),
+    Math.ceil(lightLightBinsPerAxis / 4),
+    Math.ceil(lightLightBinsPerAxis / 4)
+  ).ssbo(0, lightLists).define("LIGHT_LIST_BINDING", "0").compile();
   pipeline.createObjectShader("shadow", Usage.SHADOW).vertex("program/geometry/shadow.vsh").fragment("program/geometry/shadow.fsh").compile();
   pipeline.createObjectShader("point_shadow", Usage.POINT).vertex("program/geometry/point_shadow.vsh").fragment("program/geometry/point_shadow.fsh").compile();
   const gbufferTex1 = pipeline.createTexture("gbuffer_tex_1").format(Format.RGBA16).clear(true).build();

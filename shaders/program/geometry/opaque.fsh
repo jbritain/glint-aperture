@@ -2,6 +2,7 @@
 
 #include "/lib/common.glsl"
 #include "/lib/structs/gbuffer_material.glsl"
+#include "/lib/misc/parallax.glsl"
 
 layout(location = 0) out vec4 gbuffer_1;
 layout(location = 1) out vec4 gbuffer_2;
@@ -10,11 +11,31 @@ in vec2 uv;
 in vec4 color;
 in vec2 lightmap;
 flat in uint block_id;
+in vec3 view_pos;
+
+in vec4 texture_bounds;
+in vec2 texture_size;
+in vec3 mid_block;
 
 in mat3 tbn_matrix;
 
 void iris_emitFragment() {
   Gbuffer gbuffer;
+
+  vec2 dx = dFdx(uv);
+  vec2 dy = dFdy(uv);
+  vec3 parallax_pos;
+  vec2 uv = apply_parallax(
+    uv,
+    view_pos,
+    tbn_matrix,
+    parallax_pos,
+    dx,
+    dy,
+    texture_bounds,
+    texture_size,
+    mid_block
+  );
 
   vec4 albedo = iris_sampleBaseTex(uv) * color;
   if (iris_discardFragment(albedo)) discard;
@@ -30,6 +51,7 @@ void iris_emitFragment() {
 
   gbuffer.specular_map = iris_sampleSpecularMap(uv);
 
+  // TODO: abstract this out into a function
   if (iris_hasTag(block_id, TAG_LEAVES)) {
     gbuffer.specular_map.b = 1.0;
   }

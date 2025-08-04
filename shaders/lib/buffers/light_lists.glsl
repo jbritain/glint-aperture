@@ -3,6 +3,7 @@
 
 struct LightList {
   uint light_count;
+  uint final_light_count;
   uint[MAX_LIGHTS_PER_BIN] light_indeces;
 };
 

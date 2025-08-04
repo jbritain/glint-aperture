@@ -10,7 +10,7 @@ void iris_emitFragment() {
   vec4 col = iris_sampleBaseTex(mUV);
   float emission = iris_sampleSpecularMap(mUV).a;
 
-  if (emission > 0.1 && emission != 1.0 && max_vec3(model_pos) < 0.6) {
+  if (emission > 0.0 && emission != 1.0 && max_vec3(model_pos) < 0.6) {
     discard;
   } else if (iris_discardFragment(col) && max_vec3(model_pos) >= 0.6) {
     discard;
