@@ -1,6 +1,8 @@
 #ifndef JESSIE_UTILS_GLSL
 #define JESSIE_UTILS_GLSL
 
+#include "/lib/common.glsl"
+
 // https://github.com/Jessie-LC/open-source-utility-code
 
 /*

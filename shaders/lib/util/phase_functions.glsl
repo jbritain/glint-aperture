@@ -21,4 +21,12 @@ float henyey_greenstein_phase(float cos_theta, float g) {
   (4.0 * PI * pow(1.0 + g * g - 2.0 * g * cos_theta, 3.0 / 2.0));
 }
 
+float dual_lobe_hg_phase(float cos_theta, float g0, float g1, float alpha) {
+  return mix(
+    henyey_greenstein_phase(cos_theta, g0),
+    henyey_greenstein_phase(cos_theta, g1),
+    alpha
+  );
+}
+
 #endif // PHASE_FUNCTIONS_GLSL

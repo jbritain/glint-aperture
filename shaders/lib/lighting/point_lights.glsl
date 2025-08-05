@@ -62,7 +62,7 @@ vec3 sample_point_light(
       brdf_specular(material, sample_dir, -normalize(player_pos)),
       fresnel
     ) *
-    shadow;
+    shadow * rcp(sample_distance);
 
   return lighting;
 }

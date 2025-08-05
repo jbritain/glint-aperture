@@ -1,0 +1,19 @@
+#version 460 core
+
+layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
+
+#include "/lib/common.glsl"
+#include "/lib/util/jessie_utils.glsl"
+#include "/lib/noise/perlin_noise.glsl"
+#include "/lib/noise/worley_noise.glsl"
+#include "/lib/noise/curl_noise.glsl"
+
+layout(rgba8) uniform image3D cloud_detail;
+
+void main(){
+  float worley1 = 1.0 - sample_worley_noise(vec3(gl_GlobalInvocationID.xyz), 8, 4, 2);
+  float worley2 = 1.0 - sample_worley_noise(vec3(gl_GlobalInvocationID.xyz), 4, 8, 2);
+  float worley3 = 1.0 - sample_worley_noise(vec3(gl_GlobalInvocationID.xyz), 2, 16, 3);
+
+  imageStore(cloud_detail, ivec3(gl_GlobalInvocationID.xyz), vec4(worley1, worley2, worley3, 1.0));
+}

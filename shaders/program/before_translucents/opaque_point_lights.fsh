@@ -15,6 +15,8 @@ uniform sampler2D diffuse_tex;
 uniform sampler2D gbuffer_tex_1;
 uniform sampler2D gbuffer_tex_2;
 
+uniform sampler2D cloud_weather_tex;
+
 uniform sampler2D mainDepthTex;
 
 layout(location = 0) out vec3 color;
@@ -42,5 +44,4 @@ void main() {
 
   uint point_index = map_light_list_index(player_pos);
 
-  show(light_lists[point_index].light_count / 8.0);
 }

@@ -25,13 +25,15 @@ void main() {
   color = tonemap(color);
 
   // light list occupancy visualiser
-  if (
-    int(gl_FragCoord.y * MAX_LIGHTS_PER_BIN / ap.game.screenSize.y) <
-    light_lists[int(
-      gl_FragCoord.x * LIGHT_LIST_BIN_COUNT / ap.game.screenSize.x
-    )].light_count
-  ) {
-    color = vec3(1.0);
-  }
+  // if (
+  //   int(gl_FragCoord.y * MAX_LIGHTS_PER_BIN / ap.game.screenSize.y) <
+  //   light_lists[int(
+  //     gl_FragCoord.x * LIGHT_LIST_BIN_COUNT / ap.game.screenSize.x
+  //   )].light_count
+  // ) {
+  //   color = vec3(1.0);
+  // }
+
+  // color = texture(debug_tex, uv).rgb;
 
 }

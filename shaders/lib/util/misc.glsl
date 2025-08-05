@@ -47,4 +47,60 @@ vec2 vogel_disc_sample(int step_index, int step_count, float jitter) {
   return r * vec2(cos(theta), sin(theta));
 }
 
+uint pcg_hash(uint seed) {
+  uint state = seed * 747796405u + 2891336453u;
+  uint word = ((state >> (state >> 28u) + 4u) ^ state) * 277803737u;
+  return (word >> 22u) ^ word;
+}
+
+float pcg_hash_normalized(uint seed) {
+  return pcg_hash(seed) / float(0xffffffffu);
+}
+
+// https://nullprogram.com/blog/2018/07/31/
+uint murmur_hash(uint x) {
+  x ^= x >> 16;
+  x *= 0x85ebca6bU;
+  x ^= x >> 13;
+  x *= 0xc2b2ae35U;
+  x ^= x >> 16;
+  return x;
+}
+
+float remap(
+  float value,
+  float original_min,
+  float original_max,
+  float new_min,
+  float new_max
+) {
+  return new_min +
+  (value - original_min) / (original_max - original_min) * (new_max - new_min);
+}
+
+bool ray_plane_intersection(
+  vec3 origin,
+  vec3 direction,
+  float height,
+  inout vec3 point
+) {
+  vec3 normal = vec3(0.0, sign(origin.y - height), 0.0); // plane normal vector
+  vec3 plane_point = vec3(0.0, height, 0.0); // point on the plane
+
+  float normal_dot_direction = dot(normal, direction);
+  if (normal_dot_direction == 0.0) {
+    return false;
+  }
+
+  float t = dot(normal, plane_point - origin) / normal_dot_direction;
+
+  point = origin + t * direction;
+
+  if (t < 0) {
+    return false;
+  }
+
+  return true;
+}
+
 #endif // MISC_GLSL
