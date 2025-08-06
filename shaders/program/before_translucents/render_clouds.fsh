@@ -31,6 +31,4 @@ void main() {
 
   color = fma(color, vec3(clouds.a), clouds.rgb);
 
-  show(texture(cloud_shape_tex, vec3(fract(uv), 0.0)).r);
-
 }

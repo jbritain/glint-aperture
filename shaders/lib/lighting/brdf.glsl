@@ -105,6 +105,10 @@ vec3 brdf_specular_area(
   float NoL = dot(material.texture_normal, L);
   NoL *= step(0.0, dot(material.geometry_normal, L));
 
+  if (NoL < 1e-6) {
+    return vec3(0.0);
+  }
+
   float NoV = dot(N, V);
   float VoL = dot(V, L);
   float HoV = dot(H, V);
