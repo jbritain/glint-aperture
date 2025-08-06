@@ -66,33 +66,33 @@ float get_cloud_density(vec3 pos) {
 
   if (height_fraction <= 0.15) {
     density *= linearstep(0.0, 0.15, height_fraction);
-  } else if (height_fraction > 0.9) {
-    density *= 1.0 - linearstep(0.9, 1.0, height_fraction);
+  } else if (height_fraction >= 0.3) {
+    density *= 1.0 - linearstep(0.3, 1.0, height_fraction);
   }
 
   density = saturate(remap(density, 1.0 - coverage, 1.0, 0.0, 1.0));
   density *= coverage;
 
-  // if (density < 0.01) {
-  //   return 0.0;
-  // }
+  if (density < 0.01) {
+    return 0.0;
+  }
 
-  // vec3 high_frequency_noise = texture(cloud_detail_tex, fract(pos / 100.0)).rgb;
-  // float high_frequency_fbm =
-  //   high_frequency_noise.r * 0.625 +
-  //   high_frequency_noise.g * 0.25 +
-  //   high_frequency_noise.b * 0.125;
+  vec3 high_frequency_noise = texture(cloud_detail_tex, fract(pos / 100.0)).rgb;
+  float high_frequency_fbm =
+    high_frequency_noise.r * 0.625 +
+    high_frequency_noise.g * 0.25 +
+    high_frequency_noise.b * 0.125;
 
-  // high_frequency_fbm =
-  //   0.35 *
-  //   exp(-coverage * 0.75) *
-  //   mix(
-  //     high_frequency_fbm,
-  //     1.0 - high_frequency_fbm,
-  //     saturate(height_fraction)
-  //   );
+  high_frequency_fbm =
+    0.35 *
+    exp(-coverage * 0.75) *
+    mix(
+      high_frequency_fbm,
+      1.0 - high_frequency_fbm,
+      saturate(height_fraction)
+    );
 
-  // density = max0(remap(density, high_frequency_fbm, 1.0, 0.0, 1.0));
+  density = max0(remap(density, high_frequency_fbm, 1.0, 0.0, 1.0));
 
   return density * 0.5;
 }
@@ -130,11 +130,17 @@ vec4 get_clouds(vec3 origin, vec3 ray_dir) {
   vec3 a;
   vec3 b;
   if (!ray_plane_intersection(origin, ray_dir, CLOUD_BASE_HEIGHT, a)) {
-    return vec4(vec3(0.0), 1.0);
+    a = ap.camera.pos;
   }
 
   if (!ray_plane_intersection(origin, ray_dir, CLOUD_TOP_HEIGHT, b)) {
-    return vec4(vec3(0.0), 1.0);
+    b = ap.camera.pos;
+  }
+
+  if (distance(ap.camera.pos, a) > distance(ap.camera.pos, b)) {
+    vec3 c = a;
+    a = b;
+    b = c;
   }
 
   vec3 ray_step = (b - a) / CLOUD_STEPS;
