@@ -47,11 +47,15 @@ float multiple_scattering(float density, float cos_theta) {
 }
 
 float get_cloud_density(vec3 pos) {
+  vec3 rounded_pos = pos; //floor(pos / 64.0) * 64.0;
   float height_fraction = saturate(
-    linearstep(CLOUD_BASE_HEIGHT, CLOUD_TOP_HEIGHT, pos.y)
+    linearstep(CLOUD_BASE_HEIGHT, CLOUD_TOP_HEIGHT, rounded_pos.y)
   );
 
-  vec4 low_frequency_noise = texture(cloud_shape_tex, fract(pos / 2000.0));
+  vec4 low_frequency_noise = texture(
+    cloud_shape_tex,
+    fract(rounded_pos / 2000.0)
+  );
 
   float low_frequency_fbm = saturate(
     low_frequency_noise.g * 0.625 +
@@ -62,7 +66,11 @@ float get_cloud_density(vec3 pos) {
   float density = low_frequency_noise.r;
   density = saturate(remap(density, low_frequency_fbm * 0.7, 1.0, 0.0, 1.0));
 
-  float coverage = texture(cloud_weather_tex, fract(pos.xz / 50000.0)).r;
+  // rounded_pos = floor(pos / 128.0) * 128.0;
+  float coverage = texture(
+    cloud_weather_tex,
+    fract(rounded_pos.xz / 50000.0)
+  ).r;
 
   if (height_fraction <= 0.15) {
     density *= linearstep(0.0, 0.15, height_fraction);
@@ -77,7 +85,11 @@ float get_cloud_density(vec3 pos) {
     return 0.0;
   }
 
-  vec3 high_frequency_noise = texture(cloud_detail_tex, fract(pos / 100.0)).rgb;
+  // rounded_pos = floor(pos / 32.0) * 32.0;
+  vec3 high_frequency_noise = texture(
+    cloud_detail_tex,
+    fract(rounded_pos / 100.0)
+  ).rgb;
   float high_frequency_fbm =
     high_frequency_noise.r * 0.625 +
     high_frequency_noise.g * 0.25 +
@@ -94,7 +106,7 @@ float get_cloud_density(vec3 pos) {
 
   density = max0(remap(density, high_frequency_fbm, 1.0, 0.0, 1.0));
 
-  return density * 0.5;
+  return density * 2.0;
 }
 
 float get_transmittance_towards_sun(
