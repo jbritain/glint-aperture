@@ -321,12 +321,12 @@ function configurePipeline(pipeline) {
   preRender.barrier(IMAGE_BIT);
   preRender.createCompute("generateSkyIrradianceLUT").location("program/render_setup/generate_sky_irradiance_lut.csh").workGroups(4, 4, 1).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
   preRender.barrier(IMAGE_BIT);
-  const cloudShapeTex = pipeline.createImageTexture("cloud_shape_tex", "cloud_shape").format(Format.RGBA8).width(128).height(128).depth(128).clear(false).build();
+  const cloudShapeTex = pipeline.createImageTexture("cloud_shape_tex", "cloud_shape").format(Format.RGBA16).width(128).height(128).depth(128).clear(false).build();
   screenSetup.createCompute("generate_cloud_shape").location("program/render_setup/generate_cloud_shape.csh").workGroups(32, 32, 32).compile();
-  const cloudDetailTex = pipeline.createImageTexture("cloud_detail_tex", "cloud_detail").format(Format.RGBA8).width(32).height(32).depth(32).clear(false).build();
+  const cloudDetailTex = pipeline.createImageTexture("cloud_detail_tex", "cloud_detail").format(Format.RGBA16).width(32).height(32).depth(32).clear(false).build();
   screenSetup.createCompute("generate_cloud_detail").location("program/render_setup/generate_cloud_detail.csh").workGroups(8, 8, 8).compile();
-  const cloudWeatherTex = pipeline.createImageTexture("cloud_weather_tex", "cloud_weather").format(Format.RGBA8).width(256).height(256).clear(false).build();
-  screenSetup.createCompute("generate_cloud_weather").location("program/render_setup/generate_cloud_weather.csh").workGroups(32, 32, 1).compile();
+  const cloudWeatherTex = pipeline.createImageTexture("cloud_weather_tex", "cloud_weather").format(Format.RGBA16).width(512).height(512).clear(false).build();
+  screenSetup.createCompute("generate_cloud_weather").location("program/render_setup/generate_cloud_weather.csh").workGroups(64, 64, 1).compile();
   preRender.createCompute("clearLightLists").location("program/render_setup/clear_light_lists.csh").workGroups(Math.ceil(lightListBinCount / 64), 1, 1).ssbo(0, lightLists).define("LIGHT_LIST_BINDING", "0").compile();
   preRender.barrier(SSBO_BIT);
   preRender.createCompute("generateLightLists").location("program/render_setup/generate_light_lists.csh").workGroups(Math.ceil(maxPointLights / 64), 1, 1).ssbo(0, lightLists).define("LIGHT_LIST_BINDING", "0").compile();

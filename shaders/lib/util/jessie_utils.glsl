@@ -173,30 +173,30 @@ permanent authorization for you to choose that version for the
 Library.
 */
 
-float linearstep(float x, float low, float high) {
-  float data = x;
-  float mapped = (data - low) / (high - low);
+// float linearstep(float x, float low, float high) {
+//   float data = x;
+//   float mapped = (data - low) / (high - low);
 
-  return saturate(mapped);
-}
-vec2 linearstep(vec2 x, float low, float high) {
-  vec2 data = x;
-  vec2 mapped = (data - low) / (high - low);
+//   return saturate(mapped);
+// }
+// vec2 linearstep(vec2 x, float low, float high) {
+//   vec2 data = x;
+//   vec2 mapped = (data - low) / (high - low);
 
-  return saturate(mapped);
-}
-vec3 linearstep(vec3 x, float low, float high) {
-  vec3 data = x;
-  vec3 mapped = (data - low) / (high - low);
+//   return saturate(mapped);
+// }
+// vec3 linearstep(vec3 x, float low, float high) {
+//   vec3 data = x;
+//   vec3 mapped = (data - low) / (high - low);
 
-  return saturate(mapped);
-}
-vec4 linearstep(vec4 x, float low, float high) {
-  vec4 data = x;
-  vec4 mapped = (data - low) / (high - low);
+//   return saturate(mapped);
+// }
+// vec4 linearstep(vec4 x, float low, float high) {
+//   vec4 data = x;
+//   vec4 mapped = (data - low) / (high - low);
 
-  return saturate(mapped);
-}
+//   return saturate(mapped);
+// }
 
 vec2 sincos(float x) {
   return vec2(sin(x), cos(x));

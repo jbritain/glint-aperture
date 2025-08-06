@@ -89,6 +89,11 @@ const float isotropic_phase = 1.0 / (4.0 * PI);
     return x * x;                                                              \
   }
 
+#define linearstep_(type)                                                      \
+type linearstep(type edge0, type edge1, type x) {                              \
+  return  clamp((x - edge0) / (edge1 - edge0), type(0.0), type(1.0));          \
+}
+
 DEFINE_genFType(rcp_)
 DEFINE_genFType(pow2_)
 DEFINE_genFType(pow3_)
@@ -97,6 +102,7 @@ DEFINE_genFType(pow5_)
 DEFINE_genFType(pow6_)
 DEFINE_genFType(pow7_)
 DEFINE_genFType(pow8_)
+DEFINE_genFType(linearstep_)
 
 #define saturate(x) clamp(x, 0.0, 1.0)
 

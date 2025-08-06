@@ -160,7 +160,7 @@ export function configurePipeline(pipeline: PipelineConfig) {
   // =======================================================================================
   const cloudShapeTex = pipeline
     .createImageTexture("cloud_shape_tex", "cloud_shape")
-    .format(Format.RGBA8)
+    .format(Format.RGBA16)
     .width(128)
     .height(128)
     .depth(128)
@@ -175,7 +175,7 @@ export function configurePipeline(pipeline: PipelineConfig) {
 
   const cloudDetailTex = pipeline
     .createImageTexture("cloud_detail_tex", "cloud_detail")
-    .format(Format.RGBA8)
+    .format(Format.RGBA16)
     .width(32)
     .height(32)
     .depth(32)
@@ -190,16 +190,16 @@ export function configurePipeline(pipeline: PipelineConfig) {
 
   const cloudWeatherTex = pipeline
     .createImageTexture("cloud_weather_tex", "cloud_weather")
-    .format(Format.RGBA8)
-    .width(256)
-    .height(256)
+    .format(Format.RGBA16)
+    .width(512)
+    .height(512)
     .clear(false)
     .build();
 
   screenSetup
     .createCompute("generate_cloud_weather")
     .location("program/render_setup/generate_cloud_weather.csh")
-    .workGroups(32, 32, 1)
+    .workGroups(64, 64, 1)
     .compile();
 
   // LIGHT LIST BINS

@@ -18,70 +18,91 @@ uniform sampler2D cloud_weather_tex;
 
 #define CLOUD_EXTINCTION 0.1
 
-float get_cloud_density(vec3 pos) {
-  float height_fraction = saturate(
-    smoothstep(CLOUD_BASE_HEIGHT, CLOUD_TOP_HEIGHT, pos.y)
-  );
+// https://x.com/FewesW/status/1364629939568451587/photo/1
+float multiple_scattering(float density, float cos_theta) {
+  float attenuation = 0.2;
+  float contribution = 0.2;
+  float phase_attenuation = 0.5;
 
-  vec4 low_frequency_noise = texture(cloud_shape_tex, fract(pos / 5000.0));
+  float a = 1.0;
+  float b = 1.0;
+  float c = 1.0;
+  float g = 0.85;
+  const int scattering_octaves = 4;
 
-  float low_frequency_fbm =
-    low_frequency_noise.g * 0.625 +
-    low_frequency_noise.b * 0.25 +
-    low_frequency_noise.a * 0.125;
+  float luminance = 0.0;
 
-  float density = remap(
-    low_frequency_noise.r,
-    -(1.0 - low_frequency_fbm),
-    1.0,
-    0.0,
-    1.0
-  );
+  for (int i = 0; i < scattering_octaves; i++) {
+    float phase = dual_lobe_hg_phase(cos_theta, 0.8, -0.5, 0.5);
 
-  float coverage = texture(cloud_weather_tex, fract(pos.xz / 10000.0)).r;
-  density = pow2(
-    smoothstep(0.8 - coverage * 0.3, 0.85 - coverage * 0.3, density)
-  );
+    float beers = exp(-density * CLOUD_EXTINCTION * a);
 
-  if (height_fraction <= 0.2) {
-    density *= sqrt(smoothstep(0.0, 0.2, height_fraction));
-  } else if (height_fraction >= 0.3) {
-    density *= 1.0 - smoothstep(0.3, 1.0, height_fraction);
+    luminance += b * phase * beers;
+
+    a *= attenuation;
+    b *= contribution;
+    c *= 1.0 - phase_attenuation;
   }
-  density *= coverage;
-
-  if (density < 0.01) {
-    return 0.0;
-  }
-
-  vec3 high_frequency_noise = texture(cloud_detail_tex, fract(pos / 500.0)).rgb;
-  float high_frequency_fbm = smoothstep(
-    0.45,
-    0.5,
-    high_frequency_noise.r * 0.625 +
-      high_frequency_noise.g * 0.25 +
-      high_frequency_noise.b * 0.125
-  );
-
-  high_frequency_fbm = mix(
-    high_frequency_fbm,
-    1.0 - high_frequency_fbm,
-    saturate(height_fraction * 10.0)
-  );
-
-  density = max0(remap(density, high_frequency_fbm * 0.2, 1.0, 0.0, 1.0));
-
-  if (height_fraction <= 0.2) {
-    density *= sqrt(smoothstep(0.0, 0.2, height_fraction));
-  } else if (height_fraction >= 0.3) {
-    density *= 1.0 - smoothstep(0.3, 1.0, height_fraction);
-  }
-
-  return density * 0.1;
+  return luminance;
 }
 
-float get_transmittance_towards_sun(vec3 ray_pos, vec2 jitter) {
-  vec3 ray_dir = generate_cone_vector(world_light_dir, jitter, 0.01);
+float get_cloud_density(vec3 pos) {
+  float height_fraction = saturate(
+    linearstep(CLOUD_BASE_HEIGHT, CLOUD_TOP_HEIGHT, pos.y)
+  );
+
+  vec4 low_frequency_noise = texture(cloud_shape_tex, fract(pos / 2000.0));
+
+  float low_frequency_fbm = saturate(
+    low_frequency_noise.g * 0.625 +
+      low_frequency_noise.b * 0.25 +
+      low_frequency_noise.a * 0.125
+  );
+
+  float density = low_frequency_noise.r;
+  density = saturate(remap(density, low_frequency_fbm * 0.7, 1.0, 0.0, 1.0));
+
+  float coverage = texture(cloud_weather_tex, fract(pos.xz / 50000.0)).r;
+
+  if (height_fraction <= 0.15) {
+    density *= linearstep(0.0, 0.15, height_fraction);
+  } else if (height_fraction > 0.9) {
+    density *= 1.0 - linearstep(0.9, 1.0, height_fraction);
+  }
+
+  density = saturate(remap(density, 1.0 - coverage, 1.0, 0.0, 1.0));
+  density *= coverage;
+
+  // if (density < 0.01) {
+  //   return 0.0;
+  // }
+
+  // vec3 high_frequency_noise = texture(cloud_detail_tex, fract(pos / 100.0)).rgb;
+  // float high_frequency_fbm =
+  //   high_frequency_noise.r * 0.625 +
+  //   high_frequency_noise.g * 0.25 +
+  //   high_frequency_noise.b * 0.125;
+
+  // high_frequency_fbm =
+  //   0.35 *
+  //   exp(-coverage * 0.75) *
+  //   mix(
+  //     high_frequency_fbm,
+  //     1.0 - high_frequency_fbm,
+  //     saturate(height_fraction)
+  //   );
+
+  // density = max0(remap(density, high_frequency_fbm, 1.0, 0.0, 1.0));
+
+  return density * 0.5;
+}
+
+float get_transmittance_towards_sun(
+  vec3 ray_pos,
+  vec2 jitter,
+  float cos_theta
+) {
+  vec3 ray_dir = generate_cone_vector(world_light_dir, jitter, 0.03);
 
   vec3 a = ray_pos;
   vec3 b;
@@ -102,10 +123,7 @@ float get_transmittance_towards_sun(vec3 ray_pos, vec2 jitter) {
     previous_sample_pos = sample_pos;
   }
 
-  float beers_law = exp(-density * CLOUD_EXTINCTION);
-  float powder = 1.0 - exp(-density * CLOUD_EXTINCTION * 2.0);
-
-  return beers_law; //2.0 * powder * beers_law;
+  return multiple_scattering(density, cos_theta);
 }
 
 vec4 get_clouds(vec3 origin, vec3 ray_dir) {
@@ -124,6 +142,7 @@ vec4 get_clouds(vec3 origin, vec3 ray_dir) {
   vec3 ray_pos = a;
   vec2 jitter = blue_noise(floor(gl_FragCoord.xy), ap.time.frames).xy;
   ray_pos += ray_step * jitter.x;
+  float cos_theta = dot(ray_dir, world_light_dir);
 
   float transmittance = 1.0;
   vec3 scatter = vec3(0.0);
@@ -141,7 +160,8 @@ vec4 get_clouds(vec3 origin, vec3 ray_dir) {
     float sample_transmittance = exp(-density * step_length * CLOUD_EXTINCTION);
 
     vec3 radiance =
-      sunlight_color * get_transmittance_towards_sun(ray_pos, jitter);
+      sunlight_color *
+      get_transmittance_towards_sun(ray_pos, jitter, cos_theta);
     radiance += skylight_color * transmittance;
 
     scatter +=
@@ -150,8 +170,6 @@ vec4 get_clouds(vec3 origin, vec3 ray_dir) {
     transmittance *= sample_transmittance;
 
   }
-
-  scatter *= dual_lobe_hg_phase(dot(ray_dir, world_light_dir), 0.8, -0.5, 0.5);
 
   return vec4(scatter, transmittance);
 }

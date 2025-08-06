@@ -1,13 +1,18 @@
 #ifndef WORLEY_GLSL
 #define WORLEY_GLSL
 
-vec3 rand(ivec3 p) {
-  vec3 p3 = fract(vec3(p) * 0.1031);
+vec3 rand(ivec3 p, uint seed) {
+  vec3 p3 = fract(vec3(p + seed) * 0.1031);
   p3 += dot(p3, p3.yzx + 33.33);
   return fract((p3.xxy + p3.yzz) * p3.zyx);
 }
 
-float sample_worley_noise(vec3 coord, float grid_size, int cell_dimensions) {
+float sample_worley_noise(
+  vec3 coord,
+  float grid_size,
+  int cell_dimensions,
+  uint seed
+) {
   float min_distance = 2.0;
 
   ivec3 cell = ivec3(floor(coord / grid_size));
@@ -20,7 +25,7 @@ float sample_worley_noise(vec3 coord, float grid_size, int cell_dimensions) {
         ivec3 sample_cell = (cell + ivec3(x, y, z)) % cell_dimensions;
 
         // a 0-1 coordinate within the cell
-        vec3 cell_coord = rand(sample_cell);
+        vec3 cell_coord = rand(sample_cell, seed);
 
         min_distance = min(
           min_distance,
@@ -37,7 +42,8 @@ float sample_worley_noise(
   vec3 coord,
   float grid_size,
   int cell_dimensions,
-  int octaves
+  int octaves,
+  uint seed
 ) {
   float noise = 0.0;
   float amplitude = 1.0;
@@ -47,7 +53,8 @@ float sample_worley_noise(
     float noise_sample = sample_worley_noise(
       coord / amplitude,
       grid_size,
-      cell_dimensions
+      cell_dimensions,
+      seed
     );
     amplitude *= 0.5;
     noise += noise_sample * amplitude;
