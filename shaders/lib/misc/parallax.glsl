@@ -7,7 +7,8 @@
 #define PARALLAX_SAMPLES 32
 
 float get_depth(vec2 uv, vec2 dx, vec2 dy) {
-  return 1.0 - iris_sampleNormalMapGrad(uv, dx, dy).a;
+  // return 1.0 - iris_sampleNormalMapGrad(uv, dx, dy).a;
+  return 1.0 - iris_sampleNormalMap(uv).a;
 }
 
 vec2 local_to_atlas(vec2 uv, vec4 texture_bounds, vec2 single_tex_size) {

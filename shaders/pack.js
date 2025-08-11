@@ -253,6 +253,10 @@ function setLightColors() {
 var maxPointLights = 96;
 var lightRadius = 16;
 var cascades = 4;
+var cloudTexRead;
+var cloudTexWrite;
+var cloudTexA;
+var cloudTexB;
 function configureRenderer(renderer) {
   renderer.disableShade = true;
   renderer.sunPathRotation = 40;
@@ -271,6 +275,10 @@ function configureRenderer(renderer) {
   renderer.pointLight.updateThreshold = 0.08;
   renderer.mergedHandDepth = true;
   setLightColors();
+}
+function beginFrame(state) {
+  cloudTexWrite.pointTo(state.currentFrame % 2 == 0 ? cloudTexA : cloudTexB);
+  cloudTexRead.pointTo(state.currentFrame % 2 == 0 ? cloudTexB : cloudTexA);
 }
 function configurePipeline(pipeline) {
   pipeline.addTag(0, new NamespacedId("minecraft", "leaves"));
@@ -345,7 +353,25 @@ function configurePipeline(pipeline) {
   preTranslucent.createComposite("opaque_shadowing").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_shadowing.fsh").target(0, shadowTex).compile();
   const sceneTex = pipeline.createTexture("scene_tex").format(Format.RGBA16F).clear(true).build();
   preTranslucent.createComposite("sky").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/render_sky.fsh").target(0, sceneTex).compile();
-  preTranslucent.createComposite("clouds").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/render_clouds.fsh").target(0, sceneTex).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
+  cloudTexA = pipeline.createTexture("cloud_tex_a").format(Format.RGBA16F).clear(true).build();
+  cloudTexB = pipeline.createTexture("cloud_tex_b").format(Format.RGBA16F).clear(true).build();
+  cloudTexWrite = pipeline.createTextureReference(
+    "cloud_tex_w",
+    null,
+    screenWidth,
+    screenHeight,
+    1,
+    Format.RGBA16F
+  );
+  cloudTexRead = pipeline.createTextureReference(
+    "cloud_tex",
+    null,
+    screenWidth,
+    screenHeight,
+    1,
+    Format.RGBA16F
+  );
+  preTranslucent.createComposite("render_clouds").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/render_clouds.fsh").target(0, sceneTex).target(1, cloudTexWrite).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
   const diffuseTex = pipeline.createTexture("diffuse_tex").format(Format.R11F_G11F_B10F).clear(false).build();
   const specularTex = pipeline.createTexture("specular_tex").format(Format.RGBA16F).clear(false).build();
   const ssrTex = pipeline.createTexture("ssr_tex").format(Format.RGBA16F).clear(false).build();
@@ -367,6 +393,7 @@ function configurePipeline(pipeline) {
   pipeline.createCombinationPass("program/combination.fsh").ssbo(0, lightLists).define("LIGHT_LIST_BINDING", "0").compile();
 }
 export {
+  beginFrame,
   configurePipeline,
   configureRenderer
 };

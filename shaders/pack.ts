@@ -5,6 +5,11 @@ const maxPointLights = 96;
 const lightRadius = 16;
 const cascades = 4;
 
+let cloudTexRead: ActiveTextureReference;
+let cloudTexWrite: ActiveTextureReference;
+let cloudTexA: BuiltTexture;
+let cloudTexB: BuiltTexture;
+
 export function configureRenderer(renderer: RendererConfig) {
   renderer.disableShade = true;
   renderer.sunPathRotation = 40.0;
@@ -29,6 +34,11 @@ export function configureRenderer(renderer: RendererConfig) {
   renderer.mergedHandDepth = true;
 
   setLightColors();
+}
+
+export function beginFrame(state: WorldState) {
+  cloudTexWrite.pointTo(state.currentFrame % 2 == 0 ? cloudTexA : cloudTexB);
+  cloudTexRead.pointTo(state.currentFrame % 2 == 0 ? cloudTexB : cloudTexA);
 }
 
 export function configurePipeline(pipeline: PipelineConfig) {
@@ -298,11 +308,42 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .target(0, sceneTex)
     .compile();
 
+  cloudTexA = pipeline
+    .createTexture("cloud_tex_a")
+    .format(Format.RGBA16F)
+    .clear(true)
+    .build();
+
+  cloudTexB = pipeline
+    .createTexture("cloud_tex_b")
+    .format(Format.RGBA16F)
+    .clear(true)
+    .build();
+
+  cloudTexWrite = pipeline.createTextureReference(
+    "cloud_tex_w",
+    null,
+    screenWidth,
+    screenHeight,
+    1,
+    Format.RGBA16F,
+  );
+
+  cloudTexRead = pipeline.createTextureReference(
+    "cloud_tex",
+    null,
+    screenWidth,
+    screenHeight,
+    1,
+    Format.RGBA16F,
+  );
+
   preTranslucent
-    .createComposite("clouds")
+    .createComposite("render_clouds")
     .vertex("program/fullscreen_pass.vsh")
     .fragment("program/before_translucents/render_clouds.fsh")
     .target(0, sceneTex)
+    .target(1, cloudTexWrite)
     .ssbo(0, sceneData)
     .define("SCENE_DATA_BINDING", "0")
     .compile();
