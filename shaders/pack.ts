@@ -37,8 +37,8 @@ export function configureRenderer(renderer: RendererConfig) {
 }
 
 export function beginFrame(state: WorldState) {
-  cloudTexWrite.pointTo(state.currentFrame % 2 == 0 ? cloudTexA : cloudTexB);
-  cloudTexRead.pointTo(state.currentFrame % 2 == 0 ? cloudTexB : cloudTexA);
+  cloudTexWrite.pointTo(state.currentFrame() % 2 == 0 ? cloudTexA : cloudTexB);
+  cloudTexRead.pointTo(state.currentFrame() % 2 == 0 ? cloudTexB : cloudTexA);
 }
 
 export function configurePipeline(pipeline: PipelineConfig) {
@@ -89,6 +89,18 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .width(screenWidth)
     .height(screenHeight)
     .clear(true)
+    .build();
+
+  const previousSolidDepthTex = pipeline
+    .createTexture("previousSolidDepthTex")
+    .format(Format.R32F)
+    .clear(false)
+    .build();
+
+  const previousMainDepthTex = pipeline
+    .createTexture("previousMainDepthTex")
+    .format(Format.R32F)
+    .clear(false)
     .build();
 
   // SKY
@@ -280,13 +292,36 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .target(1, gbufferTex2)
     .compile();
 
-  // BEFORE TRANSLUCENTS
-  // =======================================================================================
+  const translucentTex = pipeline
+    .createTexture("translucent_tex")
+    .format(Format.RGBA16F)
+    .clear(true)
+    .clearColor(0, 0, 0, 0)
+    .build();
+
   const shadowTex = pipeline
     .createTexture("shadow_tex")
     .format(Format.RGBA8)
     .clear(true)
     .build();
+
+  pipeline
+    .createObjectShader("water", Usage.TERRAIN_TRANSLUCENT)
+    .vertex("program/geometry/translucent.vsh")
+    .fragment("program/geometry/translucent.fsh")
+    .target(0, translucentTex)
+    .target(1, gbufferTex1)
+    .target(2, gbufferTex2)
+    .target(3, shadowTex)
+    .blendOff(1)
+    .blendOff(2)
+    .blendOff(3)
+    .ssbo(0, sceneData)
+    .define("SCENE_DATA_BINDING", "0")
+    .compile();
+
+  // BEFORE TRANSLUCENTS
+  // =======================================================================================
 
   preTranslucent
     .createComposite("opaque_shadowing")
@@ -311,13 +346,13 @@ export function configurePipeline(pipeline: PipelineConfig) {
   cloudTexA = pipeline
     .createTexture("cloud_tex_a")
     .format(Format.RGBA16F)
-    .clear(true)
+    .clear(false)
     .build();
 
   cloudTexB = pipeline
     .createTexture("cloud_tex_b")
     .format(Format.RGBA16F)
-    .clear(true)
+    .clear(false)
     .build();
 
   cloudTexWrite = pipeline.createTextureReference(
@@ -413,6 +448,15 @@ export function configurePipeline(pipeline: PipelineConfig) {
   // =======================================================================================
 
   postRender
+    .createComposite("blend_translucents")
+    .vertex("program/fullscreen_pass.vsh")
+    .fragment("program/post/translucent_shading.fsh")
+    .target(0, sceneTex)
+    .ssbo(0, sceneData)
+    .define("SCENE_DATA_BINDING", "0")
+    .compile();
+
+  postRender
     .createComposite("exposure")
     .vertex("program/fullscreen_pass.vsh")
     .fragment("program/post/exposure.fsh")
@@ -428,7 +472,7 @@ export function configurePipeline(pipeline: PipelineConfig) {
 
   for (let i = 0; i < 5; i++) {
     postRender
-      .createComposite(`bloom_ownsample${i}-${i + 1}`)
+      .createComposite(`bloom_downsample${i}-${i + 1}`)
       .vertex("program/fullscreen_pass.vsh")
       .fragment("program/post/bloom_downsample.fsh")
       .target(0, bloomTex, i + 1)
@@ -438,13 +482,29 @@ export function configurePipeline(pipeline: PipelineConfig) {
 
   for (let i = 5; i > 0; i -= 1) {
     postRender
-      .createComposite(`bloomUpsample${i}-${i - 1}`)
+      .createComposite(`bloom_upsample${i}-${i - 1}`)
       .vertex("program/fullscreen_pass.vsh")
       .fragment("program/post/bloom_upsample.fsh")
       .target(0, bloomTex, i - 1)
       .define("BLOOM_INDEX", i.toString())
       .compile();
   }
+
+  postRender
+    .createComposite("copy_previous_main_depth")
+    .vertex("program/fullscreen_pass.vsh")
+    .fragment("program/buffer_copy.fsh")
+    .target(0, previousMainDepthTex)
+    .define("SAMPLE_BUFFER", "mainDepthTex")
+    .compile();
+
+  postRender
+    .createComposite("copy_previous_solid_depth")
+    .vertex("program/fullscreen_pass.vsh")
+    .fragment("program/buffer_copy.fsh")
+    .target(0, previousSolidDepthTex)
+    .define("SAMPLE_BUFFER", "solidDepthTex")
+    .compile();
 
   screenSetup.end();
   preRender.end();

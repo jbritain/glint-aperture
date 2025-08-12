@@ -6,6 +6,8 @@
 #include "/lib/util/dither.glsl"
 #include "/lib/util/misc.glsl"
 #include "/lib/util/phase_functions.glsl"
+#include "/lib/atmospherics/atmosphere.glsl"
+#include "/lib/util/intersections.glsl"
 
 uniform sampler3D cloud_shape_tex;
 uniform sampler3D cloud_detail_tex;
@@ -27,7 +29,7 @@ float beers_powder(float extinction) {
 }
 
 // https://x.com/FewesW/status/1364629939568451587/photo/1
-float multiple_scattering(float density, float cos_theta) {
+float multiple_scattering(float density, float phase) {
   float attenuation = 0.2;
   float contribution = 0.2;
   float phase_attenuation = 0.5;
@@ -39,11 +41,8 @@ float multiple_scattering(float density, float cos_theta) {
   const int scattering_octaves = 4;
 
   float luminance = 0.0;
-  float phase = dual_lobe_hg_phase(cos_theta, 0.8, -0.5, 0.5);
 
   for (int i = 0; i < scattering_octaves; i++) {
-    // float phase = hg_draine_phase(cos_theta, 10.4);
-
     float transmittance = beers_powder(density * CLOUD_EXTINCTION * a);
 
     luminance += b * phase * transmittance;
@@ -55,16 +54,30 @@ float multiple_scattering(float density, float cos_theta) {
   return luminance;
 }
 
+vec3 map_spherical(vec3 world_pos, float radius) {
+  radius += earth_radius + 64;
+  world_pos.y += earth_radius + 64;
+  float angle_x = world_pos.x / radius;
+  float angle_z = world_pos.z / radius;
+
+  vec3 curved_pos;
+  curved_pos.x = radius * sin(angle_x) * cos(angle_z);
+  curved_pos.y = world_pos.y + radius * (1.0 - cos(angle_x) * cos(angle_z));
+  curved_pos.z = radius * sin(angle_z) * cos(angle_x);
+
+  curved_pos.y -= earth_radius;
+
+  return curved_pos;
+}
+
 float get_cloud_density(vec3 pos, bool high_quality) {
-  vec3 rounded_pos = pos;
-  // rounded_pos = floor(pos / 64.0) * 64.0;
   float height_fraction = saturate(
-    linearstep(CLOUD_BASE_HEIGHT, CLOUD_TOP_HEIGHT, rounded_pos.y)
+    linearstep(CLOUD_BASE_HEIGHT, CLOUD_TOP_HEIGHT, pos.y)
   );
 
   vec4 low_frequency_noise = texture(
     cloud_shape_tex,
-    fract(rounded_pos / 2000.0)
+    fract((pos + vec3(0.0, 0.0, ap.time.elapsed) * 10.0) / 2000.0)
   );
 
   float low_frequency_fbm = saturate(
@@ -76,16 +89,17 @@ float get_cloud_density(vec3 pos, bool high_quality) {
   float density = low_frequency_noise.r;
   density = saturate(remap(density, low_frequency_fbm * 0.7, 1.0, 0.0, 1.0));
 
-  // rounded_pos = floor(pos / 128.0) * 128.0;
-  float coverage = texture(
-    cloud_weather_tex,
-    fract(rounded_pos.xz / 50000.0)
-  ).r;
+  float coverage = max0(
+    texture(
+      cloud_weather_tex,
+      fract((pos.xz + vec2(0.0, ap.time.elapsed) * 10.0) / 50000.0)
+    ).r
+  );
 
   if (height_fraction <= 0.15) {
     density *= linearstep(0.0, 0.15, height_fraction);
-  } else if (height_fraction >= 0.3) {
-    density *= 1.0 - linearstep(0.3, 1.0, height_fraction);
+  } else if (height_fraction >= 0.15) {
+    density *= 1.0 - linearstep(0.15, 1.0, height_fraction);
   }
 
   density = saturate(remap(density, 1.0 - coverage, 1.0, 0.0, 1.0));
@@ -99,10 +113,9 @@ float get_cloud_density(vec3 pos, bool high_quality) {
     return 0.0;
   }
 
-  // rounded_pos = floor(pos / 32.0) * 32.0;
   vec3 high_frequency_noise = texture(
     cloud_detail_tex,
-    fract(rounded_pos / 100.0)
+    fract((pos + vec3(0.0, 0.0, ap.time.elapsed) * 20.0) / 100.0)
   ).rgb;
   float high_frequency_fbm =
     high_frequency_noise.r * 0.625 +
@@ -123,12 +136,9 @@ float get_cloud_density(vec3 pos, bool high_quality) {
   return density * 2.0;
 }
 
-float get_transmittance_towards_sun(
-  vec3 ray_pos,
-  vec2 jitter,
-  float cos_theta
-) {
-  vec3 ray_dir = generate_cone_vector(world_light_dir, jitter, 0.03);
+float get_light_from_sun(vec3 ray_pos, vec2 jitter, float phase) {
+  // vec3 ray_dir = generate_cone_vector(world_light_dir, jitter, 0.03);
+  vec3 ray_dir = world_light_dir;
 
   vec3 a = ray_pos;
   vec3 b;
@@ -150,7 +160,7 @@ float get_transmittance_towards_sun(
     previous_sample_pos = sample_pos;
   }
 
-  return multiple_scattering(density, cos_theta);
+  return multiple_scattering(density, phase);
 }
 
 vec4 get_clouds(vec3 origin, vec3 ray_dir) {
@@ -187,20 +197,24 @@ vec4 get_clouds(vec3 origin, vec3 ray_dir) {
     ).rgb *
     henyey_greenstein_phase(0.0, 0.0);
 
+  float phase = dual_lobe_hg_phase(cos_theta, 0.8, -0.5, 0.5);
+
   for (int i = 0; i < CLOUD_STEPS; i++, ray_pos += ray_step) {
     float density = get_cloud_density(ray_pos, true);
 
     float sample_transmittance = exp(-density * step_length * CLOUD_EXTINCTION);
 
-    vec3 radiance =
-      sunlight_color *
-      get_transmittance_towards_sun(ray_pos, jitter, cos_theta);
+    vec3 radiance = sunlight_color * get_light_from_sun(ray_pos, jitter, phase);
     radiance += skylight_color;
 
     scatter +=
       transmittance *
       (radiance * (1.0 - saturate(sample_transmittance)) / CLOUD_EXTINCTION);
     transmittance *= sample_transmittance;
+
+    if (transmittance < 0.01) {
+      break;
+    }
 
   }
 

@@ -29,7 +29,12 @@ vec3 get_sky(vec3 color, vec3 ray_dir, bool include_sun) {
     sun_irradiance;
 
   if (include_sun && dot(ray_dir, world_sun_dir) > cos(sun_angular_radius)) {
-    luminance += sun_radiance;
+    luminance +=
+      sun_radiance *
+      texture(
+        sun_transmittance_lut_tex,
+        parameterise_sun_transmittance(Ray(sky_ray.origin, world_light_dir))
+      ).xyz;
   }
 
   return luminance + color * transmittance;

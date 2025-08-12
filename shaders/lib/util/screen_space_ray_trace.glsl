@@ -46,8 +46,9 @@ bool ray_intersects(
   ray_dir -= ray_pos;
   ray_dir = normalize(ray_dir);
 
-  vec3 temp = abs(sign(ray_dir) - ray_pos) / max(abs(ray_dir), 0.00001);
-  float ray_length = min_vec3(temp);
+  vec2 temp =
+    abs(sign(ray_dir.xy) - ray_pos.xy) / max(abs(ray_dir.xy), 0.00001);
+  float ray_length = min_vec2(temp);
   float step_length = ray_length * rcp(float(max_steps));
 
   vec3 ray_step = ray_dir * step_length;

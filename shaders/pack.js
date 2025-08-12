@@ -277,8 +277,8 @@ function configureRenderer(renderer) {
   setLightColors();
 }
 function beginFrame(state) {
-  cloudTexWrite.pointTo(state.currentFrame % 2 == 0 ? cloudTexA : cloudTexB);
-  cloudTexRead.pointTo(state.currentFrame % 2 == 0 ? cloudTexB : cloudTexA);
+  cloudTexWrite.pointTo(state.currentFrame() % 2 == 0 ? cloudTexA : cloudTexB);
+  cloudTexRead.pointTo(state.currentFrame() % 2 == 0 ? cloudTexB : cloudTexA);
 }
 function configurePipeline(pipeline) {
   pipeline.addTag(0, new NamespacedId("minecraft", "leaves"));
@@ -313,6 +313,8 @@ function configurePipeline(pipeline) {
     true
   );
   const debugTex = pipeline.createImageTexture("debug_tex", "debug").format(Format.RGBA8).width(screenWidth).height(screenHeight).clear(true).build();
+  const previousSolidDepthTex = pipeline.createTexture("previousSolidDepthTex").format(Format.R32F).clear(false).build();
+  const previousMainDepthTex = pipeline.createTexture("previousMainDepthTex").format(Format.R32F).clear(false).build();
   const sunTransmittanceLUT = pipeline.createImageTexture("sun_transmittance_lut_tex", "sun_transmittance_lut").format(Format.RGBA16F).width(256).height(64).clear(false).build();
   const multipleScatteringLUT = pipeline.createImageTexture(
     "multiple_scattering_lut_tex",
@@ -349,12 +351,14 @@ function configurePipeline(pipeline) {
   const gbufferTex1 = pipeline.createTexture("gbuffer_tex_1").format(Format.RGBA16).clear(true).build();
   const gbufferTex2 = pipeline.createTexture("gbuffer_tex_2").format(Format.RGBA16).clear(true).build();
   pipeline.createObjectShader("terrain", Usage.TEXTURED).vertex("program/geometry/opaque.vsh").fragment("program/geometry/opaque.fsh").target(0, gbufferTex1).target(1, gbufferTex2).compile();
+  const translucentTex = pipeline.createTexture("translucent_tex").format(Format.RGBA16F).clear(true).clearColor(0, 0, 0, 0).build();
   const shadowTex = pipeline.createTexture("shadow_tex").format(Format.RGBA8).clear(true).build();
+  pipeline.createObjectShader("water", Usage.TERRAIN_TRANSLUCENT).vertex("program/geometry/translucent.vsh").fragment("program/geometry/translucent.fsh").target(0, translucentTex).target(1, gbufferTex1).target(2, gbufferTex2).target(3, shadowTex).blendOff(1).blendOff(2).blendOff(3).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
   preTranslucent.createComposite("opaque_shadowing").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_shadowing.fsh").target(0, shadowTex).compile();
   const sceneTex = pipeline.createTexture("scene_tex").format(Format.RGBA16F).clear(true).build();
   preTranslucent.createComposite("sky").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/render_sky.fsh").target(0, sceneTex).compile();
-  cloudTexA = pipeline.createTexture("cloud_tex_a").format(Format.RGBA16F).clear(true).build();
-  cloudTexB = pipeline.createTexture("cloud_tex_b").format(Format.RGBA16F).clear(true).build();
+  cloudTexA = pipeline.createTexture("cloud_tex_a").format(Format.RGBA16F).clear(false).build();
+  cloudTexB = pipeline.createTexture("cloud_tex_b").format(Format.RGBA16F).clear(false).build();
   cloudTexWrite = pipeline.createTextureReference(
     "cloud_tex_w",
     null,
@@ -378,14 +382,17 @@ function configurePipeline(pipeline) {
   preTranslucent.createComposite("opaque_ssr").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_ssr.fsh").target(0, ssrTex).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
   preTranslucent.createComposite("opaque_shading").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_shading.fsh").target(0, sceneTex).target(1, diffuseTex).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
   preTranslucent.createComposite("opaque_point_lights").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_point_lights.fsh").target(0, sceneTex).target(1, diffuseTex).ssbo(0, lightLists).define("LIGHT_LIST_BINDING", "0").compile();
+  postRender.createComposite("blend_translucents").vertex("program/fullscreen_pass.vsh").fragment("program/post/translucent_shading.fsh").target(0, sceneTex).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
   postRender.createComposite("exposure").vertex("program/fullscreen_pass.vsh").fragment("program/post/exposure.fsh").target(0, sceneTex).compile();
   const bloomTex = pipeline.createTexture("bloom_tex").format(Format.RGBA16F).clear(true).mipmap(true).build();
   for (let i = 0; i < 5; i++) {
-    postRender.createComposite(`bloom_ownsample${i}-${i + 1}`).vertex("program/fullscreen_pass.vsh").fragment("program/post/bloom_downsample.fsh").target(0, bloomTex, i + 1).define("BLOOM_INDEX", i.toString()).compile();
+    postRender.createComposite(`bloom_downsample${i}-${i + 1}`).vertex("program/fullscreen_pass.vsh").fragment("program/post/bloom_downsample.fsh").target(0, bloomTex, i + 1).define("BLOOM_INDEX", i.toString()).compile();
   }
   for (let i = 5; i > 0; i -= 1) {
-    postRender.createComposite(`bloomUpsample${i}-${i - 1}`).vertex("program/fullscreen_pass.vsh").fragment("program/post/bloom_upsample.fsh").target(0, bloomTex, i - 1).define("BLOOM_INDEX", i.toString()).compile();
+    postRender.createComposite(`bloom_upsample${i}-${i - 1}`).vertex("program/fullscreen_pass.vsh").fragment("program/post/bloom_upsample.fsh").target(0, bloomTex, i - 1).define("BLOOM_INDEX", i.toString()).compile();
   }
+  postRender.createComposite("copy_previous_main_depth").vertex("program/fullscreen_pass.vsh").fragment("program/buffer_copy.fsh").target(0, previousMainDepthTex).define("SAMPLE_BUFFER", "mainDepthTex").compile();
+  postRender.createComposite("copy_previous_solid_depth").vertex("program/fullscreen_pass.vsh").fragment("program/buffer_copy.fsh").target(0, previousSolidDepthTex).define("SAMPLE_BUFFER", "solidDepthTex").compile();
   screenSetup.end();
   preRender.end();
   preTranslucent.end();
