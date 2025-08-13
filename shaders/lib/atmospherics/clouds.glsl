@@ -77,7 +77,7 @@ float get_cloud_density(vec3 pos, bool high_quality) {
 
   vec4 low_frequency_noise = texture(
     cloud_shape_tex,
-    fract((pos + vec3(0.0, 0.0, ap.time.elapsed) * 10.0) / 2000.0)
+    fract((pos + vec3(0.0, 0.0, world_time_counter) * 10.0) / 2000.0)
   );
 
   float low_frequency_fbm = saturate(
@@ -92,7 +92,7 @@ float get_cloud_density(vec3 pos, bool high_quality) {
   float coverage = max0(
     texture(
       cloud_weather_tex,
-      fract((pos.xz + vec2(0.0, ap.time.elapsed) * 10.0) / 50000.0)
+      fract((pos.xz + vec2(0.0, world_time_counter) * 10.0) / 50000.0)
     ).r
   );
 
@@ -115,7 +115,7 @@ float get_cloud_density(vec3 pos, bool high_quality) {
 
   vec3 high_frequency_noise = texture(
     cloud_detail_tex,
-    fract((pos + vec3(0.0, 0.0, ap.time.elapsed) * 20.0) / 100.0)
+    fract((pos + vec3(0.0, 0.0, world_time_counter) * 20.0) / 100.0)
   ).rgb;
   float high_frequency_fbm =
     high_frequency_noise.r * 0.625 +

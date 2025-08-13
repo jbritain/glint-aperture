@@ -37,6 +37,7 @@ void main() {
     mat3(ap.camera.view) * material.texture_normal,
     material.lightmap.y,
     mainDepthTex,
-    diffuse_tex
+    diffuse_tex,
+    true
   );
 }

@@ -54,9 +54,11 @@ void main() {
   vec3 luminance = vec3(0.0);
   vec3 transmittance = vec3(1.0);
 
-  float cos_theta = dot(ray.direction, world_sun_dir);
-  float rayleigh_phase = rayleigh_phase(-cos_theta);
-  float mie_phase = mie_phase(cos_theta);
+  float sun_cos_theta = dot(ray.direction, world_sun_dir);
+  float sun_rayleigh_phase = rayleigh_phase(-sun_cos_theta);
+  float sun_mie_phase = mie_phase(sun_cos_theta);
+  float moon_rayleigh_phase = rayleigh_phase(sun_cos_theta);
+  float moon_mie_phase = mie_phase(-sun_cos_theta);
 
   ray_pos += ray_step * 0.5; // to centre us in each step
 
@@ -77,6 +79,7 @@ void main() {
     extinction += ozone_absorption_coeff * ozone_density;
     vec3 sample_transmittance = exp(-extinction * step_length);
 
+    // sun
     Ray sun_ray;
     sun_ray.origin = ray_pos;
     sun_ray.direction = world_sun_dir;
@@ -86,12 +89,29 @@ void main() {
     ).rgb;
 
     vec3 scattering =
-      (rayleigh_scattering * rayleigh_phase + mie_scattering * mie_phase) *
+      (rayleigh_scattering * sun_rayleigh_phase + mie_scattering * sun_mie_phase) *
       sun_transmittance;
 
     vec3 scattering_integral =
       (scattering - scattering * sample_transmittance) / max(extinction, 1e-6);
-    luminance += scattering_integral * transmittance;
+    luminance += scattering_integral * transmittance * sun_irradiance;
+
+    // moon
+    sun_ray.direction = -world_sun_dir;
+    sun_transmittance = texture(
+      sun_transmittance_lut_tex,
+      parameterise_sun_transmittance(sun_ray)
+    ).rgb;
+
+    scattering =
+      (rayleigh_scattering * moon_rayleigh_phase + mie_scattering * moon_mie_phase) *
+      sun_transmittance;
+
+    scattering_integral =
+      (scattering - scattering * sample_transmittance) / max(extinction, 1e-6);
+    luminance += scattering_integral * transmittance * moon_irradiance;
+
+
     transmittance *= sample_transmittance;
 
     ray_pos += ray_step;
@@ -123,11 +143,11 @@ void main() {
         parameterise_sun_transmittance(
           Ray(
             vec3(0.0, ap.camera.pos.y + earth_radius + 64, 0.0),
-            world_sun_dir
+            world_light_dir
           )
         )
       ).rgb *
-      sun_irradiance;
+      (light_dir == sun_dir ? sun_irradiance : moon_irradiance);
   }
 
 }

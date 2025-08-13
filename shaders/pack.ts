@@ -1,7 +1,7 @@
 import type {} from "./iris";
 import { setLightColors } from "./tslib/lightColors";
 
-const maxPointLights = 96;
+const maxPointLights = 64;
 const lightRadius = 16;
 const cascades = 4;
 
@@ -21,6 +21,7 @@ export function configureRenderer(renderer: RendererConfig) {
   renderer.shadow.cascades = cascades;
 
   renderer.shadow.entityCascadeCount = 1;
+  renderer.render.clouds = false;
 
   renderer.pointLight.nearPlane = 0.1;
   renderer.pointLight.cacheRealTimeTerrain = true;

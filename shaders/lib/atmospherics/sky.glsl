@@ -24,16 +24,28 @@ vec3 get_sky(vec3 color, vec3 ray_dir, bool include_sun) {
     parameterise_sun_transmittance(sky_ray)
   ).xyz;
 
-  vec3 luminance =
-    textureLod(sky_view_lut_tex, parameterise_sky_view(sky_ray), 0).rgb *
-    sun_irradiance;
+  vec3 luminance = textureLod(
+    sky_view_lut_tex,
+    parameterise_sky_view(sky_ray),
+    0
+  ).rgb;
 
   if (include_sun && dot(ray_dir, world_sun_dir) > cos(sun_angular_radius)) {
     luminance +=
       sun_radiance *
       texture(
         sun_transmittance_lut_tex,
-        parameterise_sun_transmittance(Ray(sky_ray.origin, world_light_dir))
+        parameterise_sun_transmittance(Ray(sky_ray.origin, world_sun_dir))
+      ).xyz;
+  } else if (
+    include_sun &&
+    dot(ray_dir, -world_sun_dir) > cos(moon_angular_radius)
+  ) {
+    luminance +=
+      moon_radiance *
+      texture(
+        sun_transmittance_lut_tex,
+        parameterise_sun_transmittance(Ray(sky_ray.origin, -world_sun_dir))
       ).xyz;
   }
 

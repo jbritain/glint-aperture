@@ -1,5 +1,7 @@
 #version 460 core
 
+#include "/lib/common.glsl"
+
 out vec2 uv;
 out vec4 color;
 out vec2 lightmap;
@@ -18,7 +20,7 @@ void iris_emitVertex(inout VertexData data) {
 
 void iris_sendParameters(VertexData data) {
   uv = data.uv;
-  lightmap = data.light;
+  lightmap = linearstep(vec2(0.5 / 15.0), vec2(14.5 / 15.0), data.light);
 
   color = vec4(
     mix(data.overlayColor.rgb, data.color.rgb, data.overlayColor.a),

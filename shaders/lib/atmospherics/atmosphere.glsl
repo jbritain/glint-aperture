@@ -7,12 +7,22 @@
     Hillaire, S. (2020). A Scalable and Production Ready Sky and Atmosphere Rendering Technique.  https://sebh.github.io/publications/egsr2020.pdf
 */
 
+// numbers obtained from belmu
 const float sun_radius = 6.9634e8;
 const float sun_distance = 1.496e11;
 const float sun_angular_radius = sun_radius / sun_distance;
 const vec3 sun_irradiance = vec3(1.0, 0.949, 0.937) * 126;
 const vec3 sun_radiance =
   sun_irradiance / (TAU * (1.0 - cos(sun_angular_radius)));
+
+const float moon_radius = 1.7374e6;
+const float moon_distance = 3.8440e8;
+const float moon_angular_radius = moon_radius / moon_distance;
+const float moon_albedo = 0.136; // The full moon reflects approximately 13-14% of the sun's emitted light
+
+const vec3 moon_radiance = moon_albedo * sun_irradiance;
+const vec3 moon_irradiance =
+  moon_radiance * (TAU * (1.0 - cos(moon_angular_radius)));
 
 const vec3 earth_albedo = vec3(0.0, 0.03, 0.06);
 

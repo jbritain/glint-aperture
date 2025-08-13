@@ -26,8 +26,13 @@ layout(location = 0) out vec3 color;
 void main() {
   color = texture(scene_tex, uv).rgb;
 
+  Material material = decode_material_from_gbuffer(
+    texture(gbuffer_tex_1, uv),
+    texture(gbuffer_tex_2, uv)
+  );
+
   vec4 translucents = texture(translucent_tex, uv);
-  if (translucents.a < 0.01) {
+  if (translucents.a < 0.01 && !material.mask.is_fluid) {
     return;
   }
 
@@ -35,17 +40,6 @@ void main() {
 
   if (depth == 1.0) {
     return;
-  }
-
-  Material material = decode_material_from_gbuffer(
-    texture(gbuffer_tex_1, uv),
-    texture(gbuffer_tex_2, uv)
-  );
-
-  if (material.mask.is_fluid) {
-    translucents.a = 0.0;
-    material.f0 = 0.02;
-    material.roughness = 0.0;
   }
 
   vec3 view_pos = screen_space_to_view_space(vec3(uv, depth));
@@ -64,7 +58,8 @@ void main() {
     mat3(ap.camera.view) * material.texture_normal,
     material.lightmap.y,
     mainDepthTex,
-    diffuse_tex
+    diffuse_tex,
+    false
   );
 
   vec3 indirect_fresnel = schlick(material, ssr.a);
@@ -74,6 +69,12 @@ void main() {
     material.albedo *
     textureLod(sky_irradiance_lut_tex, irradiance_uv, 0).rgb *
     material.lightmap.y *
+    (1.0 - indirect_fresnel);
+
+  translucents.rgb +=
+    material.albedo *
+    material.emission *
+    EMISSION_STRENGTH *
     (1.0 - indirect_fresnel);
 
   color = mix(color, translucents.rgb, translucents.a);

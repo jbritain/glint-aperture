@@ -71,6 +71,11 @@ void iris_emitFragment() {
 
   gbuffer.lightmap = lightmap;
 
+  if (gbuffer.material_mask.is_fluid) {
+    gbuffer.specular_map = vec4(1.0, 0.02, 0.0, 0.0);
+    albedo.a = 0.0;
+  }
+
   encode_gbuffer(gbuffer_1, gbuffer_2, gbuffer);
   Material material;
   material = decode_material_from_gbuffer(gbuffer_1, gbuffer_2); // TODO: absolutely not this

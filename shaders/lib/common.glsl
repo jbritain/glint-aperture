@@ -34,6 +34,7 @@ vec3 world_sun_dir = mat3(ap.camera.viewInv) * sun_dir;
 vec3 world_light_dir = mat3(ap.camera.viewInv) * light_dir;
 // vec3 world_light_dir = -ap.celestial.view[2].xyz;
 // vec3 world_sun_dir = sun_dir == light_dir ? world_light_dir : -world_light_dir;
+float world_time_counter = ((ap.world.time / 20.0) + (ap.world.day * 1200.0));
 
 const float isotropic_phase = 1.0 / (4.0 * PI);
 

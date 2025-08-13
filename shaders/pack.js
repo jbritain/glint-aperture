@@ -250,7 +250,7 @@ function setLightColors() {
 }
 
 // pack.ts
-var maxPointLights = 96;
+var maxPointLights = 64;
 var lightRadius = 16;
 var cascades = 4;
 var cloudTexRead;
@@ -266,6 +266,7 @@ function configureRenderer(renderer) {
   renderer.shadow.enabled = true;
   renderer.shadow.cascades = cascades;
   renderer.shadow.entityCascadeCount = 1;
+  renderer.render.clouds = false;
   renderer.pointLight.nearPlane = 0.1;
   renderer.pointLight.cacheRealTimeTerrain = true;
   renderer.pointLight.farPlane = lightRadius;
