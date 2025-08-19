@@ -2,6 +2,7 @@
 #define HILLAIRE_GLSL
 
 #include "/lib/util/phase_functions.glsl"
+#include "/lib/util/space_conversions.glsl"
 
 /*
     Hillaire, S. (2020). A Scalable and Production Ready Sky and Atmosphere Rendering Technique.  https://sebh.github.io/publications/egsr2020.pdf

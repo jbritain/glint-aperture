@@ -11,16 +11,13 @@ float get_depth(vec2 pos, sampler2D depth_sampler) {
 }
 
 void binary_search(inout vec3 ray_pos, vec3 ray_dir, sampler2D depth_sampler) {
-  vec3 last_good_pos = ray_pos;
   for (int i = 0; i < BINARY_REFINEMENTS; i++) {
     float depth = get_depth(ray_pos.xy, depth_sampler);
     float intersect = sign(depth - ray_pos.z);
-    last_good_pos = intersect == 1.0 ? ray_pos : last_good_pos;
 
     ray_pos += intersect * ray_dir;
     ray_dir *= BINARY_REDUCTION;
   }
-  ray_pos = last_good_pos;
 }
 
 // traces through screen space to find intersection point
@@ -52,7 +49,7 @@ bool ray_intersects(
   float step_length = ray_length * rcp(float(max_steps));
 
   vec3 ray_step = ray_dir * step_length;
-  ray_pos += ray_step * jitter;
+  ray_pos += ray_step * (jitter + 0.1);
 
   float depth_lenience = max(abs(ray_step.z) * 3.0, 0.02 / pow2(view_origin.z));
 
@@ -73,7 +70,7 @@ bool ray_intersects(
   }
 
   if (intersect) {
-    binary_search(ray_pos, ray_step, depth_sampler);
+    // binary_search(ray_pos, ray_step, depth_sampler);
   }
 
   return intersect;

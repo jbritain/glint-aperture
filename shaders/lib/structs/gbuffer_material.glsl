@@ -15,7 +15,7 @@
 #define LEAD 6u
 #define PLATINUM 7u
 #define SILVER 8u
-#define OTHER_METAL 9u
+#define OTHER_METAL 26u
 
 vec3 get_metal_f0(uint metal_id) {
   switch (metal_id) {
@@ -158,9 +158,9 @@ Material decode_material_from_gbuffer(vec4 data_1, vec4 data_2) {
   material.roughness = pow2(1.0 - specular_map.r);
   material.f0 = specular_map.g;
 
-  material.emission = specular_map.a == 1.0 ? 0.0 : specular_map.a;
+  material.emission = specular_map.a == 1.0 ? 0.0 : pow2(specular_map.a);
 
-  material.metal_id = max(0, int(specular_map.g * 255.0 - 228.5));
+  material.metal_id = max(int(specular_map.g * 255.0 - 228.5), 0);
 
   if (specular_map.b <= 0.25) {
     material.porosity = specular_map.b * 4.0;

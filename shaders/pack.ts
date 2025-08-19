@@ -1,20 +1,27 @@
 import type {} from "./iris";
+import FlippableTexture from "./tslib/FlippableTexture";
 import { setLightColors } from "./tslib/lightColors";
 
 const maxPointLights = 64;
 const lightRadius = 16;
 const cascades = 4;
+const shadowRes = 1592;
 
 let cloudTexRead: ActiveTextureReference;
 let cloudTexWrite: ActiveTextureReference;
 let cloudTexA: BuiltTexture;
 let cloudTexB: BuiltTexture;
 
+let ssrTexRead: ActiveTextureReference;
+let ssrTexWrite: ActiveTextureReference;
+let ssrTexA: BuiltTexture;
+let ssrTexB: BuiltTexture;
+
 export function configureRenderer(renderer: RendererConfig) {
   renderer.disableShade = true;
   renderer.sunPathRotation = 40.0;
 
-  renderer.shadow.resolution = 1592;
+  renderer.shadow.resolution = shadowRes;
   renderer.shadow.far = 192;
   renderer.shadow.distance = 192;
   renderer.shadow.enabled = true;
@@ -40,6 +47,9 @@ export function configureRenderer(renderer: RendererConfig) {
 export function beginFrame(state: WorldState) {
   cloudTexWrite.pointTo(state.currentFrame() % 2 == 0 ? cloudTexA : cloudTexB);
   cloudTexRead.pointTo(state.currentFrame() % 2 == 0 ? cloudTexB : cloudTexA);
+
+  ssrTexWrite.pointTo(state.currentFrame() % 2 == 0 ? ssrTexA : ssrTexB);
+  ssrTexRead.pointTo(state.currentFrame() % 2 == 0 ? ssrTexB : ssrTexA);
 }
 
 export function configurePipeline(pipeline: PipelineConfig) {
@@ -68,7 +78,7 @@ export function configurePipeline(pipeline: PipelineConfig) {
     false,
   );
 
-  defineGlobally("EMISSION_STRENGTH", 100.0);
+  defineGlobally("EMISSION_STRENGTH", 10.0);
 
   const screenSetup = pipeline.forStage(Stage.SCREEN_SETUP);
   const preRender = pipeline.forStage(Stage.PRE_RENDER);
@@ -134,7 +144,7 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .width(200)
     .height(200)
     .clear(true)
-    .mipmap(true)
+    .mipmap(false)
     .build();
   defineGlobally("SKY_VIEW_RES", "ivec2(200, 200)"); // + multipleScatteringLUT.width.toString() + "," + multipleScatteringLUT.height.toString() + ")");
 
@@ -143,7 +153,16 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .format(Format.RGBA16F)
     .width(32)
     .height(32)
-    .clear(true)
+    .clear(false)
+    .build();
+
+  const atmosphericFogLUT = pipeline
+    .createImageTexture("atmospheric_fog_lut_tex", "atmospheric_fog_lut")
+    .format(Format.RGBA16F)
+    .width(32)
+    .height(32)
+    .depth(64)
+    .clear(false)
     .build();
 
   screenSetup
@@ -170,11 +189,18 @@ export function configurePipeline(pipeline: PipelineConfig) {
 
   preRender.barrier(IMAGE_BIT);
   preRender
-    .createCompute("generateSkyIrradianceLUT")
+    .createCompute("generate_sky_irradiance_lut")
     .location("program/render_setup/generate_sky_irradiance_lut.csh")
     .workGroups(4, 4, 1)
     .ssbo(0, sceneData)
     .define("SCENE_DATA_BINDING", "0")
+    .compile();
+
+  preRender.barrier(IMAGE_BIT);
+  preRender
+    .createCompute("generate_atmospheric_fog_lut")
+    .location("program/atmosphere/generate_atmospheric_fog_lut.csh")
+    .workGroups(4, 4, 8)
     .compile();
 
   preRender.barrier(IMAGE_BIT);
@@ -219,7 +245,7 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .clear(false)
     .build();
 
-  screenSetup
+  preRender
     .createCompute("generate_cloud_weather")
     .location("program/render_setup/generate_cloud_weather.csh")
     .workGroups(64, 64, 1)
@@ -261,6 +287,14 @@ export function configurePipeline(pipeline: PipelineConfig) {
 
   // GEOMETRY
   // =======================================================================================
+  const cloudShadowTex = pipeline
+    .createArrayTexture("cloud_shadow_tex")
+    .format(Format.R16F)
+    .width(shadowRes)
+    .height(shadowRes)
+    .slices(cascades)
+    .build();
+
   pipeline
     .createObjectShader("shadow", Usage.SHADOW)
     .vertex("program/geometry/shadow.vsh")
@@ -291,6 +325,12 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .fragment("program/geometry/opaque.fsh")
     .target(0, gbufferTex1)
     .target(1, gbufferTex2)
+    .compile();
+
+  pipeline
+    .createObjectShader("clouds", Usage.CLOUDS)
+    .vertex("program/geometry/discard.vsh")
+    .fragment("program/geometry/discard.fsh")
     .compile();
 
   const translucentTex = pipeline
@@ -331,36 +371,44 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .target(0, shadowTex)
     .compile();
 
-  const sceneTex = pipeline
-    .createTexture("scene_tex")
+  // const sceneTex = pipeline
+  //   .createTexture("scene_tex")
+  //   .format(Format.RGBA16F)
+  //   .clear(true)
+  //   .build();
+  const sceneTex = new FlippableTexture("scene_tex")
     .format(Format.RGBA16F)
     .clear(true)
-    .build();
+    .build(pipeline);
 
   preTranslucent
     .createComposite("sky")
     .vertex("program/fullscreen_pass.vsh")
     .fragment("program/before_translucents/render_sky.fsh")
-    .target(0, sceneTex)
+    .target(0, sceneTex.target)
     .compile();
 
   cloudTexA = pipeline
     .createTexture("cloud_tex_a")
     .format(Format.RGBA16F)
+    .width(Math.floor(screenWidth * 0.5))
+    .height(Math.floor(screenHeight * 0.5))
     .clear(false)
     .build();
 
   cloudTexB = pipeline
     .createTexture("cloud_tex_b")
     .format(Format.RGBA16F)
+    .width(Math.floor(screenWidth * 0.5))
+    .height(Math.floor(screenHeight * 0.5))
     .clear(false)
     .build();
 
   cloudTexWrite = pipeline.createTextureReference(
     "cloud_tex_w",
     null,
-    screenWidth,
-    screenHeight,
+    Math.floor(screenWidth * 0.5),
+    Math.floor(screenHeight * 0.5),
     1,
     Format.RGBA16F,
   );
@@ -368,8 +416,8 @@ export function configurePipeline(pipeline: PipelineConfig) {
   cloudTexRead = pipeline.createTextureReference(
     "cloud_tex",
     null,
-    screenWidth,
-    screenHeight,
+    Math.floor(screenWidth * 0.5),
+    Math.floor(screenHeight * 0.5),
     1,
     Format.RGBA16F,
   );
@@ -378,21 +426,21 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .createComposite("render_clouds")
     .vertex("program/fullscreen_pass.vsh")
     .fragment("program/before_translucents/render_clouds.fsh")
-    .target(0, sceneTex)
-    .target(1, cloudTexWrite)
+    .target(0, cloudTexWrite)
     .ssbo(0, sceneData)
     .define("SCENE_DATA_BINDING", "0")
+    .compile();
+
+  preTranslucent
+    .createComposite("blend_clouds")
+    .vertex("program/fullscreen_pass.vsh")
+    .fragment("program/before_translucents/blend_clouds.fsh")
+    .target(0, sceneTex.target)
     .compile();
 
   const diffuseTex = pipeline
     .createTexture("diffuse_tex")
     .format(Format.R11F_G11F_B10F)
-    .clear(false)
-    .build();
-
-  const specularTex = pipeline
-    .createTexture("specular_tex")
-    .format(Format.RGBA16F)
     .clear(false)
     .build();
 
@@ -410,17 +458,41 @@ export function configurePipeline(pipeline: PipelineConfig) {
   //   .ssbo(0, sceneData)
   //   .compile();
 
-  const ssrTex = pipeline
-    .createTexture("ssr_tex")
+  ssrTexA = pipeline
+    .createTexture("ssr_tex_a")
     .format(Format.RGBA16F)
     .clear(false)
     .build();
+
+  ssrTexB = pipeline
+    .createTexture("ssr_tex_b")
+    .format(Format.RGBA16F)
+    .clear(false)
+    .build();
+
+  ssrTexWrite = pipeline.createTextureReference(
+    "ssr_tex_w",
+    null,
+    screenWidth,
+    screenHeight,
+    1,
+    Format.RGBA16F,
+  );
+
+  ssrTexRead = pipeline.createTextureReference(
+    "ssr_tex",
+    null,
+    screenWidth,
+    screenHeight,
+    1,
+    Format.RGBA16F,
+  );
 
   preTranslucent
     .createComposite("opaque_ssr")
     .vertex("program/fullscreen_pass.vsh")
     .fragment("program/before_translucents/opaque_ssr.fsh")
-    .target(0, ssrTex)
+    .target(0, ssrTexWrite)
     .ssbo(0, sceneData)
     .define("SCENE_DATA_BINDING", "0")
     .compile();
@@ -429,7 +501,7 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .createComposite("opaque_shading")
     .vertex("program/fullscreen_pass.vsh")
     .fragment("program/before_translucents/opaque_shading.fsh")
-    .target(0, sceneTex)
+    .target(0, sceneTex.target)
     .target(1, diffuseTex)
     .ssbo(0, sceneData)
     .define("SCENE_DATA_BINDING", "0")
@@ -439,7 +511,7 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .createComposite("opaque_point_lights")
     .vertex("program/fullscreen_pass.vsh")
     .fragment("program/before_translucents/opaque_point_lights.fsh")
-    .target(0, sceneTex)
+    .target(0, sceneTex.target)
     .target(1, diffuseTex)
     .ssbo(0, lightLists)
     .define("LIGHT_LIST_BINDING", "0")
@@ -449,19 +521,47 @@ export function configurePipeline(pipeline: PipelineConfig) {
   // =======================================================================================
 
   postRender
+    .createComposite("water_fog_outside_water")
+    .vertex("program/fullscreen_pass.vsh")
+    .fragment("program/post/water_fog.fsh")
+    .target(0, sceneTex.target)
+    .ssbo(0, sceneData)
+    .define("SCENE_DATA_BINDING", "0")
+    .define("CONDITION", "is_water && !in_water")
+    .define("START_POS", "translucent_player_pos")
+    .define("END_POS", "opaque_player_pos")
+    .compile();
+
+  sceneTex.flip();
+
+  postRender
     .createComposite("blend_translucents")
     .vertex("program/fullscreen_pass.vsh")
     .fragment("program/post/translucent_shading.fsh")
-    .target(0, sceneTex)
+    .target(0, sceneTex.target)
     .ssbo(0, sceneData)
     .define("SCENE_DATA_BINDING", "0")
+    .compile();
+
+  sceneTex.unflip();
+
+  postRender
+    .createComposite("water_fog_inside_water")
+    .vertex("program/fullscreen_pass.vsh")
+    .fragment("program/post/water_fog.fsh")
+    .target(0, sceneTex.target)
+    .ssbo(0, sceneData)
+    .define("SCENE_DATA_BINDING", "0")
+    .define("CONDITION", "in_water")
+    .define("START_POS", "vec3(0.0)")
+    .define("END_POS", "translucent_player_pos")
     .compile();
 
   postRender
     .createComposite("exposure")
     .vertex("program/fullscreen_pass.vsh")
     .fragment("program/post/exposure.fsh")
-    .target(0, sceneTex)
+    .target(0, sceneTex.target)
     .compile();
 
   const bloomTex = pipeline

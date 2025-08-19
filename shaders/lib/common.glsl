@@ -163,4 +163,9 @@ struct Ray {
   vec3 direction;
 };
 
+struct Volume {
+  vec3 transmittance;
+  vec3 scattering;
+};
+
 #endif // COMMON_GLSL

@@ -16,13 +16,11 @@ uniform sampler2D previousSolidDepthTex;
 
 in vec2 uv;
 
-layout(location = 0) out vec3 color;
-layout(location = 1) out vec4 clouds;
+layout(location = 0) out vec4 clouds;
 
 void main() {
-  color = texture(scene_tex, uv).rgb;
-
-  float depth = texture(mainDepthTex, uv).r;
+  clouds = vec4(0.0, 0.0, 0.0, 1.0);
+  float depth = max_vec4(textureGather(mainDepthTex, uv, 0));
 
   if (depth != 1.0) {
     return;
@@ -46,10 +44,8 @@ void main() {
     ).r;
     if (previous_depth == 1.0) {
       vec4 previous_clouds = texture(cloud_tex, previous_screen_pos.xy);
-      clouds = mix(previous_clouds, clouds, 0.1);
+      clouds = mix(previous_clouds, clouds, 0.05);
     }
   }
-
-  color = fma(color, vec3(clouds.a), clouds.rgb);
 
 }

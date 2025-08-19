@@ -29,7 +29,7 @@ float beers_powder(float extinction) {
 }
 
 // https://x.com/FewesW/status/1364629939568451587/photo/1
-float multiple_scattering(float density, float phase) {
+float multiple_scattering_clouds(float density, float phase) {
   float attenuation = 0.2;
   float contribution = 0.2;
   float phase_attenuation = 0.5;
@@ -160,7 +160,7 @@ float get_light_from_sun(vec3 ray_pos, vec2 jitter, float phase) {
     previous_sample_pos = sample_pos;
   }
 
-  return multiple_scattering(density, phase);
+  return multiple_scattering_clouds(density, phase);
 }
 
 vec4 get_clouds(vec3 origin, vec3 ray_dir) {
@@ -195,7 +195,7 @@ vec4 get_clouds(vec3 origin, vec3 ray_dir) {
       sky_irradiance_lut_tex,
       cartesian_to_spherical(vec3(0.0, 1.0, 0.0)) / TAU
     ).rgb *
-    henyey_greenstein_phase(0.0, 0.0);
+    isotropic_phase;
 
   float phase = dual_lobe_hg_phase(cos_theta, 0.8, -0.5, 0.5);
 

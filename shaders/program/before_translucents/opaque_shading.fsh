@@ -15,6 +15,7 @@ uniform sampler2D scene_tex;
 uniform sampler2D shadow_tex;
 uniform sampler2D global_illumination_tex;
 uniform sampler2D ssr_tex;
+uniform sampler3D atmospheric_fog_lut_tex;
 
 uniform sampler2D gbuffer_tex_1;
 uniform sampler2D gbuffer_tex_2;

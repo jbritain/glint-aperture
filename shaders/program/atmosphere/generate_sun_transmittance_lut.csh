@@ -28,10 +28,11 @@ void main() {
 
   vec3 target_pos;
 
-  // the sun cannot shine through the planet
-  if (ray_sphere_intersection(ray, vec3(0.0), earth_radius, target_pos)) {
-    imageStore(sun_transmittance_lut, texel_coord, vec4(vec3(0.0), 1.0));
-  }
+  // // the sun cannot shine through the planet
+  // if (ray_sphere_intersection(ray, vec3(0.0), earth_radius, target_pos)) {
+  //   imageStore(sun_transmittance_lut, texel_coord, vec4(vec3(0.0), 1.0));
+  //   return;
+  // }
 
   ray_sphere_intersection(ray, vec3(0.0), atmosphere_radius, target_pos);
 

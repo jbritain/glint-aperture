@@ -47,8 +47,8 @@ void main() {
     }
   }
 
-  #define SKY_VIEW_TRANSMITTANCE_STEPS 32u
-  vec3 ray_step = (end_pos - ray_pos) / SKY_VIEW_TRANSMITTANCE_STEPS;
+  #define SKY_VIEW_STEPS 32u
+  vec3 ray_step = (end_pos - ray_pos) / SKY_VIEW_STEPS;
   float step_length = length(ray_step);
 
   vec3 luminance = vec3(0.0);
@@ -62,7 +62,7 @@ void main() {
 
   ray_pos += ray_step * 0.5; // to centre us in each step
 
-  for (uint i = 0u; i < SKY_VIEW_TRANSMITTANCE_STEPS; i++) {
+  for (uint i = 0u; i < SKY_VIEW_STEPS; i++) {
     float altitude = max0(length(ray_pos) - earth_radius);
 
     float rayleigh_density = rayleigh_density(altitude);
@@ -130,8 +130,16 @@ void main() {
     luminance +=
       earth_albedo *
       sun_transmittance *
+      sun_irradiance *
       transmittance *
-      dot(world_light_dir, normalize(end_pos));
+      dot(world_sun_dir, normalize(end_pos));
+
+    luminance +=
+      earth_albedo *
+      sun_transmittance *
+      moon_irradiance *
+      transmittance *
+      dot(-world_sun_dir, normalize(end_pos));
   }
 
   imageStore(sky_view_lut, texel_coord, vec4(luminance, 1.0));

@@ -1,5 +1,5 @@
-#ifndef WATER_FOG_GLSL
-#define WATER_FOG_GLSL
+#ifndef CLOUDY_FOG_GLSL
+#define CLOUDY_FOG_GLSL
 
 #include "/lib/common.glsl"
 #include "/lib/util/shadow_space.glsl"
@@ -9,38 +9,21 @@
 #include "/lib/util/dither.glsl"
 #include "/lib/util/misc.glsl"
 
-const vec3 water_absorption = vec3(0.3, 0.04, 0.01);
-const vec3 water_scattering = vec3(0.002, 0.01, 0.015);
-const vec3 water_extinction = water_absorption + water_scattering;
-const vec3 water_scattering_albedo = water_scattering / water_extinction;
+#define VOLUMETRIC_FOG_STEPS 16
 
-const float water_density = 1.0;
+#define VOLUMETRIC_FOG_BOTTOM_PLANE 50
+#define VOLUMETRIC_FOG_CENTRE_PLANE 63
+#define VOLUMETRIC_FOG_TOP_PLANE 100
 
-#define WATER_FOG_STEPS 8
-
-// https://x.com/FewesW/status/1364629939568451587/photo/1
-float multiple_scattering_water(float phase, float step_length) {
-  float attenuation = 0.2;
-  float contribution = 0.2;
-  float phase_attenuation = 0.5;
-
-  float a = 1.0;
-  float b = 1.0;
-  float c = 1.0;
-  const int scattering_octaves = 4;
-
-  float luminance = 0.0;
-
-  for (int i = 0; i < scattering_octaves; i++) {
-    float transmittance = exp(-a * step_length);
-
-    luminance += b * phase * transmittance;
-
-    a *= attenuation;
-    b *= contribution;
-    c *= 1.0 - phase_attenuation;
-  }
-  return luminance;
+float cloudy_fog_density(vec3 pos) {
+  return pos.y <= VOLUMETRIC_FOG_CENTRE_PLANE
+    ? linearstep(
+      VOLUMETRIC_FOG_BOTTOM_PLANE,
+      VOLUMETRIC_FOG_CENTRE_PLANE,
+      pos.y
+    )
+    : 1.0 -
+      smoothstep(VOLUMETRIC_FOG_CENTRE_PLANE, VOLUMETRIC_FOG_TOP_PLANE, pos.y);
 }
 
 Volume water_fog(vec3 start_pos, vec3 end_pos) {
@@ -104,4 +87,4 @@ Volume water_fog(vec3 start_pos, vec3 end_pos) {
   return Volume(transmittance, scattering);
 }
 
-#endif // WATER_FOG_GLSL
+#endif // CLOUDY_FOG_GLSL

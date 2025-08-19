@@ -81,9 +81,20 @@ export default class FlippableTexture {
     return this;
   }
 
-  public build(): FlippableTexture {
-    this.textureA = new Texture(this.name + "_a");
-    this.textureB = new Texture(this.name + "_b");
+  public build(pipeline: PipelineConfig): FlippableTexture {
+    if (this._imageName) {
+      this.textureA = pipeline.createImageTexture(
+        this.name + "_a",
+        this._imageName + "_a",
+      );
+      this.textureB = pipeline.createImageTexture(
+        this.name + "_b",
+        this._imageName + "_b",
+      );
+    } else {
+      this.textureA = pipeline.createTexture(this.name + "_a");
+      this.textureB = pipeline.createTexture(this.name + "_b");
+    }
 
     if (this._format) {
       this.textureA.format(this._format);
@@ -103,11 +114,6 @@ export default class FlippableTexture {
     if (this._depth) {
       this.textureA.depth(this._depth);
       this.textureB.depth(this._depth);
-    }
-
-    if (this._imageName) {
-      this.textureA.imageName(this._imageName + "_a");
-      this.textureB.imageName(this._imageName + "_b");
     }
 
     if (this.clearColorR) {
