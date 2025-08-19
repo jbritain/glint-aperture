@@ -6,6 +6,7 @@ uniform sampler2D sky_irradiance_lut_tex;
 #include "/lib/atmospherics/clouds.glsl"
 #include "/lib/util/space_conversions.glsl"
 #include "/lib/util/reproject.glsl"
+#include "/lib/util/misc.glsl"
 
 uniform sampler2D scene_tex;
 
@@ -43,8 +44,12 @@ void main() {
       previous_screen_pos.xy
     ).r;
     if (previous_depth == 1.0) {
-      vec4 previous_clouds = texture(cloud_tex, previous_screen_pos.xy);
-      clouds = mix(previous_clouds, clouds, 0.05);
+      vec4 previous_clouds = catmull_texture(cloud_tex, previous_screen_pos.xy);
+      clouds = mix(
+        previous_clouds,
+        clouds,
+        0.05 + clamp(distance(ap.camera.pos, ap.temporal.pos), 0.0, 0.05)
+      );
     }
   }
 
