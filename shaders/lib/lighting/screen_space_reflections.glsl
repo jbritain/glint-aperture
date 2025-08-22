@@ -27,8 +27,21 @@ vec4 ssr_sample(
   float NoV = dot(normal, -view_dir);
 
   vec3 screen_ray_pos;
+  vec3 hit_view_pos;
   if (
-    ray_intersects(view_pos, ray_dir, 32, jitter, screen_ray_pos, depth_sampler)
+    ray_intersects(
+      view_pos,
+      ray_dir,
+      ap.camera.projection,
+      depth_sampler,
+      1.0,
+      48,
+      jitter,
+      samples,
+      1000.0,
+      screen_ray_pos,
+      hit_view_pos
+    )
   ) {
     vec3 previous_pos;
     if (reproject) {
