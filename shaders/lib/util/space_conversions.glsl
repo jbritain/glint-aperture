@@ -1,6 +1,11 @@
 #ifndef SPACE_CONVERSIONS_GLSL
 #define SPACE_CONVERSIONS_GLSL
 
+vec3 project_and_divide(vec4 pos, mat4 projection) {
+  pos = projection * pos;
+  return pos.xyz / pos.w;
+}
+
 vec3 screen_space_to_view_space(vec3 screen_pos) {
   vec4 hom_pos = ap.camera.projectionInv * vec4(screen_pos * 2.0 - 1.0, 1.0);
   return hom_pos.xyz / hom_pos.w;

@@ -48,7 +48,7 @@ void main() {
       clouds = mix(
         previous_clouds,
         clouds,
-        0.05 + clamp(distance(ap.camera.pos, ap.temporal.pos), 0.0, 0.05)
+        0.05 + clamp(distance(ap.camera.pos, ap.temporal.pos), 0.0, 0.1)
       );
     }
   }

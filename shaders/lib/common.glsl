@@ -91,9 +91,22 @@ const float isotropic_phase = 1.0 / (4.0 * PI);
   }
 
 #define linearstep_(type)                                                      \
-type linearstep(type edge0, type edge1, type x) {                              \
-  return  clamp((x - edge0) / (edge1 - edge0), type(0.0), type(1.0));          \
-}
+  type linearstep(type edge0, type edge1, type x) {                            \
+    return clamp((x - edge0) / (edge1 - edge0), type(0.0), type(1.0));         \
+  }
+
+#define distance_squared_(type)                                                \
+  float distance_squared(type a, type b) {                                      \
+    a -= b;                                                                    \
+    return dot(a, a);                                                          \
+  }
+
+#define swap_(type)                                                            \
+  void swap(inout type a, inout type b) {                                      \
+    type c = a;                                                                \
+    a = b;                                                                     \
+    b = c;                                                                     \
+  }
 
 DEFINE_genFType(rcp_)
 DEFINE_genFType(pow2_)
@@ -104,6 +117,8 @@ DEFINE_genFType(pow6_)
 DEFINE_genFType(pow7_)
 DEFINE_genFType(pow8_)
 DEFINE_genFType(linearstep_)
+DEFINE_genVType(distance_squared_)
+DEFINE_genFType(swap_)
 
 #define saturate(x) clamp(x, 0.0, 1.0)
 
@@ -167,5 +182,6 @@ struct Volume {
   vec3 transmittance;
   vec3 scattering;
 };
+
 
 #endif // COMMON_GLSL

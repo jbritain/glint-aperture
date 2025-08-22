@@ -14,7 +14,7 @@ in vec2 uv;
 uniform sampler2D scene_tex;
 uniform sampler2D shadow_tex;
 uniform sampler2D global_illumination_tex;
-uniform sampler2D ssr_tex;
+uniform sampler2D ssr_tex_w;
 uniform sampler3D atmospheric_fog_lut_tex;
 
 uniform sampler2D gbuffer_tex_1;
@@ -52,7 +52,7 @@ void main() {
     dot(world_V, normalize(world_V + world_light_dir))
   );
 
-  vec4 ssr = texture(ssr_tex, uv);
+  vec4 ssr = texture(ssr_tex_w, uv);
 
   vec3 indirect_fresnel = schlick(material, ssr.a);
 

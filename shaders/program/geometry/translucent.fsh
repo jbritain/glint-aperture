@@ -96,9 +96,11 @@ void iris_emitFragment() {
   diffuse.a = albedo.a;
 
   diffuse.rgb =
-    brdf_diffuse(material, world_light_dir) *
-    sunlight_color *
-    shadow.rgb *
-    (1.0 - direct_fresnel);
+    brdf_diffuse(material, world_light_dir) * sunlight_color * shadow.rgb;
+
+  diffuse.rgb +=
+    material.albedo * material.emission * EMISSION_STRENGTH / albedo.a;
+
+  diffuse.rgb *= 1.0 - direct_fresnel;
 
 }

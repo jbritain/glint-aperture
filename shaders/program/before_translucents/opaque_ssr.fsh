@@ -60,8 +60,13 @@ void main() {
 
   if (
     distance(previous_view_pos, actual_previous_view_pos) < 0.1 &&
-    previous_screen_pos.z != 1.0
+    previous_screen_pos.z != 1.0 &&
+    saturate(previous_screen_pos.xy) == previous_screen_pos.xy
   )
-    ssr = mix(previous_ssr, ssr, 0.2);
+    ssr.rgb = mix(
+      previous_ssr.rgb,
+      ssr.rgb,
+      0.2 + 0.8 * pow2(material.roughness)
+    );
 
 }

@@ -10,7 +10,7 @@
 #include "/lib/util/misc.glsl"
 
 const vec3 water_absorption = vec3(0.3, 0.04, 0.01);
-const vec3 water_scattering = vec3(0.002, 0.01, 0.015);
+const vec3 water_scattering = vec3(0.002, 0.01, 0.015) * 0.1;
 const vec3 water_extinction = water_absorption + water_scattering;
 const vec3 water_scattering_albedo = water_scattering / water_extinction;
 
@@ -53,7 +53,7 @@ Volume water_fog(vec3 start_pos, vec3 end_pos) {
 
   ray_pos += blue_noise(floor(gl_FragCoord.xy), ap.time.frames).r * ray_step;
 
-  vec3 step_transmittance = max0(exp(-length(ray_step) * water_extinction));
+  vec3 step_transmittance = max0(exp(-step_length * water_extinction));
 
   float phase = rayleigh_phase(-dot(normalize(ray_step), world_light_dir));
   phase = multiple_scattering_water(phase, step_length);
@@ -92,14 +92,14 @@ Volume water_fog(vec3 start_pos, vec3 end_pos) {
     vec3 radiance =
       sunlight_color * phase * transmittance_to_sun +
       skylight_color * isotropic_phase;
-    scattering +=
-      transmittance *
-      (radiance * (1.0 - step_transmittance)) *
-      water_scattering_albedo;
+
+    radiance *= step_length;
+
+    scattering += transmittance * radiance;
     transmittance *= step_transmittance;
   }
 
-  mat2x3 water_fog;
+  scattering *= (1.0 - step_transmittance) * water_scattering_albedo;
 
   return Volume(transmittance, scattering);
 }

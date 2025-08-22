@@ -5,7 +5,9 @@
 #include "/lib/util/space_conversions.glsl"
 
 /*
-    Hillaire, S. (2020). A Scalable and Production Ready Sky and Atmosphere Rendering Technique.  https://sebh.github.io/publications/egsr2020.pdf
+  Hillaire, S. (2020). 
+  "A Scalable and Production Ready Sky and Atmosphere Rendering Technique." 
+  https://sebh.github.io/publications/egsr2020.pdf
 */
 
 // numbers obtained from belmu
