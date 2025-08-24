@@ -9,37 +9,101 @@
 #include "/lib/util/dither.glsl"
 #include "/lib/util/misc.glsl"
 
-#define VOLUMETRIC_FOG_STEPS 16
+#define CLOUDY_FOG_STEPS 16
+#define CLOUDY_FOG_SUB_STEPS 1
 
-#define VOLUMETRIC_FOG_BOTTOM_PLANE 50
-#define VOLUMETRIC_FOG_CENTRE_PLANE 63
-#define VOLUMETRIC_FOG_TOP_PLANE 100
+#define CLOUDY_FOG_BOTTOM_PLANE 50
+#define CLOUDY_FOG_CENTRE_PLANE 63
+#define CLOUDY_FOG_TOP_PLANE 150
 
-float cloudy_fog_density(vec3 pos) {
-  return pos.y <= VOLUMETRIC_FOG_CENTRE_PLANE
-    ? linearstep(
-      VOLUMETRIC_FOG_BOTTOM_PLANE,
-      VOLUMETRIC_FOG_CENTRE_PLANE,
-      pos.y
-    )
-    : 1.0 -
-      smoothstep(VOLUMETRIC_FOG_CENTRE_PLANE, VOLUMETRIC_FOG_TOP_PLANE, pos.y);
+#define CLOUDY_FOG_EXTINCTION 0.1
+#define CLOUDY_FOG_DENSITY 0.01
+
+float get_cloudy_fog_density(vec3 pos) {
+  float density =
+    pos.y <= CLOUDY_FOG_CENTRE_PLANE
+      ? linearstep(CLOUDY_FOG_BOTTOM_PLANE, CLOUDY_FOG_CENTRE_PLANE, pos.y)
+      : 1.0 - linearstep(CLOUDY_FOG_CENTRE_PLANE, CLOUDY_FOG_TOP_PLANE, pos.y);
+
+  density = pow3(density);
+
+  density *= smoothstep(
+    0.6,
+    1.0,
+    texture(
+      cloud_shape_tex,
+      fract((pos + vec3(0.0, 0.0, world_time_counter) * 10.0) / 2000.0)
+    ).r
+  );
+
+  density *= 1.0 - abs(world_light_dir.y);
+
+  return density * CLOUDY_FOG_DENSITY;
 }
 
-Volume water_fog(vec3 start_pos, vec3 end_pos) {
-  vec3 ray_step = (end_pos - start_pos) / WATER_FOG_STEPS;
-  float step_length = length(ray_step);
-  vec3 ray_pos = start_pos;
+// https://x.com/FewesW/status/1364629939568451587/photo/1
+float multiple_scattering_cloudy_fog(float density, float phase) {
+  float attenuation = 0.2;
+  float contribution = 0.2;
+  float phase_attenuation = 0.5;
 
+  float a = 1.0;
+  float b = 1.0;
+  float c = 1.0;
+  float g = 0.85;
+  const int scattering_octaves = 4;
+
+  float luminance = 0.0;
+
+  for (int i = 0; i < scattering_octaves; i++) {
+    float transmittance = exp(-density * CLOUDY_FOG_EXTINCTION * a);
+
+    luminance += b * phase * transmittance;
+
+    a *= attenuation;
+    b *= contribution;
+    c *= 1.0 - phase_attenuation;
+  }
+  return luminance;
+}
+
+float get_light_from_sun(vec3 ray_pos, float jitter, float phase) {
+  vec3 ray_dir = world_light_dir;
+
+  vec3 a = ray_pos;
+  vec3 b;
+  if (!ray_plane_intersection(a, ray_dir, CLOUDY_FOG_TOP_PLANE, b)) {
+    return 1.0;
+  }
+
+  float density = 0.0;
+
+  vec3 previous_sample_pos = a;
+  for (int i = 0; i < CLOUDY_FOG_SUB_STEPS; i++) {
+    float progress = float(i + jitter) / float(CLOUDY_FOG_SUB_STEPS);
+    vec3 sample_pos = mix(a, b, exp(10.0 * (progress - 1.0)));
+
+    density +=
+      get_cloudy_fog_density(sample_pos) *
+      distance(previous_sample_pos, sample_pos);
+
+    previous_sample_pos = sample_pos;
+  }
+
+  return exp(-density * CLOUDY_FOG_EXTINCTION) * phase;
+  // return multiple_scattering_cloudy_fog(density, phase);
+}
+
+Volume cloudy_fog(vec3 start_pos, vec3 end_pos) {
   vec3 transmittance = vec3(1.0);
   vec3 scattering = vec3(0.0);
 
-  ray_pos += blue_noise(floor(gl_FragCoord.xy), ap.time.frames).r * ray_step;
+  vec2 jitter = blue_noise(floor(gl_FragCoord.xy), ap.time.frames).xy;
 
-  vec3 step_transmittance = max0(exp(-length(ray_step) * water_extinction));
+  vec3 ray_dir = normalize(end_pos - start_pos);
 
-  float phase = rayleigh_phase(-dot(normalize(ray_step), world_light_dir));
-  phase = multiple_scattering_water(phase, step_length);
+  float cos_theta = dot(ray_dir, world_light_dir);
+  float phase = rayleigh_phase(-cos_theta);
 
   vec3 skylight_color =
     texture(
@@ -48,41 +112,66 @@ Volume water_fog(vec3 start_pos, vec3 end_pos) {
     ).rgb *
     isotropic_phase;
 
-  for (int i = 0; i < WATER_FOG_STEPS; i++, ray_pos += ray_step) {
-    int cascade;
-    vec3 shadow_sample_pos = get_shadow_screen_pos(ray_pos, cascade);
-    vec3 shadow_map_pixel_size = get_shadow_map_pixel_size(cascade);
-
-    vec3 transmittance_to_sun = vec3(
-      texture(
-        solidShadowMapFiltered,
-        vec4(shadow_sample_pos.xy, cascade, shadow_sample_pos.z)
-      ).r
-    );
-    if (min_vec3(transmittance_to_sun) > 0.01) {
-      float translucent_shadow_depth = texture(
-        shadowMap,
-        vec3(shadow_sample_pos.xy, cascade)
-      ).r;
-
-      float blocker_distance =
-        (shadow_sample_pos.z - translucent_shadow_depth) *
-        shadow_map_pixel_size.z;
-
-      transmittance_to_sun *= exp(-blocker_distance * water_extinction);
-
-    }
-    vec3 radiance =
-      sunlight_color * phase * transmittance_to_sun +
-      skylight_color * isotropic_phase;
-    scattering +=
-      transmittance *
-      (radiance * (1.0 - step_transmittance)) *
-      water_scattering_albedo;
-    transmittance *= step_transmittance;
+  vec3 a;
+  vec3 b;
+  if (!ray_plane_intersection(start_pos, ray_dir, CLOUDY_FOG_BOTTOM_PLANE, a)) {
+    a = ap.camera.pos;
   }
 
-  mat2x3 water_fog;
+  if (!ray_plane_intersection(start_pos, ray_dir, CLOUDY_FOG_BOTTOM_PLANE, b)) {
+    b = ap.camera.pos;
+  }
+
+  if (distance(ap.camera.pos, a) > distance(ap.camera.pos, b)) {
+    swap(a, b);
+  }
+
+  if (end_pos.y > CLOUDY_FOG_BOTTOM_PLANE && end_pos.y < CLOUDY_FOG_TOP_PLANE) {
+    b = end_pos;
+  }
+
+  vec3 previous_ray_pos = start_pos;
+
+  for (int i = 0; i < CLOUDY_FOG_STEPS; i++) {
+    float progress = float(i + jitter) / float(CLOUDY_FOG_STEPS);
+
+    vec3 ray_pos = mix(
+      start_pos,
+      end_pos,
+      start_pos == ap.camera.pos
+        ? exp(10.0 * (progress - 1.0))
+        : progress
+    );
+
+    int cascade;
+    vec3 shadow_sample_pos = get_shadow_screen_pos(
+      ray_pos - ap.camera.pos,
+      cascade
+    );
+    vec3 shadow_map_pixel_size = get_shadow_map_pixel_size(cascade);
+
+    float density =
+      get_cloudy_fog_density(ray_pos) * distance(ray_pos, previous_ray_pos);
+    float sample_transmittance = exp(-density * CLOUDY_FOG_EXTINCTION);
+
+    float shadow = texture(
+      shadowMapFiltered,
+      vec4(shadow_sample_pos.xy, cascade, shadow_sample_pos.z)
+    ).r;
+
+    vec3 radiance =
+      sunlight_color * get_light_from_sun(ray_pos, jitter.y, phase) * shadow +
+      skylight_color * isotropic_phase;
+
+    scattering +=
+      transmittance *
+      (radiance *
+        (1.0 - saturate(sample_transmittance)) /
+        CLOUDY_FOG_EXTINCTION);
+    transmittance *= sample_transmittance;
+
+    previous_ray_pos = ray_pos;
+  }
 
   return Volume(transmittance, scattering);
 }

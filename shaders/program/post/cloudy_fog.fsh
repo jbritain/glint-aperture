@@ -3,11 +3,13 @@
 #include "/lib/common.glsl"
 #include "/lib/util/space_conversions.glsl"
 
-uniform sampler2DArray shadowMap;
 uniform sampler2DArrayShadow solidShadowMapFiltered;
+uniform sampler2DArrayShadow shadowMapFiltered;
 uniform sampler2D sky_irradiance_lut_tex;
 
-#include "/lib/water/water_fog.glsl"
+uniform sampler3D cloud_shape_tex;
+
+#include "/lib/atmospherics/cloudy_fog.glsl"
 
 uniform sampler2D scene_tex;
 uniform sampler2D mainDepthTex;
@@ -21,11 +23,7 @@ void main() {
   color = texture(scene_tex, uv).rgb;
 
   float translucent_depth = texture(mainDepthTex, uv).r;
-  if (translucent_depth == 1.0) {
-    return;
-  }
 
-  bool is_water = material.mask.is_fluid;
   bool in_water = ap.camera.fluid == 1;
 
   if (CONDITION) {
@@ -40,7 +38,10 @@ void main() {
     vec3 opaque_player_pos = (ap.camera.viewInv *
       vec4(opaque_view_pos, 1.0)).xyz;
 
-    Volume cloudy_fog = cloudy_fog(START_POS, END_POS);
+    Volume cloudy_fog = cloudy_fog(
+      START_POS + ap.camera.pos,
+      END_POS + ap.camera.pos
+    );
 
     color *= cloudy_fog.transmittance;
     color += cloudy_fog.scattering;

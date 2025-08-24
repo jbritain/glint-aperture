@@ -134,6 +134,12 @@ void main() {
       transmittance *
       dot(world_sun_dir, normalize(end_pos));
 
+    sun_ray.direction = -world_sun_dir;
+    sun_transmittance = texture(
+      sun_transmittance_lut_tex,
+      parameterise_sun_transmittance(sun_ray)
+    ).rgb;
+
     luminance +=
       earth_albedo *
       sun_transmittance *

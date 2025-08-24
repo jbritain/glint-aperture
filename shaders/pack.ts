@@ -22,8 +22,8 @@ export function configureRenderer(renderer: RendererConfig) {
   renderer.sunPathRotation = 40.0;
 
   renderer.shadow.resolution = shadowRes;
-  renderer.shadow.far = 192;
-  renderer.shadow.distance = 192;
+  renderer.shadow.far = 512;
+  renderer.shadow.distance = 512;
   renderer.shadow.enabled = true;
   renderer.shadow.cascades = cascades;
 
@@ -77,6 +77,9 @@ export function configurePipeline(pipeline: PipelineConfig) {
     (maxLightsPerBin + 2) * lightListBinCount * 4,
     false,
   );
+
+  // float for average luminance, float for centre depth
+  const cameraData = pipeline.createBuffer(16, false);
 
   defineGlobally("EMISSION_STRENGTH", 10.0);
 
@@ -378,7 +381,8 @@ export function configurePipeline(pipeline: PipelineConfig) {
   //   .build();
   const sceneTex = new FlippableTexture("scene_tex")
     .format(Format.RGBA16F)
-    .clear(true)
+    .clear(false)
+    .mipmap(true)
     .build(pipeline);
 
   preTranslucent
@@ -546,6 +550,18 @@ export function configurePipeline(pipeline: PipelineConfig) {
   sceneTex.unflip();
 
   postRender
+    .createComposite("cloudy_fog")
+    .vertex("program/fullscreen_pass.vsh")
+    .fragment("program/post/cloudy_fog.fsh")
+    .target(0, sceneTex.target)
+    .ssbo(0, sceneData)
+    .define("SCENE_DATA_BINDING", "0")
+    .define("CONDITION", "!in_water")
+    .define("START_POS", "vec3(0.0)")
+    .define("END_POS", "translucent_player_pos")
+    .compile();
+
+  postRender
     .createComposite("water_fog_inside_water")
     .vertex("program/fullscreen_pass.vsh")
     .fragment("program/post/water_fog.fsh")
@@ -558,10 +574,29 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .compile();
 
   postRender
+    .createComposite("luminance_alpha")
+    .vertex("program/fullscreen_pass.vsh")
+    .fragment("program/post/write_luminance_to_alpha.fsh")
+    .target(0, sceneTex.target)
+    .compile();
+
+  postRender.generateMips(sceneTex.target);
+
+  postRender
+    .createCompute("fetch_camera_data")
+    .workGroups(1, 1, 1)
+    .location("program/post/fetch_camera_data.csh")
+    .ssbo(0, cameraData)
+    .define("CAMERA_DATA_BINDING", "0")
+    .compile();
+
+  postRender
     .createComposite("exposure")
     .vertex("program/fullscreen_pass.vsh")
     .fragment("program/post/exposure.fsh")
     .target(0, sceneTex.target)
+    .ssbo(0, cameraData)
+    .define("CAMERA_DATA_BINDING", "0")
     .compile();
 
   const bloomTex = pipeline

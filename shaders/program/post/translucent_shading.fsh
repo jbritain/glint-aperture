@@ -79,12 +79,13 @@ void main() {
   float opaque_depth = texture(solidDepthTex, uv).r;
   vec3 opaque_view_pos = screen_space_to_view_space(vec3(uv, opaque_depth));
   vec3 opaque_player_pos = (ap.camera.viewInv * vec4(opaque_view_pos, 1.0)).xyz;
-  vec3 refraction_normal = in_water
-    ? material.texture_normal
-    : material.geometry_normal - material.texture_normal;
+  vec3 refraction_normal =
+    in_water && material.mask.is_fluid
+      ? material.texture_normal
+      : material.geometry_normal - material.texture_normal;
 
   vec3 refracted = refract(
-    normalize(translucent_player_pos),
+    normalize(translucent_player_pos - ap.camera.viewInv[3].xyz),
     refraction_normal,
     rcp(ior)
   );
@@ -99,7 +100,7 @@ void main() {
     saturate(refracted_pos.xy) == refracted_pos.xy &&
     refracted_depth > translucent_depth
   ) {
-    color = texture(scene_tex, refracted_pos.xy).rgb;
+    color = textureLod(scene_tex, refracted_pos.xy, 0).rgb;
   }
 
   vec3 direct_fresnel = schlick(

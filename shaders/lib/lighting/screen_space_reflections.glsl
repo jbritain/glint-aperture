@@ -93,10 +93,7 @@ vec4 compute_rough_reflections(
       vndf_normal,
       sky_factor,
       ROUGH_REFLECTION_STEPS,
-      interleaved_gradient_noise(
-        floor(gl_FragCoord.xy),
-        i + ap.time.frames * ROUGH_REFLECTION_SAMPLES
-      ),
+      noise.z,
       depth_sampler,
       color_sampler,
       reproject
@@ -124,12 +121,12 @@ vec4 compute_screen_space_reflections(
       normal,
       sky_factor,
       SMOOTH_REFLECTION_STEPS,
-      interleaved_gradient_noise(floor(gl_FragCoord.xy), ap.time.frames),
+      blue_noise(floor(gl_FragCoord.xy), ap.time.frames).r,
       depth_sampler,
       color_sampler,
       reproject
     );
-  } else if (roughness < 0.3) {
+  } else if (roughness < 0.5) {
     return compute_rough_reflections(
       view_pos,
       view_dir,

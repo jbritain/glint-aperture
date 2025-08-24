@@ -406,8 +406,8 @@ function configureRenderer(renderer) {
   renderer.disableShade = true;
   renderer.sunPathRotation = 40;
   renderer.shadow.resolution = shadowRes;
-  renderer.shadow.far = 192;
-  renderer.shadow.distance = 192;
+  renderer.shadow.far = 512;
+  renderer.shadow.distance = 512;
   renderer.shadow.enabled = true;
   renderer.shadow.cascades = cascades;
   renderer.shadow.entityCascadeCount = 1;
@@ -448,6 +448,7 @@ function configurePipeline(pipeline) {
     (maxLightsPerBin + 2) * lightListBinCount * 4,
     false
   );
+  const cameraData = pipeline.createBuffer(16, false);
   defineGlobally("EMISSION_STRENGTH", 10);
   const screenSetup = pipeline.forStage(Stage.SCREEN_SETUP);
   const preRender = pipeline.forStage(Stage.PRE_RENDER);
@@ -508,7 +509,7 @@ function configurePipeline(pipeline) {
   const shadowTex = pipeline.createTexture("shadow_tex").format(Format.RGBA8).clear(true).build();
   pipeline.createObjectShader("water", Usage.TERRAIN_TRANSLUCENT).vertex("program/geometry/translucent.vsh").fragment("program/geometry/translucent.fsh").target(0, translucentTex).target(1, gbufferTex1).target(2, gbufferTex2).target(3, shadowTex).blendOff(1).blendOff(2).blendOff(3).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
   preTranslucent.createComposite("opaque_shadowing").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_shadowing.fsh").target(0, shadowTex).compile();
-  const sceneTex = new FlippableTexture("scene_tex").format(Format.RGBA16F).clear(true).build(pipeline);
+  const sceneTex = new FlippableTexture("scene_tex").format(Format.RGBA16F).clear(false).mipmap(true).build(pipeline);
   preTranslucent.createComposite("sky").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/render_sky.fsh").target(0, sceneTex.target).compile();
   cloudTexA = pipeline.createTexture("cloud_tex_a").format(Format.RGBA16F).width(Math.floor(screenWidth * 0.5)).height(Math.floor(screenHeight * 0.5)).clear(false).build();
   cloudTexB = pipeline.createTexture("cloud_tex_b").format(Format.RGBA16F).width(Math.floor(screenWidth * 0.5)).height(Math.floor(screenHeight * 0.5)).clear(false).build();
@@ -556,8 +557,12 @@ function configurePipeline(pipeline) {
   sceneTex.flip();
   postRender.createComposite("blend_translucents").vertex("program/fullscreen_pass.vsh").fragment("program/post/translucent_shading.fsh").target(0, sceneTex.target).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
   sceneTex.unflip();
+  postRender.createComposite("cloudy_fog").vertex("program/fullscreen_pass.vsh").fragment("program/post/cloudy_fog.fsh").target(0, sceneTex.target).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").define("CONDITION", "!in_water").define("START_POS", "vec3(0.0)").define("END_POS", "translucent_player_pos").compile();
   postRender.createComposite("water_fog_inside_water").vertex("program/fullscreen_pass.vsh").fragment("program/post/water_fog.fsh").target(0, sceneTex.target).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").define("CONDITION", "in_water").define("START_POS", "vec3(0.0)").define("END_POS", "translucent_player_pos").compile();
-  postRender.createComposite("exposure").vertex("program/fullscreen_pass.vsh").fragment("program/post/exposure.fsh").target(0, sceneTex.target).compile();
+  postRender.createComposite("luminance_alpha").vertex("program/fullscreen_pass.vsh").fragment("program/post/write_luminance_to_alpha.fsh").target(0, sceneTex.target).compile();
+  postRender.generateMips(sceneTex.target);
+  postRender.createCompute("fetch_camera_data").workGroups(1, 1, 1).location("program/post/fetch_camera_data.csh").ssbo(0, cameraData).define("CAMERA_DATA_BINDING", "0").compile();
+  postRender.createComposite("exposure").vertex("program/fullscreen_pass.vsh").fragment("program/post/exposure.fsh").target(0, sceneTex.target).ssbo(0, cameraData).define("CAMERA_DATA_BINDING", "0").compile();
   const bloomTex = pipeline.createTexture("bloom_tex").format(Format.RGBA16F).clear(true).mipmap(true).build();
   for (let i = 0; i < 5; i++) {
     postRender.createComposite(`bloom_downsample${i}-${i + 1}`).vertex("program/fullscreen_pass.vsh").fragment("program/post/bloom_downsample.fsh").target(0, bloomTex, i + 1).define("BLOOM_INDEX", i.toString()).compile();

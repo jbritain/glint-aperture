@@ -143,7 +143,9 @@ float get_light_from_sun(vec3 ray_pos, vec2 jitter, float phase) {
   vec3 a = ray_pos;
   vec3 b;
   if (!ray_plane_intersection(a, ray_dir, CLOUD_TOP_HEIGHT, b)) {
-    return 1.0;
+    if (!ray_plane_intersection(a, ray_dir, CLOUD_BASE_HEIGHT, b)) {
+      return 1.0;
+    }
   }
 
   float density = 0.0;
