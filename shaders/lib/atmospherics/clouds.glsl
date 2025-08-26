@@ -18,7 +18,8 @@ uniform sampler2D cloud_weather_tex;
 #define CLOUD_STEPS 16
 #define CLOUD_SUB_STEPS 8
 
-#define CLOUD_EXTINCTION 0.1
+#define CLOUD_EXTINCTION 0.05
+#define CLOUD_DENSITY 2.0
 
 float beers_powder(float extinction) {
   return mix(
@@ -37,7 +38,6 @@ float multiple_scattering_clouds(float density, float phase) {
   float a = 1.0;
   float b = 1.0;
   float c = 1.0;
-  float g = 0.85;
   const int scattering_octaves = 4;
 
   float luminance = 0.0;
@@ -106,7 +106,7 @@ float get_cloud_density(vec3 pos, bool high_quality) {
   density *= coverage;
 
   if (!high_quality) {
-    return density;
+    return density * CLOUD_DENSITY;
   }
 
   if (density < 0.01) {
@@ -133,7 +133,7 @@ float get_cloud_density(vec3 pos, bool high_quality) {
 
   density = max0(remap(density, high_frequency_fbm, 1.0, 0.0, 1.0));
 
-  return density * 2.0;
+  return density * CLOUD_DENSITY;
 }
 
 float get_light_from_sun(vec3 ray_pos, vec2 jitter, float phase) {
@@ -193,13 +193,11 @@ vec4 get_clouds(vec3 origin, vec3 ray_dir) {
   vec3 scatter = vec3(0.0);
 
   vec3 skylight_color =
-    texture(
-      sky_irradiance_lut_tex,
-      cartesian_to_spherical(vec3(0.0, 1.0, 0.0)) / TAU
-    ).rgb *
+    texture(sky_irradiance_lut_tex, cartesian_to_spherical(ray_dir) / TAU).rgb *
     isotropic_phase;
 
-  float phase = dual_lobe_hg_phase(cos_theta, 0.8, -0.5, 0.5);
+  float phase = dual_lobe_hg_phase(cos_theta, 0.8, -0.5, 0.1);
+  // float phase = hg_draine_phase(cos_theta, 10);
 
   for (int i = 0; i < CLOUD_STEPS; i++, ray_pos += ray_step) {
     float density = get_cloud_density(ray_pos, true);
@@ -207,7 +205,7 @@ vec4 get_clouds(vec3 origin, vec3 ray_dir) {
     float sample_transmittance = exp(-density * step_length * CLOUD_EXTINCTION);
 
     vec3 radiance = sunlight_color * get_light_from_sun(ray_pos, jitter, phase);
-    radiance += skylight_color;
+    radiance += skylight_color * CLOUD_EXTINCTION * 10.0;
 
     scatter +=
       transmittance *

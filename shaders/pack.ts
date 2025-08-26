@@ -17,6 +17,11 @@ let ssrTexWrite: ActiveTextureReference;
 let ssrTexA: BuiltTexture;
 let ssrTexB: BuiltTexture;
 
+let cloudyFogTexRead: ActiveTextureReference;
+let cloudyFogTexWrite: ActiveTextureReference;
+let cloudyFogTexA: BuiltTexture;
+let cloudyFogTexB: BuiltTexture;
+
 export function configureRenderer(renderer: RendererConfig) {
   renderer.disableShade = true;
   renderer.sunPathRotation = 40.0;
@@ -50,6 +55,13 @@ export function beginFrame(state: WorldState) {
 
   ssrTexWrite.pointTo(state.currentFrame() % 2 == 0 ? ssrTexA : ssrTexB);
   ssrTexRead.pointTo(state.currentFrame() % 2 == 0 ? ssrTexB : ssrTexA);
+
+  cloudyFogTexWrite.pointTo(
+    state.currentFrame() % 2 == 0 ? cloudyFogTexA : cloudyFogTexB,
+  );
+  cloudyFogTexRead.pointTo(
+    state.currentFrame() % 2 == 0 ? cloudyFogTexB : cloudyFogTexA,
+  );
 }
 
 export function configurePipeline(pipeline: PipelineConfig) {
@@ -290,13 +302,6 @@ export function configurePipeline(pipeline: PipelineConfig) {
 
   // GEOMETRY
   // =======================================================================================
-  const cloudShadowTex = pipeline
-    .createArrayTexture("cloud_shadow_tex")
-    .format(Format.R16F)
-    .width(shadowRes)
-    .height(shadowRes)
-    .slices(cascades)
-    .build();
 
   pipeline
     .createObjectShader("shadow", Usage.SHADOW)
@@ -366,6 +371,21 @@ export function configurePipeline(pipeline: PipelineConfig) {
 
   // BEFORE TRANSLUCENTS
   // =======================================================================================
+
+  // const cloudShadowTex = pipeline
+  //   .createArrayTexture("cloud_shadow_tex")
+  //   .format(Format.R16F)
+  //   .width(2048)
+  //   .height(2048)
+  //   .slices(cascades)
+  //   .build();
+
+  // preTranslucent
+  //   .createArrayComposite("cloud_shadow_map")
+  //   .vertex("program/fullscreen_pass.vsh")
+  //   .fragment("program/before_translucents/generate_cloud_shadow_map.fsh")
+  //   .target(0, cloudShadowTex)
+  //   .build();
 
   preTranslucent
     .createComposite("opaque_shadowing")
@@ -549,16 +569,50 @@ export function configurePipeline(pipeline: PipelineConfig) {
 
   sceneTex.unflip();
 
+  cloudyFogTexA = pipeline
+    .createTexture("cloudy_fog_tex_a")
+    .format(Format.RGBA16F)
+    .clear(false)
+    .build();
+
+  cloudyFogTexB = pipeline
+    .createTexture("cloudy_fog_tex_b")
+    .format(Format.RGBA16F)
+    .clear(false)
+    .build();
+
+  cloudyFogTexWrite = pipeline.createTextureReference(
+    "cloudy_fog_tex_w",
+    null,
+    screenWidth,
+    screenHeight,
+    1,
+    Format.RGBA16F,
+  );
+
+  cloudyFogTexRead = pipeline.createTextureReference(
+    "cloudy_fog_tex",
+    null,
+    screenWidth,
+    screenHeight,
+    1,
+    Format.RGBA16F,
+  );
+
   postRender
-    .createComposite("cloudy_fog")
+    .createComposite("render_cloudy_fog")
     .vertex("program/fullscreen_pass.vsh")
-    .fragment("program/post/cloudy_fog.fsh")
-    .target(0, sceneTex.target)
+    .fragment("program/post/render_cloudy_fog.fsh")
+    .target(0, cloudyFogTexWrite)
     .ssbo(0, sceneData)
     .define("SCENE_DATA_BINDING", "0")
-    .define("CONDITION", "!in_water")
-    .define("START_POS", "vec3(0.0)")
-    .define("END_POS", "translucent_player_pos")
+    .compile();
+
+  postRender
+    .createComposite("blend_cloudy_fog")
+    .vertex("program/fullscreen_pass.vsh")
+    .fragment("program/post/blend_cloudy_fog.fsh")
+    .target(0, sceneTex.target)
     .compile();
 
   postRender

@@ -6,14 +6,19 @@
 
 const float hand_depth = 0.0; //MC_HAND_DEPTH * 0.5 + 0.5;
 
-float get_depth(vec2 pos, sampler2D depth_sampler) {
-  return texelFetch(depth_sampler, ivec2(pos * ap.game.screenSize), 0).r;
+float get_depth(vec2 pos, sampler2D depth_sampler, int lod) {
+  return texelFetch(depth_sampler, ivec2(pos * ap.game.screenSize), lod).r;
 }
 
-void binary_search(inout vec3 ray_pos, vec3 ray_dir, sampler2D depth_sampler) {
+void binary_search(
+  inout vec3 ray_pos,
+  vec3 ray_dir,
+  sampler2D depth_sampler,
+  int lod
+) {
   for (int i = 0; i < BINARY_REFINEMENTS; i++) {
     ray_dir *= BINARY_REDUCTION;
-    float depth = get_depth(ray_pos.xy, depth_sampler);
+    float depth = get_depth(ray_pos.xy, depth_sampler, lod);
     float intersect = sign(depth - ray_pos.z);
 
     ray_pos += intersect * ray_dir;
@@ -29,7 +34,8 @@ bool ray_intersects(
   int max_steps,
   float jitter,
   out vec3 ray_pos,
-  sampler2D depth_sampler
+  sampler2D depth_sampler,
+  int lod
 ) {
   if (view_dir.z > 0.0 && view_dir.z >= -view_origin.z) {
     return false;
@@ -58,7 +64,7 @@ bool ray_intersects(
   for (int i = 0; i < max_steps; ++i, ray_pos += ray_step) {
     if (saturate(ray_pos.xy) != ray_pos.xy) return false;
 
-    float depth = get_depth(ray_pos.xy, depth_sampler);
+    float depth = get_depth(ray_pos.xy, depth_sampler, lod);
     if (depth == 1.0) return false;
 
     if (
@@ -71,7 +77,7 @@ bool ray_intersects(
   }
 
   if (intersect) {
-    binary_search(ray_pos, ray_step, depth_sampler);
+    binary_search(ray_pos, ray_step, depth_sampler, lod);
   }
 
   return intersect;

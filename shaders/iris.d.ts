@@ -332,6 +332,8 @@ declare class CommandList {
 
   createComposite(name: string): Composite;
 
+  createArrayComposite(name: string): ArrayComposite;
+
   createCompute(name: string): Compute;
 
   barrier(barrier: number, state?: StateReference): CommandList;
@@ -417,6 +419,32 @@ declare class Composite implements PostShader<Composite>, Command {
   ): Composite;
 
   compile(): PostPass;
+}
+
+declare class ArrayComposite implements PostShader<Composite>, Command {
+  vertex(loc: string): Composite;
+  geometry(loc: string): Composite;
+  control(loc: string): Composite;
+  eval(loc: string): Composite;
+  fragment(loc: string): Composite;
+
+  state(state: StateReference): Composite;
+
+  target(index: number, tex: BuiltTexture | undefined): Composite;
+  target(index: number, tex: BuiltTexture | undefined, mip: number): Composite;
+  ssbo(index: number, buf: BuiltBuffer | undefined): Composite;
+  ubo(index: number, buf: BuiltBuffer | undefined): Composite;
+  define(key: string, value: string): Composite;
+
+  blendFunc(
+    index: number,
+    srcRGB: BlendModeFunction,
+    dstRGB: BlendModeFunction,
+    srcA: BlendModeFunction,
+    dstA: BlendModeFunction,
+  ): Composite;
+
+  build(): PostPass;
 }
 
 declare class Compute implements PostShader<Compute>, Command {

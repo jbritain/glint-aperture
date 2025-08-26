@@ -402,6 +402,10 @@ var ssrTexRead;
 var ssrTexWrite;
 var ssrTexA;
 var ssrTexB;
+var cloudyFogTexRead;
+var cloudyFogTexWrite;
+var cloudyFogTexA;
+var cloudyFogTexB;
 function configureRenderer(renderer) {
   renderer.disableShade = true;
   renderer.sunPathRotation = 40;
@@ -427,6 +431,12 @@ function beginFrame(state) {
   cloudTexRead.pointTo(state.currentFrame() % 2 == 0 ? cloudTexB : cloudTexA);
   ssrTexWrite.pointTo(state.currentFrame() % 2 == 0 ? ssrTexA : ssrTexB);
   ssrTexRead.pointTo(state.currentFrame() % 2 == 0 ? ssrTexB : ssrTexA);
+  cloudyFogTexWrite.pointTo(
+    state.currentFrame() % 2 == 0 ? cloudyFogTexA : cloudyFogTexB
+  );
+  cloudyFogTexRead.pointTo(
+    state.currentFrame() % 2 == 0 ? cloudyFogTexB : cloudyFogTexA
+  );
 }
 function configurePipeline(pipeline) {
   pipeline.addTag(0, new NamespacedId("minecraft", "leaves"));
@@ -498,7 +508,6 @@ function configurePipeline(pipeline) {
     Math.ceil(lightLightBinsPerAxis / 4),
     Math.ceil(lightLightBinsPerAxis / 4)
   ).ssbo(0, lightLists).define("LIGHT_LIST_BINDING", "0").compile();
-  const cloudShadowTex = pipeline.createArrayTexture("cloud_shadow_tex").format(Format.R16F).width(shadowRes).height(shadowRes).slices(cascades).build();
   pipeline.createObjectShader("shadow", Usage.SHADOW).vertex("program/geometry/shadow.vsh").fragment("program/geometry/shadow.fsh").compile();
   pipeline.createObjectShader("point_shadow", Usage.POINT).vertex("program/geometry/point_shadow.vsh").fragment("program/geometry/point_shadow.fsh").compile();
   const gbufferTex1 = pipeline.createTexture("gbuffer_tex_1").format(Format.RGBA16).clear(true).build();
@@ -557,7 +566,26 @@ function configurePipeline(pipeline) {
   sceneTex.flip();
   postRender.createComposite("blend_translucents").vertex("program/fullscreen_pass.vsh").fragment("program/post/translucent_shading.fsh").target(0, sceneTex.target).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
   sceneTex.unflip();
-  postRender.createComposite("cloudy_fog").vertex("program/fullscreen_pass.vsh").fragment("program/post/cloudy_fog.fsh").target(0, sceneTex.target).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").define("CONDITION", "!in_water").define("START_POS", "vec3(0.0)").define("END_POS", "translucent_player_pos").compile();
+  cloudyFogTexA = pipeline.createTexture("cloudy_fog_tex_a").format(Format.RGBA16F).clear(false).build();
+  cloudyFogTexB = pipeline.createTexture("cloudy_fog_tex_b").format(Format.RGBA16F).clear(false).build();
+  cloudyFogTexWrite = pipeline.createTextureReference(
+    "cloudy_fog_tex_w",
+    null,
+    screenWidth,
+    screenHeight,
+    1,
+    Format.RGBA16F
+  );
+  cloudyFogTexRead = pipeline.createTextureReference(
+    "cloudy_fog_tex",
+    null,
+    screenWidth,
+    screenHeight,
+    1,
+    Format.RGBA16F
+  );
+  postRender.createComposite("render_cloudy_fog").vertex("program/fullscreen_pass.vsh").fragment("program/post/render_cloudy_fog.fsh").target(0, cloudyFogTexWrite).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
+  postRender.createComposite("blend_cloudy_fog").vertex("program/fullscreen_pass.vsh").fragment("program/post/blend_cloudy_fog.fsh").target(0, sceneTex.target).compile();
   postRender.createComposite("water_fog_inside_water").vertex("program/fullscreen_pass.vsh").fragment("program/post/water_fog.fsh").target(0, sceneTex.target).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").define("CONDITION", "in_water").define("START_POS", "vec3(0.0)").define("END_POS", "translucent_player_pos").compile();
   postRender.createComposite("luminance_alpha").vertex("program/fullscreen_pass.vsh").fragment("program/post/write_luminance_to_alpha.fsh").target(0, sceneTex.target).compile();
   postRender.generateMips(sceneTex.target);

@@ -25,17 +25,17 @@ void iris_emitFragment() {
   vec2 dx = dFdx(uv);
   vec2 dy = dFdy(uv);
   vec3 parallax_pos;
-  // vec2 uv = apply_parallax(
-  //   uv,
-  //   view_pos,
-  //   tbn_matrix,
-  //   parallax_pos,
-  //   dx,
-  //   dy,
-  //   texture_bounds,
-  //   texture_size,
-  //   mid_block
-  // );
+  vec2 uv = apply_parallax(
+    uv,
+    view_pos,
+    tbn_matrix,
+    parallax_pos,
+    dx,
+    dy,
+    texture_bounds,
+    texture_size,
+    mid_block
+  );
 
   vec4 albedo = iris_sampleBaseTex(uv) * color;
   if (iris_discardFragment(albedo)) discard;

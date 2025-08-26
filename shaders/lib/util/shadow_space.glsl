@@ -44,6 +44,19 @@ vec3 get_shadow_screen_pos(vec3 player_pos, out int cascade){
   return shadow_clip_pos.xyz * 0.5 + 0.5;
 }
 
+vec3 get_shadow_screen_pos_reverse(vec3 player_pos, out int cascade){
+  vec4 shadow_view_pos = (ap.celestial.view * vec4(player_pos, 1.0));
+  vec4 shadow_clip_pos;
+  
+  for(cascade = CASCADES - 1; cascade >= 0 ; cascade -= 1){
+    shadow_clip_pos = ap.celestial.projection[cascade] * shadow_view_pos;
+
+    if(clamp(shadow_clip_pos.xy, vec2(-0.95), vec2(0.95)) == shadow_clip_pos.xy) break;
+  }
+
+  return shadow_clip_pos.xyz * 0.5 + 0.5;
+}
+
 // from null
 vec3 get_shadow_map_pixel_size(int cascade){
   return 0.5 * abs(vec3(ap.celestial.projection[cascade][0].x, ap.celestial.projection[cascade][1].y, ap.celestial.projection[cascade][2].z));

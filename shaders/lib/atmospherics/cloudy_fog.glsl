@@ -12,12 +12,12 @@
 #define CLOUDY_FOG_STEPS 16
 #define CLOUDY_FOG_SUB_STEPS 1
 
-#define CLOUDY_FOG_BOTTOM_PLANE 50
-#define CLOUDY_FOG_CENTRE_PLANE 63
+#define CLOUDY_FOG_BOTTOM_PLANE -63
+#define CLOUDY_FOG_CENTRE_PLANE 0
 #define CLOUDY_FOG_TOP_PLANE 150
 
 #define CLOUDY_FOG_EXTINCTION 0.1
-#define CLOUDY_FOG_DENSITY 0.01
+#define CLOUDY_FOG_DENSITY 0.2
 
 float get_cloudy_fog_density(vec3 pos) {
   float density =
@@ -28,7 +28,7 @@ float get_cloudy_fog_density(vec3 pos) {
   density = pow3(density);
 
   density *= smoothstep(
-    0.6,
+    0.4,
     1.0,
     texture(
       cloud_shape_tex,
@@ -36,7 +36,7 @@ float get_cloudy_fog_density(vec3 pos) {
     ).r
   );
 
-  density *= 1.0 - abs(world_light_dir.y);
+  density *= saturate(pow3(1.0 - abs(world_light_dir.y)) + ap.world.rain);
 
   return density * CLOUDY_FOG_DENSITY;
 }
@@ -90,7 +90,7 @@ float get_light_from_sun(vec3 ray_pos, float jitter, float phase) {
     previous_sample_pos = sample_pos;
   }
 
-  return exp(-density * CLOUDY_FOG_EXTINCTION) * phase;
+  return exp(-density * CLOUDY_FOG_EXTINCTION);
   // return multiple_scattering_cloudy_fog(density, phase);
 }
 
@@ -98,12 +98,19 @@ Volume cloudy_fog(vec3 start_pos, vec3 end_pos) {
   vec3 transmittance = vec3(1.0);
   vec3 scattering = vec3(0.0);
 
+  if (
+    start_pos.y > CLOUDY_FOG_TOP_PLANE && end_pos.y > CLOUDY_FOG_TOP_PLANE ||
+    start_pos.y < CLOUDY_FOG_BOTTOM_PLANE && end_pos.y < CLOUDY_FOG_BOTTOM_PLANE
+  ) {
+    return Volume(transmittance, scattering);
+  }
+
   vec2 jitter = blue_noise(floor(gl_FragCoord.xy), ap.time.frames).xy;
 
   vec3 ray_dir = normalize(end_pos - start_pos);
 
   float cos_theta = dot(ray_dir, world_light_dir);
-  float phase = rayleigh_phase(-cos_theta);
+  float phase = hg_draine_phase(cos_theta, 8);
 
   vec3 skylight_color =
     texture(
@@ -118,7 +125,7 @@ Volume cloudy_fog(vec3 start_pos, vec3 end_pos) {
     a = ap.camera.pos;
   }
 
-  if (!ray_plane_intersection(start_pos, ray_dir, CLOUDY_FOG_BOTTOM_PLANE, b)) {
+  if (!ray_plane_intersection(start_pos, ray_dir, CLOUDY_FOG_TOP_PLANE, b)) {
     b = ap.camera.pos;
   }
 
@@ -136,8 +143,8 @@ Volume cloudy_fog(vec3 start_pos, vec3 end_pos) {
     float progress = float(i + jitter) / float(CLOUDY_FOG_STEPS);
 
     vec3 ray_pos = mix(
-      start_pos,
-      end_pos,
+      a,
+      b,
       start_pos == ap.camera.pos
         ? exp(10.0 * (progress - 1.0))
         : progress
@@ -160,7 +167,10 @@ Volume cloudy_fog(vec3 start_pos, vec3 end_pos) {
     ).r;
 
     vec3 radiance =
-      sunlight_color * get_light_from_sun(ray_pos, jitter.y, phase) * shadow +
+      sunlight_color *
+        get_light_from_sun(ray_pos, jitter.y, phase) *
+        shadow *
+        phase +
       skylight_color * isotropic_phase;
 
     scattering +=

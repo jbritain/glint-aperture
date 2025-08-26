@@ -20,7 +20,8 @@ vec4 ssr_sample(
   float jitter,
   sampler2D depth_sampler,
   sampler2D color_sampler,
-  bool reproject
+  bool reproject,
+  int lod
 ) {
   vec3 ray_dir = reflect(view_dir, normal);
 
@@ -28,7 +29,15 @@ vec4 ssr_sample(
 
   vec3 screen_ray_pos;
   if (
-    ray_intersects(view_pos, ray_dir, 32, jitter, screen_ray_pos, depth_sampler)
+    ray_intersects(
+      view_pos,
+      ray_dir,
+      32,
+      jitter,
+      screen_ray_pos,
+      depth_sampler,
+      lod
+    )
   ) {
     vec3 previous_pos;
     if (reproject) {
@@ -96,7 +105,8 @@ vec4 compute_rough_reflections(
       noise.z,
       depth_sampler,
       color_sampler,
-      reproject
+      reproject,
+      0
     );
   }
   return average_ssr / float(ROUGH_REFLECTION_SAMPLES);
@@ -124,7 +134,8 @@ vec4 compute_screen_space_reflections(
       blue_noise(floor(gl_FragCoord.xy), ap.time.frames).r,
       depth_sampler,
       color_sampler,
-      reproject
+      reproject,
+      0
     );
   } else if (roughness < 0.5) {
     return compute_rough_reflections(

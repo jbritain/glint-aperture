@@ -148,6 +148,8 @@ void main() {
       dot(-world_sun_dir, normalize(end_pos));
   }
 
+  luminance *= 2.0; // TODO: make multiple scattering work
+
   imageStore(sky_view_lut, texel_coord, vec4(luminance, 1.0));
 
   if (gl_GlobalInvocationID == ivec3(0)) {

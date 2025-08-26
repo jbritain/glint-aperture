@@ -15,4 +15,7 @@ void main() {
   if (isnan(color.a) || isinf(color.a) || color.a < 0.0) {
     color.a = 0.0;
   }
+
+  color.a *= saturate(1.0 - distance(uv, vec2(0.5)) * 2.0) * 4.0;
+  show((1.0 - distance(uv, vec2(0.5)) * 2.0) * 2.0);
 }
