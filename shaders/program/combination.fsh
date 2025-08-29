@@ -24,7 +24,7 @@ void main() {
   color = mix(color, bloom, 0.01);
   color = tonemap(color);
 
-  // light list occupancy visualiser
+  // // light list occupancy visualiser
   // if (
   //   int(gl_FragCoord.y * MAX_LIGHTS_PER_BIN / ap.game.screenSize.y) <
   //   light_lists[int(

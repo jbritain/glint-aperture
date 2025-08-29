@@ -14,11 +14,11 @@ bool collect_lights(uint sample_bin_index, uint target_bin_index, uvec3 target_b
     // check if the light in question can actually populate this bin
     ap_PointLight light = iris_getPointLight(light_lists[sample_bin_index].light_indeces[i]);
 
-    vec3 min_corner = target_bin_pos * LIGHT_LIST_BIN_SIZE - LIGHT_LIST_VOLUME_SIZE / 2.0 - fract(ap.camera.pos);
-    vec3 max_corner = min_corner + vec3(LIGHT_LIST_BIN_SIZE);
+    // vec3 min_corner = target_bin_pos * LIGHT_LIST_BIN_SIZE - LIGHT_LIST_VOLUME_SIZE / 2.0 - fract(ap.camera.pos);
+    // vec3 max_corner = min_corner + vec3(LIGHT_LIST_BIN_SIZE);
 
-    float min_distance = min(min_vec3(abs(min_corner - light.pos)), min_vec3(abs(max_corner - light.pos)));
-    if(min_distance > LIGHT_RADIUS) continue;
+    // float min_distance = min(min_vec3(abs(min_corner - light.pos)), min_vec3(abs(max_corner - light.pos)));
+    // if(min_distance > LIGHT_RADIUS) continue;
 
     write_to_light_list_unsafe(target_bin_index, light_lists[sample_bin_index].light_indeces[i]);
   }

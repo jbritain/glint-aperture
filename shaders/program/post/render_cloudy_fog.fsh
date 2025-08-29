@@ -30,7 +30,11 @@ void main() {
     vec3 view_pos = screen_space_to_view_space(vec3(uv, depth));
     vec3 player_pos = (ap.camera.viewInv * vec4(view_pos, 1.0)).xyz;
 
-    Volume cloudy_fog = cloudy_fog(ap.camera.pos, player_pos + ap.camera.pos);
+    Volume cloudy_fog = cloudy_fog(
+      ap.camera.pos,
+      player_pos + ap.camera.pos,
+      depth == 1.0
+    );
 
     fog.rgb = cloudy_fog.scattering;
     fog.a = sum3(cloudy_fog.transmittance) / 3.0;

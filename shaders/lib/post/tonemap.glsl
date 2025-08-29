@@ -155,6 +155,6 @@ vec3 lottes_tonemap(vec3 x) {
   return pow(pow(x, a) / (pow(x, a * d) * b + c), vec3(rcp(2.2)));
 }
 
-#define tonemap aces_tonemap // [lottes_tonemap agx_tonemap jodie_reinhard_tonemap uncharted2_filmic_tonemap hejl_burgess_tonemap aces_tonemap]
+#define tonemap agx_tonemap // [lottes_tonemap agx_tonemap jodie_reinhard_tonemap uncharted2_filmic_tonemap hejl_burgess_tonemap aces_tonemap]
 
 #endif // TONEMAP_GLSL

@@ -60,10 +60,17 @@ vec4 ssr_sample(
     );
   }
 
-  return vec4(
-    get_sky(normalize(mat3(ap.camera.viewInv) * ray_dir), false) * sky_factor,
-    NoV
-  );
+  vec3 world_dir = normalize(mat3(ap.camera.viewInv) * ray_dir);
+  vec3 sky = get_sky(world_dir, false);
+  if (world_dir.y > 0.0) {
+    vec4 clouds = texture(
+      cloud_spheremap_tex,
+      cartesian_to_hemispherical(world_dir) / TAU
+    );
+    sky = fma(sky, vec3(clouds.a), clouds.rgb);
+  }
+
+  return vec4(sky * sky_factor, NoV);
 }
 
 vec4 compute_rough_reflections(

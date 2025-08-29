@@ -15,12 +15,12 @@ void main() {
   const float night_average_luminance = pow(33.0/255.0, 2.2);
   const float underground_average_luminance = 1.0;
 
-  float target_average_luminance = mix(night_average_luminance, day_average_luminance, smoothstep(-0.1, 0.1, world_light_dir.y));
-  // target_average_luminance = mix(underground_average_luminance, target_average_luminance, ap.camera.brightness.y / 240.0);
+  float target_average_luminance = mix(night_average_luminance, day_average_luminance, smoothstep(-0.1, 0.0, world_light_dir.y));
+  target_average_luminance = mix(underground_average_luminance, target_average_luminance, ap.camera.brightness.y);
 
   float exposure = target_average_luminance / average_luminance;
 
-  exposure = clamp(exposure, 1e-3, 20);
+  exposure = clamp(exposure, 1e-3, 0.5);
 
   auto_exposure = mix(auto_exposure, exposure, saturate(exp2(-100.0 * ap.time.delta)));
 }

@@ -58,13 +58,6 @@ Volume water_fog(vec3 start_pos, vec3 end_pos) {
   float phase = rayleigh_phase(-dot(normalize(ray_step), world_light_dir));
   phase = multiple_scattering_water(phase, step_length);
 
-  vec3 skylight_color =
-    texture(
-      sky_irradiance_lut_tex,
-      cartesian_to_spherical(vec3(0.0, 1.0, 0.0)) / TAU
-    ).rgb *
-    isotropic_phase;
-
   for (int i = 0; i < WATER_FOG_STEPS; i++, ray_pos += ray_step) {
     int cascade;
     vec3 shadow_sample_pos = get_shadow_screen_pos(ray_pos, cascade);

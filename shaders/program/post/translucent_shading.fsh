@@ -1,5 +1,7 @@
 #version 460 core
 
+uniform sampler2D cloud_spheremap_tex;
+
 #include "/lib/common.glsl"
 #include "/lib/structs/gbuffer_material.glsl"
 #include "/lib/buffers/scene_data.glsl"

@@ -18,7 +18,16 @@ vec2 cartesian_to_spherical(vec3 dir) {
   coord.x = atan(dir.x, dir.z);
   coord.y = acos(dir.y);
 
-  return coord;
+  return mod(coord, TAU);
+}
+
+// TODO: fix these
+vec3 hemispherical_to_cartesian(vec2 coord) {
+  return spherical_to_cartesian(coord);
+}
+
+vec2 cartesian_to_hemispherical(vec3 dir) {
+  return cartesian_to_spherical(dir);
 }
 
 // https://backend.orbit.dtu.dk/ws/portalfiles/portal/126824972/onb_frisvad_jgt2012_v2.pdf

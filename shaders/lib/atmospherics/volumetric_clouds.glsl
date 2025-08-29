@@ -15,18 +15,14 @@ uniform sampler2D cloud_weather_tex;
 
 #define CLOUD_BASE_HEIGHT 400
 #define CLOUD_TOP_HEIGHT 1000
-#define CLOUD_STEPS 16
+#define CLOUD_STEPS 32
 #define CLOUD_SUB_STEPS 8
 
 #define CLOUD_EXTINCTION 0.05
-#define CLOUD_DENSITY 2.0
+#define CLOUD_DENSITY 1.0
 
 float beers_powder(float extinction) {
-  return mix(
-    1.0 - exp(-2.0 * extinction),
-    exp(-extinction),
-    smoothstep(0.4, 0.6, extinction)
-  );
+  return 2.0 * exp(-2.0 * extinction) * exp(-extinction);
 }
 
 // https://x.com/FewesW/status/1364629939568451587/photo/1
@@ -70,14 +66,20 @@ vec3 map_spherical(vec3 world_pos, float radius) {
   return curved_pos;
 }
 
-float get_cloud_density(vec3 pos, bool high_quality) {
-  float height_fraction = saturate(
-    linearstep(CLOUD_BASE_HEIGHT, CLOUD_TOP_HEIGHT, pos.y)
+float get_cloud_density(
+  vec3 pos,
+  bool high_quality,
+  out float coverage,
+  out float height_fraction
+) {
+  vec3 sample_pos = pos; // floor(pos / 64.0) * 64.0;
+  height_fraction = saturate(
+    linearstep(CLOUD_BASE_HEIGHT, CLOUD_TOP_HEIGHT, sample_pos.y)
   );
 
   vec4 low_frequency_noise = texture(
     cloud_shape_tex,
-    fract((pos + vec3(0.0, 0.0, world_time_counter) * 10.0) / 2000.0)
+    fract((sample_pos + vec3(0.0, 0.0, world_time_counter) * 10.0) / 2000.0)
   );
 
   float low_frequency_fbm = saturate(
@@ -89,12 +91,20 @@ float get_cloud_density(vec3 pos, bool high_quality) {
   float density = low_frequency_noise.r;
   density = saturate(remap(density, low_frequency_fbm * 0.7, 1.0, 0.0, 1.0));
 
-  float coverage = max0(
+  // sample_pos = floor(pos / 128.0) * 128.0;
+
+  coverage = max0(
     texture(
       cloud_weather_tex,
-      fract((pos.xz + vec2(0.0, world_time_counter) * 10.0) / 50000.0)
+      fract((sample_pos.xz + vec2(0.0, world_time_counter) * 10.0) / 50000.0)
     ).r
   );
+
+  // coverage = mix(
+  //   coverage,
+  //   1.0,
+  //   saturate(distance(pos.xz, ap.camera.pos.xz) / 20000.0)
+  // );
 
   if (height_fraction <= 0.15) {
     density *= linearstep(0.0, 0.15, height_fraction);
@@ -113,9 +123,11 @@ float get_cloud_density(vec3 pos, bool high_quality) {
     return 0.0;
   }
 
+  // sample_pos = floor(pos / 32.0) * 32.0;
+
   vec3 high_frequency_noise = texture(
     cloud_detail_tex,
-    fract((pos + vec3(0.0, 0.0, world_time_counter) * 20.0) / 100.0)
+    fract((sample_pos + vec3(0.0, 0.0, world_time_counter) * 20.0) / 100.0)
   ).rgb;
   float high_frequency_fbm =
     high_frequency_noise.r * 0.625 +
@@ -155,17 +167,25 @@ float get_light_from_sun(vec3 ray_pos, vec2 jitter, float phase) {
     float progress = float(i + jitter.y) / float(CLOUD_SUB_STEPS);
     vec3 sample_pos = mix(a, b, exp(10.0 * (progress - 1.0)));
 
+    float temp1;
+    float temp2;
+
     density +=
-      get_cloud_density(sample_pos, false) *
+      get_cloud_density(sample_pos, false, temp1, temp2) *
       distance(previous_sample_pos, sample_pos);
 
     previous_sample_pos = sample_pos;
   }
 
+  // return beers_powder(density * CLOUD_EXTINCTION) * phase;
   return multiple_scattering_clouds(density, phase);
 }
 
-vec4 get_clouds(vec3 origin, vec3 ray_dir) {
+// the origin is in world space
+// TODO: not that?
+vec4 get_clouds(vec3 origin, vec3 player_pos, bool sky, bool high_quality) {
+  vec3 ray_dir = normalize(player_pos);
+
   vec3 a;
   vec3 b;
   if (!ray_plane_intersection(origin, ray_dir, CLOUD_BASE_HEIGHT, a)) {
@@ -182,30 +202,66 @@ vec4 get_clouds(vec3 origin, vec3 ray_dir) {
     b = c;
   }
 
+  vec3 world_pos = player_pos + ap.camera.pos;
+
+  if (!sky) {
+    if (world_pos.y > CLOUD_BASE_HEIGHT && world_pos.y < CLOUD_TOP_HEIGHT) {
+      b = world_pos;
+    } else if (
+      world_pos.y > CLOUD_TOP_HEIGHT && ap.camera.pos.y > CLOUD_TOP_HEIGHT ||
+      world_pos.y < CLOUD_BASE_HEIGHT && ap.camera.pos.y < CLOUD_BASE_HEIGHT
+    ) {
+      return vec4(0.0, 0.0, 0.0, 1.0);
+    }
+  }
+
   vec3 ray_step = (b - a) / CLOUD_STEPS;
   float step_length = length(ray_step);
   vec3 ray_pos = a;
-  vec2 jitter = blue_noise(floor(gl_FragCoord.xy), ap.time.frames).xy;
+  vec2 jitter = blue_noise(
+    floor(gl_FragCoord.xy),
+    high_quality
+      ? ap.time.frames
+      : 0
+  ).xy;
   ray_pos += ray_step * jitter.x;
   float cos_theta = dot(ray_dir, world_light_dir);
 
   float transmittance = 1.0;
   vec3 scatter = vec3(0.0);
 
-  vec3 skylight_color =
-    texture(sky_irradiance_lut_tex, cartesian_to_spherical(ray_dir) / TAU).rgb *
-    isotropic_phase;
+  // float phase = dual_lobe_hg_phase(cos_theta, 0.8, -0.5, 0.5);
+  float phase = mix(
+    hg_draine_phase(cos_theta, 11),
+    henyey_greenstein_phase(cos_theta, 0.2),
+    1.0 - saturate(cos_theta)
+  );
 
-  float phase = dual_lobe_hg_phase(cos_theta, 0.8, -0.5, 0.1);
-  // float phase = hg_draine_phase(cos_theta, 10);
-
-  for (int i = 0; i < CLOUD_STEPS; i++, ray_pos += ray_step) {
-    float density = get_cloud_density(ray_pos, true);
+  for (
+    int i = 0;
+    i <
+    (high_quality
+      ? int(mix(CLOUD_STEPS, CLOUD_STEPS * 2, 1.0 - abs(ray_dir.y)))
+      : CLOUD_STEPS / 2);
+    i++, ray_pos += ray_step
+  ) {
+    float height_fraction;
+    float coverage;
+    float density = get_cloud_density(
+      ray_pos,
+      high_quality,
+      coverage,
+      height_fraction
+    );
 
     float sample_transmittance = exp(-density * step_length * CLOUD_EXTINCTION);
 
     vec3 radiance = sunlight_color * get_light_from_sun(ray_pos, jitter, phase);
-    radiance += skylight_color * CLOUD_EXTINCTION * 10.0;
+    radiance +=
+      skylight_color *
+      isotropic_phase *
+      sqrt(1.0 - height_fraction * coverage) *
+      (CLOUD_EXTINCTION * 10.0); // I hate this
 
     scatter +=
       transmittance *

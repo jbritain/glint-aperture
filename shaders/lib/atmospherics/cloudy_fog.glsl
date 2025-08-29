@@ -14,10 +14,10 @@
 
 #define CLOUDY_FOG_BOTTOM_PLANE -63
 #define CLOUDY_FOG_CENTRE_PLANE 0
-#define CLOUDY_FOG_TOP_PLANE 150
+#define CLOUDY_FOG_TOP_PLANE mix(150, 1000, ap.world.rain)
 
 #define CLOUDY_FOG_EXTINCTION 0.1
-#define CLOUDY_FOG_DENSITY 0.2
+#define CLOUDY_FOG_DENSITY 1.0
 
 float get_cloudy_fog_density(vec3 pos) {
   float density =
@@ -36,7 +36,11 @@ float get_cloudy_fog_density(vec3 pos) {
     ).r
   );
 
-  density *= saturate(pow3(1.0 - abs(world_light_dir.y)) + ap.world.rain);
+  density *= mix(
+    saturate(pow3(1.0 - abs(world_light_dir.y))),
+    0.2,
+    ap.world.rain
+  );
 
   return density * CLOUDY_FOG_DENSITY;
 }
@@ -94,7 +98,7 @@ float get_light_from_sun(vec3 ray_pos, float jitter, float phase) {
   // return multiple_scattering_cloudy_fog(density, phase);
 }
 
-Volume cloudy_fog(vec3 start_pos, vec3 end_pos) {
+Volume cloudy_fog(vec3 start_pos, vec3 end_pos, bool sky) {
   vec3 transmittance = vec3(1.0);
   vec3 scattering = vec3(0.0);
 
@@ -110,14 +114,11 @@ Volume cloudy_fog(vec3 start_pos, vec3 end_pos) {
   vec3 ray_dir = normalize(end_pos - start_pos);
 
   float cos_theta = dot(ray_dir, world_light_dir);
-  float phase = hg_draine_phase(cos_theta, 8);
-
-  vec3 skylight_color =
-    texture(
-      sky_irradiance_lut_tex,
-      cartesian_to_spherical(vec3(0.0, 1.0, 0.0)) / TAU
-    ).rgb *
-    isotropic_phase;
+  float phase = mix(
+    hg_draine_phase(cos_theta, 8),
+    henyey_greenstein_phase(cos_theta, 0.2),
+    1.0 - saturate(cos_theta)
+  );
 
   vec3 a;
   vec3 b;
@@ -133,7 +134,11 @@ Volume cloudy_fog(vec3 start_pos, vec3 end_pos) {
     swap(a, b);
   }
 
-  if (end_pos.y > CLOUDY_FOG_BOTTOM_PLANE && end_pos.y < CLOUDY_FOG_TOP_PLANE) {
+  if (
+    end_pos.y > CLOUDY_FOG_BOTTOM_PLANE &&
+    end_pos.y < CLOUDY_FOG_TOP_PLANE &&
+    !sky
+  ) {
     b = end_pos;
   }
 
@@ -171,7 +176,7 @@ Volume cloudy_fog(vec3 start_pos, vec3 end_pos) {
         get_light_from_sun(ray_pos, jitter.y, phase) *
         shadow *
         phase +
-      skylight_color * isotropic_phase;
+      skylight_color * isotropic_phase * ap.camera.brightness.y;
 
     scattering +=
       transmittance *

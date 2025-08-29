@@ -38,7 +38,10 @@ void main() {
     texture(gbuffer_tex_2, uv)
   );
 
-  vec3 light = sample_all_point_lights(player_pos, material);
+  vec3 light = sample_all_point_lights(
+    player_pos + material.geometry_normal * 1e-3,
+    material
+  );
   color += light;
   diffuse += light;
 

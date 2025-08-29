@@ -43,19 +43,19 @@ bool ray_intersects(
 
   ray_pos = view_space_to_screen_space(view_origin);
 
-  vec3 ray_dir;
-  ray_dir = view_space_to_screen_space(view_origin + view_dir);
+  vec3 ray_dir = normalize(
+    view_space_to_screen_space(view_origin + view_dir) - ray_pos
+  );
 
-  ray_dir -= ray_pos;
-  ray_dir = normalize(ray_dir);
-
-  vec2 temp =
-    abs(sign(ray_dir.xy) - ray_pos.xy) / max(abs(ray_dir.xy), 0.00001);
-  float ray_length = min_vec2(temp);
+  float ray_length = min_vec2(
+    abs(sign(ray_dir.xy) - ray_pos.xy) / max(abs(ray_dir.xy), 1e-6)
+  );
   float step_length = ray_length * rcp(float(max_steps));
 
+  vec2 sampler_res = textureSize(depth_sampler, 0).xy;
+
   vec3 ray_step = ray_dir * step_length;
-  ray_pos += ray_step * (jitter + 0.1);
+  ray_pos += ray_step * jitter + ray_dir * vec3(rcp(sampler_res), 0.0);
 
   float depth_lenience = max(abs(ray_step.z) * 3.0, 0.02 / pow2(view_origin.z));
 

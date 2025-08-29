@@ -17,9 +17,15 @@ vec3 sample_point_light(
 ) {
   ap_PointLight light = iris_getPointLight(index);
 
+    float sample_distance = distance(player_pos, light.pos);
+
+  if(sample_distance > LIGHT_RADIUS){
+    return vec3(0.0);
+  }
+
   vec3 sample_dir = normalize(light.pos - player_pos);
 
-  float sample_distance = distance(player_pos, light.pos);
+
 
   // sample_dir = generate_cone_vector(
   //   sample_dir,
@@ -63,6 +69,8 @@ vec3 sample_point_light(
       fresnel
     ) *
     shadow * rcp(sample_distance);
+
+  lighting *= 1.0 - smoothstep(0.8, 1.0, sample_distance / LIGHT_RADIUS);
 
   return lighting;
 }

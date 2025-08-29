@@ -3,6 +3,7 @@
 #include "/lib/common.glsl"
 #include "/lib/structs/gbuffer_material.glsl"
 #include "/lib/misc/parallax.glsl"
+#include "/lib/util/dither.glsl"
 
 layout(location = 0) out vec4 gbuffer_1;
 layout(location = 1) out vec4 gbuffer_2;
@@ -58,6 +59,20 @@ void iris_emitFragment() {
 
   gbuffer.material_mask = build_material_mask(block_id);
   gbuffer.material_mask.is_fluid = false;
+
+  gbuffer.material_mask.parallax_shadow =
+    step(
+      0.01,
+      parallax_shadow(
+        parallax_pos,
+        view_pos,
+        tbn_matrix,
+        dx,
+        dy,
+        interleaved_gradient_noise(floor(gl_FragCoord.xy), ap.time.frames)
+      )
+    ) ==
+    1.0;
 
   gbuffer.lightmap = lightmap;
 

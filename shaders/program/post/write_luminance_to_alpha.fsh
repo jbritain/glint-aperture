@@ -17,5 +17,5 @@ void main() {
   }
 
   color.a *= saturate(1.0 - distance(uv, vec2(0.5)) * 2.0) * 4.0;
-  show((1.0 - distance(uv, vec2(0.5)) * 2.0) * 2.0);
+
 }

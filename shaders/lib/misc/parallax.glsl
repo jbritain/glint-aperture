@@ -5,10 +5,11 @@
 #define PARALLAX_DISTANCE_CURVE 0.8
 #define PARALLAX_HEIGHT 0.25
 #define PARALLAX_SAMPLES 32
+#define PARALLAX_SHADOW_SAMPLES 16
 
 float get_depth(vec2 uv, vec2 dx, vec2 dy) {
-  // return 1.0 - iris_sampleNormalMapGrad(uv, dx, dy).a;
-  return 1.0 - iris_sampleNormalMap(uv).a;
+  return 1.0 - iris_sampleNormalMapGrad(uv, dx, dy).a;
+  // return 1.0 - iris_sampleNormalMap(uv).a;
 }
 
 vec2 local_to_atlas(vec2 uv, vec4 texture_bounds, vec2 single_tex_size) {
@@ -108,7 +109,53 @@ vec2 apply_parallax(
     }
   }
 
-  return local_to_atlas(previous_pos.xy, texture_bounds, single_tex_size);
+  return local_to_atlas(
+    previous_pos.xy + ray_step.xy,
+    texture_bounds,
+    single_tex_size
+  );
+}
+
+float parallax_shadow(
+  vec3 pos,
+  vec3 view_pos,
+  mat3 tbn_matrix,
+  vec2 dx,
+  vec2 dy,
+  float jitter
+) {
+  float dist_fade = smoothstep(
+    PARALLAX_DISTANCE_CURVE * PARALLAX_DISTANCE,
+    PARALLAX_DISTANCE,
+    length(view_pos)
+  );
+  if (dist_fade >= 1.0) {
+    return 1.0;
+  }
+
+  float NoL = saturate(dot(tbn_matrix[2], light_dir));
+  if (NoL <= 0.0) {
+    return dist_fade;
+  }
+
+  vec3 tangent_light_dir = normalize(light_dir * tbn_matrix);
+
+  vec3 ray_step =
+    vec3(light_dir.xy * 0.25 / tangent_light_dir.z, -1.0) *
+    pos.z *
+    (1.0 / PARALLAX_SHADOW_SAMPLES);
+
+  pos += ray_step;
+
+  if (get_depth(pos.xy, dx, dy) < pos.z) return dist_fade;
+
+  pos += ray_step * jitter;
+
+  for (int i = 0; i < PARALLAX_SHADOW_SAMPLES; i++, pos += ray_step) {
+    if (get_depth(pos.xy, dx, dy) < pos.z) return dist_fade;
+  }
+
+  return 1.0;
 }
 
 #endif

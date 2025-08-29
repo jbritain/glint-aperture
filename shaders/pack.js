@@ -391,7 +391,7 @@ function setLightColors() {
 
 // pack.ts
 var maxPointLights = 64;
-var lightRadius = 16;
+var lightRadius = 32;
 var cascades = 4;
 var shadowRes = 1592;
 var cloudTexRead;
@@ -464,7 +464,7 @@ function configurePipeline(pipeline) {
   const preRender = pipeline.forStage(Stage.PRE_RENDER);
   const preTranslucent = pipeline.forStage(Stage.PRE_TRANSLUCENT);
   const postRender = pipeline.forStage(Stage.POST_RENDER);
-  const sceneData = pipeline.createBuffer(16, true);
+  const sceneData = pipeline.createBuffer(32, false);
   const blueNoiseTex = pipeline.importPNGTexture(
     "blue_noise_tex",
     "textures/blue_noise.png",
@@ -481,15 +481,12 @@ function configurePipeline(pipeline) {
   ).format(Format.RGBA16F).width(32).height(32).clear(false).build();
   const skyViewLUT = pipeline.createImageTexture("sky_view_lut_tex", "sky_view_lut").format(Format.RGBA16F).width(200).height(200).clear(true).mipmap(false).build();
   defineGlobally("SKY_VIEW_RES", "ivec2(200, 200)");
-  const skyIrradianceLUT = pipeline.createImageTexture("sky_irradiance_lut_tex", "sky_irradiance_lut").format(Format.RGBA16F).width(32).height(32).clear(false).build();
   const atmosphericFogLUT = pipeline.createImageTexture("atmospheric_fog_lut_tex", "atmospheric_fog_lut").format(Format.RGBA16F).width(32).height(32).depth(64).clear(false).build();
   screenSetup.createCompute("generate_sun_transmittance_lut").location("program/atmosphere/generate_sun_transmittance_lut.csh").workGroups(32, 8, 1).compile();
   screenSetup.barrier(IMAGE_BIT);
   screenSetup.createCompute("generate_multiple_scattering_lut").location("program/atmosphere/generate_multiple_scattering_lut.csh").workGroups(4, 4, 1).compile();
   preRender.barrier(IMAGE_BIT);
   preRender.createCompute("generate_sky_view_lut").location("program/atmosphere/generate_sky_view_lut.csh").workGroups(25, 25, 1).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
-  preRender.barrier(IMAGE_BIT);
-  preRender.createCompute("generate_sky_irradiance_lut").location("program/render_setup/generate_sky_irradiance_lut.csh").workGroups(4, 4, 1).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
   preRender.barrier(IMAGE_BIT);
   preRender.createCompute("generate_atmospheric_fog_lut").location("program/atmosphere/generate_atmospheric_fog_lut.csh").workGroups(4, 4, 8).compile();
   preRender.barrier(IMAGE_BIT);
@@ -499,6 +496,12 @@ function configurePipeline(pipeline) {
   screenSetup.createCompute("generate_cloud_detail").location("program/render_setup/generate_cloud_detail.csh").workGroups(8, 8, 8).compile();
   const cloudWeatherTex = pipeline.createImageTexture("cloud_weather_tex", "cloud_weather").format(Format.RGBA16).width(512).height(512).clear(false).build();
   preRender.createCompute("generate_cloud_weather").location("program/render_setup/generate_cloud_weather.csh").workGroups(64, 64, 1).compile();
+  preRender.barrier(IMAGE_BIT);
+  const cloudSpheremapLUTTex = pipeline.createImageTexture("cloud_spheremap_tex", "cloud_spheremap").format(Format.RGBA16F).width(256).height(256).clear(false).build();
+  preRender.createCompute("generate_cloud_spheremap").location("program/render_setup/generate_cloud_spheremap.csh").workGroups(32, 32, 1).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
+  preRender.barrier(IMAGE_BIT);
+  const skyIrradianceLUT = pipeline.createImageTexture("sky_irradiance_lut_tex", "sky_irradiance_lut").format(Format.RGBA16F).width(32).height(32).clear(false).build();
+  preRender.createCompute("generate_sky_irradiance_lut").location("program/render_setup/generate_sky_irradiance_lut.csh").workGroups(4, 4, 1).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
   preRender.createCompute("clearLightLists").location("program/render_setup/clear_light_lists.csh").workGroups(Math.ceil(lightListBinCount / 64), 1, 1).ssbo(0, lightLists).define("LIGHT_LIST_BINDING", "0").compile();
   preRender.barrier(SSBO_BIT);
   preRender.createCompute("generateLightLists").location("program/render_setup/generate_light_lists.csh").workGroups(Math.ceil(maxPointLights / 64), 1, 1).ssbo(0, lightLists).define("LIGHT_LIST_BINDING", "0").compile();
@@ -517,29 +520,10 @@ function configurePipeline(pipeline) {
   const translucentTex = pipeline.createTexture("translucent_tex").format(Format.RGBA16F).clear(true).clearColor(0, 0, 0, 0).build();
   const shadowTex = pipeline.createTexture("shadow_tex").format(Format.RGBA8).clear(true).build();
   pipeline.createObjectShader("water", Usage.TERRAIN_TRANSLUCENT).vertex("program/geometry/translucent.vsh").fragment("program/geometry/translucent.fsh").target(0, translucentTex).target(1, gbufferTex1).target(2, gbufferTex2).target(3, shadowTex).blendOff(1).blendOff(2).blendOff(3).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
+  const cloudShadowTex = pipeline.createArrayTexture("cloud_shadow_tex").format(Format.R16F).width(2048).height(2048).slices(cascades).build();
   preTranslucent.createComposite("opaque_shadowing").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_shadowing.fsh").target(0, shadowTex).compile();
   const sceneTex = new FlippableTexture("scene_tex").format(Format.RGBA16F).clear(false).mipmap(true).build(pipeline);
   preTranslucent.createComposite("sky").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/render_sky.fsh").target(0, sceneTex.target).compile();
-  cloudTexA = pipeline.createTexture("cloud_tex_a").format(Format.RGBA16F).width(Math.floor(screenWidth * 0.5)).height(Math.floor(screenHeight * 0.5)).clear(false).build();
-  cloudTexB = pipeline.createTexture("cloud_tex_b").format(Format.RGBA16F).width(Math.floor(screenWidth * 0.5)).height(Math.floor(screenHeight * 0.5)).clear(false).build();
-  cloudTexWrite = pipeline.createTextureReference(
-    "cloud_tex_w",
-    null,
-    Math.floor(screenWidth * 0.5),
-    Math.floor(screenHeight * 0.5),
-    1,
-    Format.RGBA16F
-  );
-  cloudTexRead = pipeline.createTextureReference(
-    "cloud_tex",
-    null,
-    Math.floor(screenWidth * 0.5),
-    Math.floor(screenHeight * 0.5),
-    1,
-    Format.RGBA16F
-  );
-  preTranslucent.createComposite("render_clouds").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/render_clouds.fsh").target(0, cloudTexWrite).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
-  preTranslucent.createComposite("blend_clouds").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/blend_clouds.fsh").target(0, sceneTex.target).compile();
   const diffuseTex = pipeline.createTexture("diffuse_tex").format(Format.R11F_G11F_B10F).clear(false).build();
   ssrTexA = pipeline.createTexture("ssr_tex_a").format(Format.RGBA16F).clear(false).build();
   ssrTexB = pipeline.createTexture("ssr_tex_b").format(Format.RGBA16F).clear(false).build();
@@ -562,6 +546,26 @@ function configurePipeline(pipeline) {
   preTranslucent.createComposite("opaque_ssr").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_ssr.fsh").target(0, ssrTexWrite).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
   preTranslucent.createComposite("opaque_shading").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_shading.fsh").target(0, sceneTex.target).target(1, diffuseTex).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
   preTranslucent.createComposite("opaque_point_lights").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/opaque_point_lights.fsh").target(0, sceneTex.target).target(1, diffuseTex).ssbo(0, lightLists).define("LIGHT_LIST_BINDING", "0").compile();
+  cloudTexA = pipeline.createTexture("cloud_tex_a").format(Format.RGBA16F).width(Math.floor(screenWidth * 0.5)).height(Math.floor(screenHeight * 0.5)).clear(false).build();
+  cloudTexB = pipeline.createTexture("cloud_tex_b").format(Format.RGBA16F).width(Math.floor(screenWidth * 0.5)).height(Math.floor(screenHeight * 0.5)).clear(false).build();
+  cloudTexWrite = pipeline.createTextureReference(
+    "cloud_tex_w",
+    null,
+    Math.floor(screenWidth * 0.5),
+    Math.floor(screenHeight * 0.5),
+    1,
+    Format.RGBA16F
+  );
+  cloudTexRead = pipeline.createTextureReference(
+    "cloud_tex",
+    null,
+    Math.floor(screenWidth * 0.5),
+    Math.floor(screenHeight * 0.5),
+    1,
+    Format.RGBA16F
+  );
+  preTranslucent.createComposite("render_clouds").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/render_clouds.fsh").target(0, cloudTexWrite).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
+  preTranslucent.createComposite("blend_clouds").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/blend_clouds.fsh").target(0, sceneTex.target).compile();
   postRender.createComposite("water_fog_outside_water").vertex("program/fullscreen_pass.vsh").fragment("program/post/water_fog.fsh").target(0, sceneTex.target).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").define("CONDITION", "is_water && !in_water").define("START_POS", "translucent_player_pos").define("END_POS", "opaque_player_pos").compile();
   sceneTex.flip();
   postRender.createComposite("blend_translucents").vertex("program/fullscreen_pass.vsh").fragment("program/post/translucent_shading.fsh").target(0, sceneTex.target).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();

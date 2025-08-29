@@ -3,7 +3,7 @@ import FlippableTexture from "./tslib/FlippableTexture";
 import { setLightColors } from "./tslib/lightColors";
 
 const maxPointLights = 64;
-const lightRadius = 16;
+const lightRadius = 32;
 const cascades = 4;
 const shadowRes = 1592;
 
@@ -100,7 +100,7 @@ export function configurePipeline(pipeline: PipelineConfig) {
   const preTranslucent = pipeline.forStage(Stage.PRE_TRANSLUCENT);
   const postRender = pipeline.forStage(Stage.POST_RENDER);
 
-  const sceneData = pipeline.createBuffer(16, true);
+  const sceneData = pipeline.createBuffer(32, false);
 
   const blueNoiseTex = pipeline.importPNGTexture(
     "blue_noise_tex",
@@ -163,14 +163,6 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .build();
   defineGlobally("SKY_VIEW_RES", "ivec2(200, 200)"); // + multipleScatteringLUT.width.toString() + "," + multipleScatteringLUT.height.toString() + ")");
 
-  const skyIrradianceLUT = pipeline
-    .createImageTexture("sky_irradiance_lut_tex", "sky_irradiance_lut")
-    .format(Format.RGBA16F)
-    .width(32)
-    .height(32)
-    .clear(false)
-    .build();
-
   const atmosphericFogLUT = pipeline
     .createImageTexture("atmospheric_fog_lut_tex", "atmospheric_fog_lut")
     .format(Format.RGBA16F)
@@ -198,15 +190,6 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .createCompute("generate_sky_view_lut")
     .location("program/atmosphere/generate_sky_view_lut.csh")
     .workGroups(25, 25, 1)
-    .ssbo(0, sceneData)
-    .define("SCENE_DATA_BINDING", "0")
-    .compile();
-
-  preRender.barrier(IMAGE_BIT);
-  preRender
-    .createCompute("generate_sky_irradiance_lut")
-    .location("program/render_setup/generate_sky_irradiance_lut.csh")
-    .workGroups(4, 4, 1)
     .ssbo(0, sceneData)
     .define("SCENE_DATA_BINDING", "0")
     .compile();
@@ -264,6 +247,42 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .createCompute("generate_cloud_weather")
     .location("program/render_setup/generate_cloud_weather.csh")
     .workGroups(64, 64, 1)
+    .compile();
+
+  preRender.barrier(IMAGE_BIT);
+
+  const cloudSpheremapLUTTex = pipeline
+    .createImageTexture("cloud_spheremap_tex", "cloud_spheremap")
+    .format(Format.RGBA16F)
+    .width(256)
+    .height(256)
+    .clear(false)
+    .build();
+
+  preRender
+    .createCompute("generate_cloud_spheremap")
+    .location("program/render_setup/generate_cloud_spheremap.csh")
+    .workGroups(32, 32, 1)
+    .ssbo(0, sceneData)
+    .define("SCENE_DATA_BINDING", "0")
+    .compile();
+
+  preRender.barrier(IMAGE_BIT);
+
+  const skyIrradianceLUT = pipeline
+    .createImageTexture("sky_irradiance_lut_tex", "sky_irradiance_lut")
+    .format(Format.RGBA16F)
+    .width(32)
+    .height(32)
+    .clear(false)
+    .build();
+
+  preRender
+    .createCompute("generate_sky_irradiance_lut")
+    .location("program/render_setup/generate_sky_irradiance_lut.csh")
+    .workGroups(4, 4, 1)
+    .ssbo(0, sceneData)
+    .define("SCENE_DATA_BINDING", "0")
     .compile();
 
   // LIGHT LIST BINS
@@ -372,13 +391,13 @@ export function configurePipeline(pipeline: PipelineConfig) {
   // BEFORE TRANSLUCENTS
   // =======================================================================================
 
-  // const cloudShadowTex = pipeline
-  //   .createArrayTexture("cloud_shadow_tex")
-  //   .format(Format.R16F)
-  //   .width(2048)
-  //   .height(2048)
-  //   .slices(cascades)
-  //   .build();
+  const cloudShadowTex = pipeline
+    .createArrayTexture("cloud_shadow_tex")
+    .format(Format.R16F)
+    .width(2048)
+    .height(2048)
+    .slices(cascades)
+    .build();
 
   // preTranslucent
   //   .createArrayComposite("cloud_shadow_map")
@@ -409,56 +428,6 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .createComposite("sky")
     .vertex("program/fullscreen_pass.vsh")
     .fragment("program/before_translucents/render_sky.fsh")
-    .target(0, sceneTex.target)
-    .compile();
-
-  cloudTexA = pipeline
-    .createTexture("cloud_tex_a")
-    .format(Format.RGBA16F)
-    .width(Math.floor(screenWidth * 0.5))
-    .height(Math.floor(screenHeight * 0.5))
-    .clear(false)
-    .build();
-
-  cloudTexB = pipeline
-    .createTexture("cloud_tex_b")
-    .format(Format.RGBA16F)
-    .width(Math.floor(screenWidth * 0.5))
-    .height(Math.floor(screenHeight * 0.5))
-    .clear(false)
-    .build();
-
-  cloudTexWrite = pipeline.createTextureReference(
-    "cloud_tex_w",
-    null,
-    Math.floor(screenWidth * 0.5),
-    Math.floor(screenHeight * 0.5),
-    1,
-    Format.RGBA16F,
-  );
-
-  cloudTexRead = pipeline.createTextureReference(
-    "cloud_tex",
-    null,
-    Math.floor(screenWidth * 0.5),
-    Math.floor(screenHeight * 0.5),
-    1,
-    Format.RGBA16F,
-  );
-
-  preTranslucent
-    .createComposite("render_clouds")
-    .vertex("program/fullscreen_pass.vsh")
-    .fragment("program/before_translucents/render_clouds.fsh")
-    .target(0, cloudTexWrite)
-    .ssbo(0, sceneData)
-    .define("SCENE_DATA_BINDING", "0")
-    .compile();
-
-  preTranslucent
-    .createComposite("blend_clouds")
-    .vertex("program/fullscreen_pass.vsh")
-    .fragment("program/before_translucents/blend_clouds.fsh")
     .target(0, sceneTex.target)
     .compile();
 
@@ -539,6 +508,56 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .target(1, diffuseTex)
     .ssbo(0, lightLists)
     .define("LIGHT_LIST_BINDING", "0")
+    .compile();
+
+  cloudTexA = pipeline
+    .createTexture("cloud_tex_a")
+    .format(Format.RGBA16F)
+    .width(Math.floor(screenWidth * 0.5))
+    .height(Math.floor(screenHeight * 0.5))
+    .clear(false)
+    .build();
+
+  cloudTexB = pipeline
+    .createTexture("cloud_tex_b")
+    .format(Format.RGBA16F)
+    .width(Math.floor(screenWidth * 0.5))
+    .height(Math.floor(screenHeight * 0.5))
+    .clear(false)
+    .build();
+
+  cloudTexWrite = pipeline.createTextureReference(
+    "cloud_tex_w",
+    null,
+    Math.floor(screenWidth * 0.5),
+    Math.floor(screenHeight * 0.5),
+    1,
+    Format.RGBA16F,
+  );
+
+  cloudTexRead = pipeline.createTextureReference(
+    "cloud_tex",
+    null,
+    Math.floor(screenWidth * 0.5),
+    Math.floor(screenHeight * 0.5),
+    1,
+    Format.RGBA16F,
+  );
+
+  preTranslucent
+    .createComposite("render_clouds")
+    .vertex("program/fullscreen_pass.vsh")
+    .fragment("program/before_translucents/render_clouds.fsh")
+    .target(0, cloudTexWrite)
+    .ssbo(0, sceneData)
+    .define("SCENE_DATA_BINDING", "0")
+    .compile();
+
+  preTranslucent
+    .createComposite("blend_clouds")
+    .vertex("program/fullscreen_pass.vsh")
+    .fragment("program/before_translucents/blend_clouds.fsh")
+    .target(0, sceneTex.target)
     .compile();
 
   // POST RENDER

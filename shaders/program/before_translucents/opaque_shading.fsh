@@ -46,6 +46,8 @@ void main() {
     texture(gbuffer_tex_2, uv)
   );
 
+  // shadow *= float(material.mask.parallax_shadow);
+
   vec3 V = -normalize(view_pos);
   vec3 world_V = mat3(ap.camera.viewInv) * V;
 
