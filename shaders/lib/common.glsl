@@ -25,8 +25,11 @@ void _show(bool x, ivec2 fragCoord){
 
 #define show(x) _show(x, ivec2(gl_FragCoord.xy))
 
+#define GAMMA 2.2
+
 const float PI = radians(180);
 const float TAU = PI * 2.0;
+const float HALF_PI = PI / 2.0;
 
 vec3 sun_dir = normalize(ap.celestial.sunPos);
 vec3 light_dir = normalize(ap.celestial.pos);
@@ -187,6 +190,8 @@ struct Volume {
 float luminance(vec3 color) {
   return dot(color, vec3(0.2126, 0.7152, 0.0722));
 }
+
+#define ROUGH_REFLECTION_THRESHOLD 0.5
 
 
 #endif // COMMON_GLSL

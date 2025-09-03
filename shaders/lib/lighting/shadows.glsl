@@ -11,12 +11,36 @@
 #define BLOCKER_DISTANCE_SAMPLES 4
 
 vec3 sample_shadow_map(vec3 shadow_screen_pos, int cascade) {
-  return vec3(
-    texture(
-      shadowMapFiltered,
-      vec4(shadow_screen_pos.xy, cascade, shadow_screen_pos.z)
-    )
+  float opaque_shadow = texture(
+    shadowMapFiltered,
+    vec4(shadow_screen_pos.xy, cascade, shadow_screen_pos.z)
   );
+
+  if (opaque_shadow < 0.01) {
+    return vec3(opaque_shadow);
+  }
+
+  float translucent_shadow = texture(
+    shadowMapFiltered,
+    vec4(shadow_screen_pos.xy, cascade, shadow_screen_pos.z)
+  );
+
+  if (translucent_shadow > 0.99) {
+    return vec3(translucent_shadow);
+  }
+
+  vec4 shadow_color = texture(
+    shadow_color_tex,
+    vec3(shadow_screen_pos.xy, cascade)
+  );
+  shadow_color.rgb = pow(shadow_color.rgb, vec3(GAMMA));
+
+  return mix(
+    shadow_color.rgb * opaque_shadow * (1.0 - shadow_color.a),
+    vec3(1.0),
+    translucent_shadow
+  );
+
 }
 
 float get_blocker_distance(
@@ -103,6 +127,13 @@ vec4 compute_shadowing_and_blocker_distance(
     saturate(blocker_distance * 4.0) *
     shadow_map_pixel_size.xy;
   shadow.rgb = sample_pcf(shadow_screen_pos, cascade, sample_radius, jitter);
+
+  vec3 cloud_shadow_pos = get_shadow_screen_pos_cascade(
+    player_pos,
+    CASCADES - 1
+  );
+  float cloud_shadow = texture(cloud_shadow_tex, cloud_shadow_pos.xy).r;
+  shadow.rgb *= cloud_shadow;
 
   shadow.a = blocker_distance;
 

@@ -1,6 +1,8 @@
 #ifndef VNDF_GLSL
 #define VNDF_GLSL
 
+#include "/lib/common.glsl"
+
 // by Zombye
 // https://discord.com/channels/237199950235041794/525510804494221312/1118170604160421918
 // https://ggx-research.github.io/publication/2023/06/09/publication-ggx.html
@@ -15,8 +17,7 @@ vec3 sample_vndf_ggx(
   );
 
   // Sample a reflection direction off the hemisphere
-  const float tau = 6.2831853; // 2 * pi
-  float phi = tau * xy.x;
+  float phi = TAU * xy.x;
   float cos_theta = fma(
     1.0 - xy.y,
     1.0 + viewer_direction.z,

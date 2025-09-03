@@ -1,7 +1,11 @@
 #version 460 core
 
 uniform sampler2DArrayShadow shadowMapFiltered;
+uniform sampler2DArrayShadow solidShadowMapFiltered;
+uniform sampler2DArray shadow_color_tex;
 uniform sampler2DArray shadowMap;
+uniform sampler2D cloud_shadow_tex;
+uniform sampler2DArray caustics_tex;
 
 #include "/lib/common.glsl"
 #include "/lib/structs/gbuffer_material.glsl"

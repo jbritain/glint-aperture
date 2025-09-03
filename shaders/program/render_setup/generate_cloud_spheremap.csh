@@ -10,7 +10,7 @@ layout(local_size_x = 8, local_size_y = 8) in;
 // TODO: holy shit definitely not this
 #define gl_FragCoord gl_GlobalInvocationID
 
-#include "/lib/atmospherics/volumetric_clouds.glsl"
+#include "/lib/atmospherics/clouds.glsl"
 
 layout(rgba16f) uniform image2D cloud_spheremap;
 

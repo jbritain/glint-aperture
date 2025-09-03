@@ -92,6 +92,8 @@ void main() {
     rcp(ior)
   );
 
+
+
   vec3 refracted_pos =
     translucent_player_pos +
     refracted * distance(translucent_player_pos, opaque_player_pos);
@@ -122,7 +124,19 @@ void main() {
     false
   );
 
-  vec3 indirect_fresnel = schlick(material, ssr.a);
+  vec3 indirect_fresnel = material.roughness <= ROUGH_REFLECTION_THRESHOLD ? schlick(
+    material,
+    dot(
+      world_V,
+      approximate_rough_normal(
+        world_V,
+        material.texture_normal,
+        material.roughness
+      )
+    )
+  ) : vec3(0.0);
+
+
 
   vec2 irradiance_uv = cartesian_to_spherical(material.texture_normal) / TAU;
   translucents.rgb +=

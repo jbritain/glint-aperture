@@ -40,7 +40,7 @@ void iris_emitFragment() {
 
   vec4 albedo = iris_sampleBaseTex(uv) * color;
   if (iris_discardFragment(albedo)) discard;
-  gbuffer.albedo = pow(albedo.rgb, vec3(2.2));
+  gbuffer.albedo = pow(albedo.rgb, vec3(GAMMA));
 
   gbuffer.geometry_normal = tbn_matrix[2];
 
@@ -74,7 +74,7 @@ void iris_emitFragment() {
     ) ==
     1.0;
 
-  gbuffer.lightmap = lightmap;
+  gbuffer.lightmap = pow2(lightmap);
 
   encode_gbuffer(gbuffer_1, gbuffer_2, gbuffer);
 }

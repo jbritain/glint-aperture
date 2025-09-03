@@ -48,6 +48,10 @@ Volume water_fog(vec3 start_pos, vec3 end_pos) {
   float step_length = length(ray_step);
   vec3 ray_pos = start_pos;
 
+  if (distance(start_pos, end_pos) < 0.01) {
+    return Volume(vec3(1.0), vec3(0.0));
+  }
+
   vec3 transmittance = vec3(1.0);
   vec3 scattering = vec3(0.0);
 

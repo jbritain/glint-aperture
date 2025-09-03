@@ -1,7 +1,10 @@
 #version 460 core
 
 uniform sampler2DArrayShadow shadowMapFiltered;
+uniform sampler2DArrayShadow solidShadowMapFiltered;
+uniform sampler2DArray shadow_color_tex;
 uniform sampler2DArray shadowMap;
+uniform sampler2D cloud_shadow_tex;
 
 uniform sampler2D sky_irradiance_lut_tex;
 
@@ -55,7 +58,7 @@ void iris_emitFragment() {
 
   vec4 albedo = iris_sampleBaseTex(uv) * color;
   if (iris_discardFragment(albedo)) discard;
-  gbuffer.albedo = pow(albedo.rgb, vec3(2.2));
+  gbuffer.albedo = pow(albedo.rgb, vec3(GAMMA));
 
   gbuffer.geometry_normal = tbn_matrix[2];
 

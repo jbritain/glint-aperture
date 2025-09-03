@@ -5,7 +5,7 @@
 
 uniform sampler2DArrayShadow solidShadowMapFiltered;
 uniform sampler2DArrayShadow shadowMapFiltered;
-uniform sampler2D sky_irradiance_lut_tex;
+uniform sampler2D cloud_shadow_tex;
 
 uniform sampler3D cloud_shape_tex;
 uniform sampler2D cloudy_fog_tex;
@@ -56,12 +56,16 @@ void main() {
       (distance(previous_view_pos, actual_previous_view_pos) <= 2.0 ||
         depth == 1.0 && previous_screen_pos.z == 1.0)
     ) {
-      vec4 previous_fog = texture(cloudy_fog_tex, previous_screen_pos.xy);
+      vec4 previous_fog = catmull_texture(
+        cloudy_fog_tex,
+        previous_screen_pos.xy
+      );
 
       fog = mix(
         previous_fog,
         fog,
-        0.05 + 0.15 * step(0.1, distance(ap.camera.pos, ap.temporal.pos))
+        0.05 +
+          0.15 * smoothstep(0.0, 0.1, distance(ap.camera.pos, ap.temporal.pos))
       );
     }
   }

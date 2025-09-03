@@ -46,6 +46,8 @@ void main() {
     texture(gbuffer_tex_2, uv)
   );
 
+  vec4 global_illumination = texture(global_illumination_tex, uv);
+
   // shadow *= float(material.mask.parallax_shadow);
 
   vec3 V = -normalize(view_pos);
@@ -58,7 +60,20 @@ void main() {
 
   vec4 ssr = texture(ssr_tex_w, uv);
 
-  vec3 indirect_fresnel = schlick(material, ssr.a);
+  vec3 indirect_fresnel =
+    material.roughness <= ROUGH_REFLECTION_THRESHOLD
+      ? schlick(
+        material,
+        dot(
+          world_V,
+          approximate_rough_normal(
+            world_V,
+            material.texture_normal,
+            material.roughness
+          )
+        )
+      )
+      : vec3(0.0);
 
   diffuse =
     brdf_diffuse(material, world_light_dir) *
@@ -104,8 +119,5 @@ void main() {
 
   shaded_color +=
     material.emission * material.albedo * EMISSION_STRENGTH * 20.0;
-
-  // *
-  // global_illumination.a;
 
 }

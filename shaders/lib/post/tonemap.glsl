@@ -4,7 +4,7 @@
 vec3 jodie_reinhard_tonemap(vec3 v) {
   float l = dot(v, vec3(0.2126, 0.7152, 0.0722));
   vec3 tv = v / (1.0f + v);
-  return pow(mix(v / (1.0f + l), tv, tv), vec3(rcp(2.2)));
+  return pow(mix(v / (1.0f + l), tv, tv), vec3(rcp(GAMMA)));
 }
 
 vec3 uncharted2_tonemap_partial(vec3 x) {
@@ -23,7 +23,7 @@ vec3 uncharted2_filmic_tonemap(vec3 v) {
 
   vec3 W = vec3(11.2f);
   vec3 white_scale = vec3(1.0f) / uncharted2_tonemap_partial(W);
-  return pow(curr * white_scale, vec3(rcp(2.2)));
+  return pow(curr * white_scale, vec3(rcp(GAMMA)));
 }
 
 vec3 hejl_burgess_tonemap(vec3 v) {
@@ -38,7 +38,10 @@ vec3 aces_tonemap(vec3 v) {
   float c = 2.43;
   float d = 0.59;
   float e = 0.14;
-  return pow(saturate(v * (a * v + b) / (v * (c * v + d) + e)), vec3(rcp(2.2)));
+  return pow(
+    saturate(v * (a * v + b) / (v * (c * v + d) + e)),
+    vec3(rcp(GAMMA))
+  );
 }
 
 // 0: Default, 1: Golden, 2: Punchy
@@ -95,7 +98,7 @@ vec3 agx_eotf(vec3 val) {
   val = agx_mat_inv * val;
 
   // sRGB IEC 61966-2-1 2.2 Exponent Reference EOTF Display
-  //val = pow(val, vec3(2.2));
+  val = pow(val, vec3(GAMMA));
 
   return val;
 }
@@ -152,9 +155,24 @@ vec3 lottes_tonemap(vec3 x) {
       pow(hdr_max, a) * pow(mid_in, a * d) * mid_out) /
     ((pow(hdr_max, a * d) - pow(mid_in, a * d)) * mid_out);
 
-  return pow(pow(x, a) / (pow(x, a * d) * b + c), vec3(rcp(2.2)));
+  return pow(pow(x, a) / (pow(x, a * d) * b + c), vec3(rcp(GAMMA)));
 }
 
-#define tonemap agx_tonemap // [lottes_tonemap agx_tonemap jodie_reinhard_tonemap uncharted2_filmic_tonemap hejl_burgess_tonemap aces_tonemap]
+uniform sampler3D tony_mc_mapface_tex;
+
+// https://github.com/h3r2tic/tony-mc-mapface/
+vec3 tony_mc_mapface(vec3 stimulus) {
+  stimulus *= 3.0;
+
+  // Apply a non-linear transform that the LUT is encoded with.
+  vec3 encoded = stimulus / (stimulus + 1.0);
+
+  // Align the encoded range to texel centers.
+  const float LUT_DIMS = 48.0;
+  vec3 coord = encoded * ((LUT_DIMS - 1.0) / LUT_DIMS) + 0.5 / LUT_DIMS;
+
+  return texture(tony_mc_mapface_tex, coord).rgb;
+}
+#define tonemap tony_mc_mapface
 
 #endif // TONEMAP_GLSL

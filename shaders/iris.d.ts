@@ -29,46 +29,97 @@ declare class RendererConfig {
   render: RenderSettings;
 }
 
+declare enum DrawMode {
+  TRIANGLE,
+  TRIANGLE_FAN,
+  QUAD,
+  POINT,
+}
+
+declare class IndirectDraw implements Command {
+  vertex(loc: string): IndirectDraw;
+  geometry(loc: string): IndirectDraw;
+  control(loc: string): IndirectDraw;
+  eval(loc: string): IndirectDraw;
+  fragment(loc: string): IndirectDraw;
+
+  state(state: StateReference): IndirectDraw;
+
+  target(index: number, tex: BuiltTexture | undefined): IndirectDraw;
+  target(
+    index: number,
+    tex: BuiltTexture | undefined,
+    mip: number,
+  ): IndirectDraw;
+  ssbo(index: number, buf: BuiltBuffer | undefined): IndirectDraw;
+  ubo(index: number, buf: BuiltBuffer | undefined): IndirectDraw;
+  define(key: string, value: string): IndirectDraw;
+  depthTest(enable: boolean): IndirectDraw;
+
+  blendFunc(
+    index: number,
+    srcRGB: BlendModeFunction,
+    dstRGB: BlendModeFunction,
+    srcA: BlendModeFunction,
+    dstA: BlendModeFunction,
+  ): IndirectDraw;
+
+  compile(): PostPass;
+}
+
 declare class PointShadowSettings {
+  /**
+   * The resolution for point-light shadow maps.
+   */
   resolution: number;
-
+  /**
+   * The maximum number of point-light shadows that can exist per-frame.
+   */
   maxCount: number;
-
+  /**
+   * The maximum number of point-light shadow maps that can be updated per-frame.
+   */
   maxUpdates: number;
-
+  /**
+   * The number of nearest lights (to camera) that will include entities and be updated every frame.
+   */
   realTimeCount: number;
-
+  /**
+   * Allows caching of terrain rendering for realtime lights.
+   */
   cacheRealTimeTerrain: boolean;
-
+  /**
+   * The minimum threshold in ranking [0.0-1.0] that is required for a pending light to replace an existing light.
+   */
   updateThreshold: number;
-
   nearPlane: number;
-
   farPlane: number;
 }
 
 declare class ShadowSettings {
   resolution: number;
   cascades: number;
+  pssmLambda: number;
+  closestImportantDistance: number;
+  outerMarginBlocks: number;
+  outerMarginPixels: number;
   entityCascadeCount: number;
+  safeZone: number[];
   distance: number;
   near: number;
   far: number;
-
-  safeZone: number[];
-
   enabled: boolean;
 }
 
 declare class RenderSettings {
   sun: boolean;
-  moon: boolean;
-  stars: boolean;
   horizon: boolean;
   clouds: boolean;
+  moon: boolean;
   vignette: boolean;
   waterOverlay: boolean;
   entityShadow: boolean;
+  stars: boolean;
 }
 
 // Formats/stages/usages
@@ -334,6 +385,13 @@ declare class CommandList {
 
   createCompute(name: string): Compute;
 
+  createIndirectDraw(
+    name: string,
+    buffer: BuiltGPUBuffer,
+    mode: DrawMode,
+    maxVertices: number,
+  ): IndirectDraw;
+
   barrier(barrier: number, state?: StateReference): CommandList;
 
   generateMips(...tex: BuiltTexture[]): CommandList;
@@ -437,9 +495,9 @@ interface BuiltCombinationPass {}
 
 declare class CombinationPass {
   constructor(location: string);
-  ssbo(index: number, buf: BuiltBuffer | undefined): ObjectShader;
-  ubo(index: number, buf: BuiltBuffer | undefined): ObjectShader;
-  define(key: string, value: string): ObjectShader;
+  ssbo(index: number, buf: BuiltBuffer | undefined): CombinationPass;
+  ubo(index: number, buf: BuiltBuffer | undefined): CombinationPass;
+  define(key: string, value: string): CombinationPass;
 
   compile(): BuiltCombinationPass;
 }
@@ -491,6 +549,24 @@ declare class Vector3f {
 
   constructor(x: number, y: number, z: number);
   constructor(other: Vector3f);
+
+  x(): number;
+  y(): number;
+  z(): number;
+
+  x(newValue: number): void;
+  y(newValue: number): void;
+  z(newValue: number): void;
+}
+
+declare class Vector3d {
+  /**
+   * Initializes to 0.
+   */
+  constructor();
+
+  constructor(x: number, y: number, z: number);
+  constructor(other: Vector3d);
 
   x(): number;
   y(): number;
@@ -614,6 +690,11 @@ declare class WorldState {
   cameraPos(): Vector3f;
 
   /**
+   * Returns the current fluid the camera is submerged in.
+   */
+  currentFluid(): number;
+
+  /**
    * Return the last frame time (ap.time.delta).
    */
   lastFrameTime(): number;
@@ -686,12 +767,12 @@ declare class Texture {
   private constructor(name: string);
 
   format(internalFormat: InternalTextureFormat): Texture;
-  clearColor(r: number, g: number, b: number, a: number): Texture;
-  clear(clear: boolean): Texture;
-  mipmap(mipmap: boolean): Texture;
   width(width: number): Texture;
   height(height: number): Texture;
   depth(depth: number): Texture;
+  mipmap(mipmap: boolean): Texture;
+  clear(clear: boolean): Texture;
+  clearColor(r: number, g: number, b: number, a: number): Texture;
   readBack(read: boolean): Texture;
 
   build(): BuiltTexture;

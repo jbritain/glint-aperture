@@ -31,6 +31,7 @@ export function configureRenderer(renderer: RendererConfig) {
   renderer.shadow.distance = 512;
   renderer.shadow.enabled = true;
   renderer.shadow.cascades = cascades;
+  renderer.render.waterOverlay = false;
 
   renderer.shadow.entityCascadeCount = 1;
   renderer.render.clouds = false;
@@ -322,10 +323,19 @@ export function configurePipeline(pipeline: PipelineConfig) {
   // GEOMETRY
   // =======================================================================================
 
+  const shadowColorTex = pipeline
+    .createArrayTexture("shadow_color_tex")
+    .width(shadowRes)
+    .height(shadowRes)
+    .slices(cascades)
+    .build();
+
   pipeline
     .createObjectShader("shadow", Usage.SHADOW)
     .vertex("program/geometry/shadow.vsh")
     .fragment("program/geometry/shadow.fsh")
+    .target(0, shadowColorTex)
+    .blendOff(0)
     .compile();
 
   pipeline
@@ -346,19 +356,52 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .clear(true)
     .build();
 
-  pipeline
-    .createObjectShader("terrain", Usage.TEXTURED)
-    .vertex("program/geometry/opaque.vsh")
-    .fragment("program/geometry/opaque.fsh")
-    .target(0, gbufferTex1)
-    .target(1, gbufferTex2)
-    .compile();
+  const deferredGbuffers = [
+    Usage.TERRAIN_SOLID,
+    Usage.TERRAIN_CUTOUT,
+    Usage.ENTITY_SOLID,
+    Usage.ENTITY_CUTOUT,
+    Usage.BLOCK_ENTITY,
+    Usage.PARTICLES,
+    Usage.EMISSIVE,
+  ];
 
-  pipeline
-    .createObjectShader("clouds", Usage.CLOUDS)
-    .vertex("program/geometry/discard.vsh")
-    .fragment("program/geometry/discard.fsh")
-    .compile();
+  const forwardGbuffers = [
+    Usage.TERRAIN_TRANSLUCENT,
+    Usage.ENTITY_TRANSLUCENT,
+    Usage.BLOCK_ENTITY_TRANSLUCENT,
+    Usage.PARTICLES_TRANSLUCENT,
+    Usage.HAND,
+    Usage.TRANSLUCENT_HAND,
+    Usage.TEXTURED,
+    Usage.BASIC,
+    Usage.TEXT,
+  ];
+
+  const discardGbuffers = [
+    Usage.CLOUDS,
+    Usage.SKYBOX,
+    Usage.SKY_TEXTURES,
+    Usage.WEATHER,
+  ];
+
+  deferredGbuffers.forEach((program) => {
+    pipeline
+      .createObjectShader("terrain", program)
+      .vertex("program/geometry/opaque.vsh")
+      .fragment("program/geometry/opaque.fsh")
+      .target(0, gbufferTex1)
+      .target(1, gbufferTex2)
+      .compile();
+  });
+
+  discardGbuffers.forEach((program) => {
+    pipeline
+      .createObjectShader("clouds", program)
+      .vertex("program/geometry/discard.vsh")
+      .fragment("program/geometry/discard.fsh")
+      .compile();
+  });
 
   const translucentTex = pipeline
     .createTexture("translucent_tex")
@@ -373,38 +416,54 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .clear(true)
     .build();
 
-  pipeline
-    .createObjectShader("water", Usage.TERRAIN_TRANSLUCENT)
-    .vertex("program/geometry/translucent.vsh")
-    .fragment("program/geometry/translucent.fsh")
-    .target(0, translucentTex)
-    .target(1, gbufferTex1)
-    .target(2, gbufferTex2)
-    .target(3, shadowTex)
-    .blendOff(1)
-    .blendOff(2)
-    .blendOff(3)
-    .ssbo(0, sceneData)
-    .define("SCENE_DATA_BINDING", "0")
-    .compile();
+  forwardGbuffers.forEach((program) => {
+    pipeline
+      .createObjectShader("water", program)
+      .vertex("program/geometry/translucent.vsh")
+      .fragment("program/geometry/translucent.fsh")
+      .target(0, translucentTex)
+      .target(1, gbufferTex1)
+      .target(2, gbufferTex2)
+      .target(3, shadowTex)
+      .blendOff(1)
+      .blendOff(2)
+      .blendOff(3)
+      .ssbo(0, sceneData)
+      .define("SCENE_DATA_BINDING", "0")
+      .compile();
+  });
 
   // BEFORE TRANSLUCENTS
   // =======================================================================================
 
-  const cloudShadowTex = pipeline
-    .createArrayTexture("cloud_shadow_tex")
-    .format(Format.R16F)
-    .width(2048)
-    .height(2048)
+  const causticsTex = pipeline
+    .createArrayTexture("caustics_tex")
+    .format(Format.R8)
+    .width(shadowRes)
+    .height(shadowRes)
     .slices(cascades)
     .build();
 
-  // preTranslucent
-  //   .createArrayComposite("cloud_shadow_map")
-  //   .vertex("program/fullscreen_pass.vsh")
-  //   .fragment("program/before_translucents/generate_cloud_shadow_map.fsh")
-  //   .target(0, cloudShadowTex)
-  //   .build();
+  preTranslucent
+    .createArrayComposite("caustics")
+    .vertex("program/fullscreen_pass.vsh")
+    .fragment("program/before_translucents/generate_caustics.fsh")
+    .target(0, causticsTex)
+    .build();
+
+  const cloudShadowTex = pipeline
+    .createTexture("cloud_shadow_tex")
+    .format(Format.R16)
+    .width(2048)
+    .height(2048)
+    .build();
+
+  preTranslucent
+    .createComposite("cloud_shadow_map")
+    .vertex("program/fullscreen_pass.vsh")
+    .fragment("program/before_translucents/generate_cloud_shadow_map.fsh")
+    .target(0, cloudShadowTex)
+    .compile();
 
   preTranslucent
     .createComposite("opaque_shadowing")
@@ -672,6 +731,39 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .define("CAMERA_DATA_BINDING", "0")
     .compile();
 
+  const DoFCoCTex = pipeline
+    .createTexture("dof_coc_tex")
+    .format(Format.R16F)
+    .build();
+
+  postRender
+    .createComposite("dof_coc")
+    .vertex("program/fullscreen_pass.vsh")
+    .fragment("program/post/dof_coc.fsh")
+    .target(0, DoFCoCTex)
+    .compile();
+
+  const DoFTex = pipeline
+    .createTexture("dof_tex")
+    .format(Format.RGB16F)
+    .width(Math.floor(screenWidth * 0.5))
+    .height(Math.floor(screenHeight * 0.5))
+    .build();
+
+  postRender
+    .createComposite("dof_blur")
+    .vertex("program/fullscreen_pass.vsh")
+    .fragment("program/post/dof_blur.fsh")
+    .target(0, DoFTex)
+    .compile();
+
+  // postRender
+  //   .createComposite("dof_blend")
+  //   .vertex("program/fullscreen_pass.vsh")
+  //   .fragment("program/post/dof_blend.fsh")
+  //   .target(0, sceneTex.target)
+  //   .compile();
+
   const bloomTex = pipeline
     .createTexture("bloom_tex")
     .format(Format.RGBA16F)
@@ -719,6 +811,17 @@ export function configurePipeline(pipeline: PipelineConfig) {
   preRender.end();
   preTranslucent.end();
   postRender.end();
+
+  let tonyMcMapFaceTex = pipeline
+    .importRawTexture("tony_mc_mapface_tex", "textures/tony_mc_mapface.bin")
+    .blur(true)
+    .clamp(true)
+    .width(48)
+    .height(48)
+    .depth(48)
+    .type(PixelType.FLOAT)
+    .format(Format.RGBA32F)
+    .load();
 
   pipeline
     .createCombinationPass("program/combination.fsh")

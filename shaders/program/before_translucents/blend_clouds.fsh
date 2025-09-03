@@ -4,7 +4,7 @@ in vec2 uv;
 
 #include "/lib/common.glsl"
 #include "/lib/util/space_conversions.glsl"
-#include "/lib/atmospherics/volumetric_clouds.glsl"
+#include "/lib/atmospherics/clouds.glsl"
 
 uniform sampler2D scene_tex;
 uniform sampler2D cloud_tex;

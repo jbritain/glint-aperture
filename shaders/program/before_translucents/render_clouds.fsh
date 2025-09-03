@@ -3,7 +3,7 @@
 uniform sampler2D sky_irradiance_lut_tex;
 
 #include "/lib/common.glsl"
-#include "/lib/atmospherics/volumetric_clouds.glsl"
+#include "/lib/atmospherics/clouds.glsl"
 #include "/lib/util/space_conversions.glsl"
 #include "/lib/util/reproject.glsl"
 #include "/lib/util/misc.glsl"

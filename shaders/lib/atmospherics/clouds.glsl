@@ -18,12 +18,10 @@ uniform sampler2D cloud_weather_tex;
 #define CLOUD_STEPS 32
 #define CLOUD_SUB_STEPS 8
 
+#define MAX_CLOUD_DIST 10000
+
 #define CLOUD_EXTINCTION 0.05
 #define CLOUD_DENSITY 1.0
-
-float beers_powder(float extinction) {
-  return 2.0 * exp(-2.0 * extinction) * exp(-extinction);
-}
 
 // https://x.com/FewesW/status/1364629939568451587/photo/1
 float multiple_scattering_clouds(float density, float phase) {
@@ -39,7 +37,7 @@ float multiple_scattering_clouds(float density, float phase) {
   float luminance = 0.0;
 
   for (int i = 0; i < scattering_octaves; i++) {
-    float transmittance = beers_powder(density * CLOUD_EXTINCTION * a);
+    float transmittance = exp(-density * CLOUD_EXTINCTION * a);
 
     luminance += b * phase * transmittance;
 
@@ -47,6 +45,7 @@ float multiple_scattering_clouds(float density, float phase) {
     b *= contribution;
     c *= 1.0 - phase_attenuation;
   }
+
   return luminance;
 }
 
@@ -72,7 +71,8 @@ float get_cloud_density(
   out float coverage,
   out float height_fraction
 ) {
-  vec3 sample_pos = pos; // floor(pos / 64.0) * 64.0;
+  vec3 sample_pos = pos;
+  // sample_pos = floor(pos / 32.0) * 32.0;
   height_fraction = saturate(
     linearstep(CLOUD_BASE_HEIGHT, CLOUD_TOP_HEIGHT, sample_pos.y)
   );
@@ -90,8 +90,6 @@ float get_cloud_density(
 
   float density = low_frequency_noise.r;
   density = saturate(remap(density, low_frequency_fbm * 0.7, 1.0, 0.0, 1.0));
-
-  // sample_pos = floor(pos / 128.0) * 128.0;
 
   coverage = max0(
     texture(
@@ -123,7 +121,7 @@ float get_cloud_density(
     return 0.0;
   }
 
-  // sample_pos = floor(pos / 32.0) * 32.0;
+  // sample_pos = floor(pos / 16.0) * 16.0;
 
   vec3 high_frequency_noise = texture(
     cloud_detail_tex,
@@ -177,7 +175,7 @@ float get_light_from_sun(vec3 ray_pos, vec2 jitter, float phase) {
     previous_sample_pos = sample_pos;
   }
 
-  // return beers_powder(density * CLOUD_EXTINCTION) * phase;
+  // return exp(-density * CLOUD_EXTINCTION) * phase;
   return multiple_scattering_clouds(density, phase);
 }
 
@@ -213,6 +211,10 @@ vec4 get_clouds(vec3 origin, vec3 player_pos, bool sky, bool high_quality) {
     ) {
       return vec4(0.0, 0.0, 0.0, 1.0);
     }
+  }
+
+  if (distance(a, b) > MAX_CLOUD_DIST) {
+    b = a + ray_dir * MAX_CLOUD_DIST;
   }
 
   vec3 ray_step = (b - a) / CLOUD_STEPS;

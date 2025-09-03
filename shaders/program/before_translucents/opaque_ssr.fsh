@@ -50,6 +50,13 @@ void main() {
 
   vec4 previous_ssr = texture(ssr_tex, previous_screen_pos.xy);
 
+  // mat4 previous_ssr_samples = mat4(
+  //   textureGather(ssr_tex, previous_screen_pos.xy, 0),
+  //   textureGather(ssr_tex, previous_screen_pos.xy, 1),
+  //   textureGather(ssr_tex, previous_screen_pos.xy, 2),
+  //   textureGather(ssr_tex, previous_screen_pos.xy, 3)
+  // );
+
   ssr = compute_screen_space_reflections(
     view_pos,
     material.roughness,
@@ -60,10 +67,25 @@ void main() {
     true
   );
 
+  // previous_ssr_samples = transpose(previous_ssr_samples);
+
+  // // weight previous samples by similarity in fresnel to the current sample
+  // vec3 previous_ssr = vec3(0.0);
+  // float previous_ssr_weight = 0.0;
+
+  // for (int i = 0; i < 4; i++) {
+  //   float weight = 1.0 - saturate(abs(previous_ssr_samples[i].a - ssr.a));
+  //   previous_ssr += previous_ssr_samples[i].rgb * weight;
+  //   previous_ssr_weight += weight;
+  // }
+
+  // previous_ssr /= previous_ssr_weight;
+
   if (
     distance(previous_view_pos, actual_previous_view_pos) < 0.1 &&
     previous_screen_pos.z != 1.0 &&
-    saturate(previous_screen_pos.xy) == previous_screen_pos.xy
+    saturate(previous_screen_pos.xy) == previous_screen_pos.xy &&
+    material.roughness > 0.01
   )
     ssr.rgb = mix(
       previous_ssr.rgb,

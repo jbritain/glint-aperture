@@ -71,6 +71,10 @@ float geometry_smith(vec3 N, vec3 V, vec3 L, float K) {
   return ggx1 * ggx2;
 }
 
+vec3 approximate_rough_normal(vec3 view_dir, vec3 normal, float roughness) {
+  return normalize(mix(normal, normal + view_dir, roughness));
+}
+
 vec3 schlick(Material material, float NoV) {
   if (material.metal_id == NO_METAL) {
     // normal schlick approx.
@@ -102,7 +106,7 @@ vec3 brdf_specular_area(
   vec3 N = material.texture_normal;
   vec3 H = normalize(L + V);
 
-  float NoL = dot(material.texture_normal, L);
+  float NoL = saturate(dot(material.texture_normal, L));
   NoL *= step(0.0, dot(material.geometry_normal, L));
 
   if (NoL < 1e-6) {

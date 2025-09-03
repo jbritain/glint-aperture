@@ -44,6 +44,13 @@ vec3 get_shadow_screen_pos(vec3 player_pos, out int cascade){
   return shadow_clip_pos.xyz * 0.5 + 0.5;
 }
 
+vec3 get_shadow_screen_pos_cascade(vec3 player_pos, int cascade){
+  vec4 shadow_view_pos = (ap.celestial.view * vec4(player_pos, 1.0));
+  vec4 shadow_clip_pos = ap.celestial.projection[cascade] * shadow_view_pos;
+
+  return shadow_clip_pos.xyz * 0.5 + 0.5;
+}
+
 vec3 get_shadow_screen_pos_reverse(vec3 player_pos, out int cascade){
   vec4 shadow_view_pos = (ap.celestial.view * vec4(player_pos, 1.0));
   vec4 shadow_clip_pos;

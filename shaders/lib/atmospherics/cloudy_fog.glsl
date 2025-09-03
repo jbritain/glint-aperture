@@ -12,18 +12,19 @@
 #define CLOUDY_FOG_STEPS 16
 #define CLOUDY_FOG_SUB_STEPS 1
 
-#define CLOUDY_FOG_BOTTOM_PLANE -63
-#define CLOUDY_FOG_CENTRE_PLANE 0
-#define CLOUDY_FOG_TOP_PLANE mix(150, 1000, ap.world.rain)
+#define CLOUDY_FOG_BASE_HEIGHT -63
+#define CLOUDY_FOG_CENTRE_HEIGHT 0
+#define CLOUDY_FOG_TOP_HEIGHT mix(150, 1000, ap.world.rain)
 
 #define CLOUDY_FOG_EXTINCTION 0.1
 #define CLOUDY_FOG_DENSITY 1.0
 
 float get_cloudy_fog_density(vec3 pos) {
   float density =
-    pos.y <= CLOUDY_FOG_CENTRE_PLANE
-      ? linearstep(CLOUDY_FOG_BOTTOM_PLANE, CLOUDY_FOG_CENTRE_PLANE, pos.y)
-      : 1.0 - linearstep(CLOUDY_FOG_CENTRE_PLANE, CLOUDY_FOG_TOP_PLANE, pos.y);
+    pos.y <= CLOUDY_FOG_CENTRE_HEIGHT
+      ? linearstep(CLOUDY_FOG_BASE_HEIGHT, CLOUDY_FOG_CENTRE_HEIGHT, pos.y)
+      : 1.0 -
+      linearstep(CLOUDY_FOG_CENTRE_HEIGHT, CLOUDY_FOG_TOP_HEIGHT, pos.y);
 
   density = pow3(density);
 
@@ -37,8 +38,8 @@ float get_cloudy_fog_density(vec3 pos) {
   );
 
   density *= mix(
-    saturate(pow3(1.0 - abs(world_light_dir.y))),
-    0.2,
+    saturate(pow3(1.0 - abs(world_light_dir.y))) * 0.9 + 0.1,
+    0.1,
     ap.world.rain
   );
 
@@ -76,7 +77,7 @@ float get_light_from_sun(vec3 ray_pos, float jitter, float phase) {
 
   vec3 a = ray_pos;
   vec3 b;
-  if (!ray_plane_intersection(a, ray_dir, CLOUDY_FOG_TOP_PLANE, b)) {
+  if (!ray_plane_intersection(a, ray_dir, CLOUDY_FOG_TOP_HEIGHT, b)) {
     return 1.0;
   }
 
@@ -103,8 +104,8 @@ Volume cloudy_fog(vec3 start_pos, vec3 end_pos, bool sky) {
   vec3 scattering = vec3(0.0);
 
   if (
-    start_pos.y > CLOUDY_FOG_TOP_PLANE && end_pos.y > CLOUDY_FOG_TOP_PLANE ||
-    start_pos.y < CLOUDY_FOG_BOTTOM_PLANE && end_pos.y < CLOUDY_FOG_BOTTOM_PLANE
+    start_pos.y > CLOUDY_FOG_TOP_HEIGHT && end_pos.y > CLOUDY_FOG_TOP_HEIGHT ||
+    start_pos.y < CLOUDY_FOG_BASE_HEIGHT && end_pos.y < CLOUDY_FOG_BASE_HEIGHT
   ) {
     return Volume(transmittance, scattering);
   }
@@ -122,11 +123,11 @@ Volume cloudy_fog(vec3 start_pos, vec3 end_pos, bool sky) {
 
   vec3 a;
   vec3 b;
-  if (!ray_plane_intersection(start_pos, ray_dir, CLOUDY_FOG_BOTTOM_PLANE, a)) {
+  if (!ray_plane_intersection(start_pos, ray_dir, CLOUDY_FOG_BASE_HEIGHT, a)) {
     a = ap.camera.pos;
   }
 
-  if (!ray_plane_intersection(start_pos, ray_dir, CLOUDY_FOG_TOP_PLANE, b)) {
+  if (!ray_plane_intersection(start_pos, ray_dir, CLOUDY_FOG_TOP_HEIGHT, b)) {
     b = ap.camera.pos;
   }
 
@@ -135,8 +136,8 @@ Volume cloudy_fog(vec3 start_pos, vec3 end_pos, bool sky) {
   }
 
   if (
-    end_pos.y > CLOUDY_FOG_BOTTOM_PLANE &&
-    end_pos.y < CLOUDY_FOG_TOP_PLANE &&
+    end_pos.y > CLOUDY_FOG_BASE_HEIGHT &&
+    end_pos.y < CLOUDY_FOG_TOP_HEIGHT &&
     !sky
   ) {
     b = end_pos;
@@ -160,16 +161,25 @@ Volume cloudy_fog(vec3 start_pos, vec3 end_pos, bool sky) {
       ray_pos - ap.camera.pos,
       cascade
     );
-    vec3 shadow_map_pixel_size = get_shadow_map_pixel_size(cascade);
 
+    float shadow = 1.0;
     float density =
       get_cloudy_fog_density(ray_pos) * distance(ray_pos, previous_ray_pos);
     float sample_transmittance = exp(-density * CLOUDY_FOG_EXTINCTION);
+    if (saturate(shadow_sample_pos) == shadow_sample_pos) {
+      vec3 shadow_map_pixel_size = get_shadow_map_pixel_size(cascade);
 
-    float shadow = texture(
-      shadowMapFiltered,
-      vec4(shadow_sample_pos.xy, cascade, shadow_sample_pos.z)
-    ).r;
+      shadow = texture(
+        shadowMapFiltered,
+        vec4(shadow_sample_pos.xy, cascade, shadow_sample_pos.z)
+      ).r;
+
+      shadow_sample_pos = get_shadow_screen_pos_cascade(
+        ray_pos - ap.camera.pos,
+        CASCADES - 1
+      );
+      shadow *= texture(cloud_shadow_tex, shadow_sample_pos.xy).r;
+    }
 
     vec3 radiance =
       sunlight_color *

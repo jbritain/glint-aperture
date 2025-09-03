@@ -73,7 +73,7 @@ struct Gbuffer {
 };
 
 void encode_gbuffer(out vec4 data_1, out vec4 data_2, Gbuffer gbuffer) {
-  vec3 gamma_corrected_albedo = pow(gbuffer.albedo, vec3(rcp(2.2)));
+  vec3 gamma_corrected_albedo = pow(gbuffer.albedo, vec3(rcp(GAMMA)));
 
   data_1.x = pack2x8F(gamma_corrected_albedo.r, gamma_corrected_albedo.g);
   data_1.y = pack2x8F(gamma_corrected_albedo.b, gbuffer.material_ao);
@@ -104,7 +104,10 @@ Gbuffer decode_gbuffer(vec4 data_1, vec4 data_2) {
   vec2 decode_2z = unpack2x8F(data_2.z);
   // vec2 decode2w = unpack2x8F(data_2.w);
 
-  gbuffer.albedo = pow(vec3(decode_1x.x, decode_1x.y, decode_1y.x), vec3(2.2));
+  gbuffer.albedo = pow(
+    vec3(decode_1x.x, decode_1x.y, decode_1y.x),
+    vec3(GAMMA)
+  );
   gbuffer.material_ao = decode_1y.y;
 
   gbuffer.geometry_normal = decode_unit_vector(decode_1z);
@@ -146,7 +149,10 @@ Material decode_material_from_gbuffer(vec4 data_1, vec4 data_2) {
 
   Material material;
 
-  material.albedo = pow(vec3(decode_1x.x, decode_1x.y, decode_1y.x), vec3(2.2));
+  material.albedo = pow(
+    vec3(decode_1x.x, decode_1x.y, decode_1y.x),
+    vec3(GAMMA)
+  );
   material.ambient_occlusion = decode_1y.y;
 
   material.geometry_normal = decode_unit_vector(decode_1z);
@@ -194,7 +200,10 @@ Reduced_Gbuffer decode_reduced_gbuffer(vec4 data_1) {
   vec2 decode_1z = unpack2x8F(data_1.z);
   vec2 decode_1w = unpack2x8F(data_1.w);
 
-  gbuffer.albedo = pow(vec3(decode_1x.x, decode_1x.y, decode_1y.x), vec3(2.2));
+  gbuffer.albedo = pow(
+    vec3(decode_1x.x, decode_1x.y, decode_1y.x),
+    vec3(GAMMA)
+  );
   gbuffer.material_ao = decode_1y.y;
 
   gbuffer.geometry_normal = decode_unit_vector(decode_1z);
