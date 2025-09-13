@@ -82,9 +82,9 @@ void main() {
   vec3 opaque_view_pos = screen_space_to_view_space(vec3(uv, opaque_depth));
   vec3 opaque_player_pos = (ap.camera.viewInv * vec4(opaque_view_pos, 1.0)).xyz;
   vec3 refraction_normal =
-    in_water && material.mask.is_fluid
-      ? material.texture_normal
-      : material.geometry_normal - material.texture_normal;
+    !in_water && material.mask.is_fluid
+      ? material.geometry_normal - material.texture_normal
+      : material.texture_normal;
 
   vec3 refracted = refract(
     normalize(translucent_player_pos - ap.camera.viewInv[3].xyz),
@@ -99,12 +99,12 @@ void main() {
     refracted * distance(translucent_player_pos, opaque_player_pos);
   refracted_pos = (ap.camera.view * vec4(refracted_pos, 1.0)).xyz;
   refracted_pos = view_space_to_screen_space(refracted_pos);
-  float refracted_depth = texture(solidDepthTex, refracted_pos.xy).r;
+  float refracted_depth = texelFetch(solidDepthTex, ivec2(refracted_pos.xy * textureSize(solidDepthTex, 0).xy), 0).r;
   if (
     saturate(refracted_pos.xy) == refracted_pos.xy &&
     refracted_depth > translucent_depth
   ) {
-    color = textureLod(scene_tex, refracted_pos.xy, 0).rgb;
+    color = texelFetch(scene_tex, ivec2(refracted_pos.xy * textureSize(scene_tex, 0).xy), 0).rgb;
   }
 
   vec3 direct_fresnel = schlick(

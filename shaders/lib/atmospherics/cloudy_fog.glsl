@@ -167,8 +167,6 @@ Volume cloudy_fog(vec3 start_pos, vec3 end_pos, bool sky) {
       get_cloudy_fog_density(ray_pos) * distance(ray_pos, previous_ray_pos);
     float sample_transmittance = exp(-density * CLOUDY_FOG_EXTINCTION);
     if (saturate(shadow_sample_pos) == shadow_sample_pos) {
-      vec3 shadow_map_pixel_size = get_shadow_map_pixel_size(cascade);
-
       shadow = texture(
         shadowMapFiltered,
         vec4(shadow_sample_pos.xy, cascade, shadow_sample_pos.z)

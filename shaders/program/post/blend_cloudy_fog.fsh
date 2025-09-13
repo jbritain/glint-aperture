@@ -6,6 +6,8 @@ uniform sampler2D scene_tex;
 uniform sampler2D mainDepthTex;
 uniform sampler2D cloudy_fog_tex_w;
 
+#include "/lib/atmospherics/clouds.glsl"
+
 layout(location = 0) out vec3 color;
 
 void main() {
@@ -14,6 +16,9 @@ void main() {
   float depth = texture(mainDepthTex, uv).r;
 
   vec4 fog = texture(cloudy_fog_tex_w, uv);
-  color = fma(color, vec3(fog.a), fog.rgb);
+
+  if (ap.camera.pos.y < CLOUD_BASE_HEIGHT) {
+    color = fma(color, vec3(fog.a), fog.rgb);
+  }
 
 }

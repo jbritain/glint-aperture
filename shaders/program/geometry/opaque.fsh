@@ -74,7 +74,7 @@ void iris_emitFragment() {
     ) ==
     1.0;
 
-  gbuffer.lightmap = pow2(lightmap);
+  gbuffer.lightmap = pow3(lightmap);
 
   encode_gbuffer(gbuffer_1, gbuffer_2, gbuffer);
 }

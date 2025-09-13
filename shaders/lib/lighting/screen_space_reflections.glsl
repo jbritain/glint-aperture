@@ -95,12 +95,9 @@ vec4 compute_rough_reflections(
 
   vec4 average_ssr;
 
-  vec4 noise;
+  vec3 noise;
   for (int i = 0; i < ROUGH_REFLECTION_SAMPLES; i++) {
-    noise = blue_noise(
-      floor(gl_FragCoord.xy),
-      i + ap.time.frames * ROUGH_REFLECTION_SAMPLES
-    );
+    noise = blue_noise(floor(gl_FragCoord.xy), ap.time.frames, i);
 
     vec3 rough_normal =
       tbn * sample_vndf_ggx(tangent_view_dir, vec2(roughness), noise.xy);

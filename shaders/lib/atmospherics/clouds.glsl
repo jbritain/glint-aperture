@@ -17,26 +17,32 @@ uniform sampler2D cloud_weather_tex;
 #define CLOUD_TOP_HEIGHT 1000
 #define CLOUD_STEPS 32
 #define CLOUD_SUB_STEPS 8
+// #define VOXEL_CLOUDS
+
+#ifdef VOXEL_CLOUDS
+#define WIND_SPEED 0.0
+#else
+#define WIND_SPEED 10.0
+#endif
 
 #define MAX_CLOUD_DIST 10000
 
-#define CLOUD_EXTINCTION 0.05
-#define CLOUD_DENSITY 1.0
+#define CLOUD_EXTINCTION 0.1
+#define CLOUD_DENSITY 0.5
 
 // https://x.com/FewesW/status/1364629939568451587/photo/1
 float multiple_scattering_clouds(float density, float phase) {
-  float attenuation = 0.2;
-  float contribution = 0.2;
-  float phase_attenuation = 0.5;
+  float attenuation = 0.6;
+  float contribution = 0.6;
+  float phase_attenuation = 0.6;
 
   float a = 1.0;
   float b = 1.0;
   float c = 1.0;
-  const int scattering_octaves = 4;
 
   float luminance = 0.0;
 
-  for (int i = 0; i < scattering_octaves; i++) {
+  for (int i = 0; i < 4; i++) {
     float transmittance = exp(-density * CLOUD_EXTINCTION * a);
 
     luminance += b * phase * transmittance;
@@ -72,14 +78,20 @@ float get_cloud_density(
   out float height_fraction
 ) {
   vec3 sample_pos = pos;
-  // sample_pos = floor(pos / 32.0) * 32.0;
+
+  #ifdef VOXEL_CLOUDS
+  sample_pos = floor(pos / 64.0) * 64.0;
+  #endif
+
   height_fraction = saturate(
     linearstep(CLOUD_BASE_HEIGHT, CLOUD_TOP_HEIGHT, sample_pos.y)
   );
 
   vec4 low_frequency_noise = texture(
     cloud_shape_tex,
-    fract((sample_pos + vec3(0.0, 0.0, world_time_counter) * 10.0) / 2000.0)
+    fract(
+      (sample_pos + vec3(0.0, 0.0, world_time_counter) * WIND_SPEED) / 2000.0
+    )
   );
 
   float low_frequency_fbm = saturate(
@@ -91,10 +103,16 @@ float get_cloud_density(
   float density = low_frequency_noise.r;
   density = saturate(remap(density, low_frequency_fbm * 0.7, 1.0, 0.0, 1.0));
 
+  #ifdef VOXEL_CLOUDS
+  sample_pos = floor(pos / 32.0) * 32.0;
+  #endif
+
   coverage = max0(
     texture(
       cloud_weather_tex,
-      fract((sample_pos.xz + vec2(0.0, world_time_counter) * 10.0) / 50000.0)
+      fract(
+        (sample_pos.xz + vec2(0.0, world_time_counter) * WIND_SPEED) / 70000.0
+      )
     ).r
   );
 
@@ -113,37 +131,44 @@ float get_cloud_density(
   density = saturate(remap(density, 1.0 - coverage, 1.0, 0.0, 1.0));
   density *= coverage;
 
-  if (!high_quality) {
-    return density * CLOUD_DENSITY;
+  if (high_quality && density > 1e-6) {
+    #ifdef VOXEL_CLOUDS
+    sample_pos = floor(pos / 16.0) * 16.0;
+    #endif
+
+    sample_pos.z += pow2(height_fraction) * 1000.0;
+
+    vec3 high_frequency_noise = texture(
+      cloud_detail_tex,
+      fract(
+        (sample_pos + vec3(0.0, 0.0, world_time_counter) * WIND_SPEED * 2.0) /
+          100.0
+      )
+    ).rgb;
+    float high_frequency_fbm =
+      high_frequency_noise.r * 0.625 +
+      high_frequency_noise.g * 0.25 +
+      high_frequency_noise.b * 0.125;
+
+    high_frequency_fbm =
+      0.5 *
+      exp(-coverage * 0.75) *
+      mix(
+        high_frequency_fbm,
+        1.0 - high_frequency_fbm,
+        saturate(height_fraction)
+      );
+
+    density = max0(remap(density, high_frequency_fbm, 1.0, 0.0, 1.0));
   }
 
-  if (density < 0.01) {
-    return 0.0;
-  }
+  #ifdef VOXEL_CLOUDS
 
-  // sample_pos = floor(pos / 16.0) * 16.0;
+  density = pow(density, 0.5);
+  density *= 2.0;
+  #endif
 
-  vec3 high_frequency_noise = texture(
-    cloud_detail_tex,
-    fract((sample_pos + vec3(0.0, 0.0, world_time_counter) * 20.0) / 100.0)
-  ).rgb;
-  float high_frequency_fbm =
-    high_frequency_noise.r * 0.625 +
-    high_frequency_noise.g * 0.25 +
-    high_frequency_noise.b * 0.125;
-
-  high_frequency_fbm =
-    0.35 *
-    exp(-coverage * 0.75) *
-    mix(
-      high_frequency_fbm,
-      1.0 - high_frequency_fbm,
-      saturate(height_fraction)
-    );
-
-  density = max0(remap(density, high_frequency_fbm, 1.0, 0.0, 1.0));
-
-  return density * CLOUD_DENSITY;
+  return pow(density, 0.7) * CLOUD_DENSITY;
 }
 
 float get_light_from_sun(vec3 ray_pos, vec2 jitter, float phase) {
@@ -238,6 +263,9 @@ vec4 get_clouds(vec3 origin, vec3 player_pos, bool sky, bool high_quality) {
     henyey_greenstein_phase(cos_theta, 0.2),
     1.0 - saturate(cos_theta)
   );
+  // float phase = hg_draine_phase(cos_theta, 11);
+
+  // we use henyey greenstein with a decreasing asymmetry parameter for each octave
 
   for (
     int i = 0;

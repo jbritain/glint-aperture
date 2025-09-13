@@ -103,12 +103,23 @@ export function configurePipeline(pipeline: PipelineConfig) {
 
   const sceneData = pipeline.createBuffer(32, false);
 
-  const blueNoiseTex = pipeline.importPNGTexture(
-    "blue_noise_tex",
-    "textures/blue_noise.png",
-    false,
-    true,
-  );
+  // const blueNoiseTex = pipeline.importPNGTexture(
+  //   "blue_noise_tex",
+  //   "textures/blue_noise.png",
+  //   false,
+  //   true,
+  // );
+
+  const blueNoiseTex = pipeline
+    .importRawTexture("blue_noise_tex", "textures/stbn.bin")
+    .width(128)
+    .height(128)
+    .depth(64)
+    .format(Format.RGB8)
+    .type(PixelType.UNSIGNED_BYTE)
+    .blur(false)
+    .clamp(false)
+    .load();
 
   const debugTex = pipeline
     .createImageTexture("debug_tex", "debug")

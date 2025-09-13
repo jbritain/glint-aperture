@@ -12,7 +12,7 @@
 
 vec3 sample_shadow_map(vec3 shadow_screen_pos, int cascade) {
   float opaque_shadow = texture(
-    shadowMapFiltered,
+    solidShadowMapFiltered,
     vec4(shadow_screen_pos.xy, cascade, shadow_screen_pos.z)
   );
 
@@ -25,10 +25,6 @@ vec3 sample_shadow_map(vec3 shadow_screen_pos, int cascade) {
     vec4(shadow_screen_pos.xy, cascade, shadow_screen_pos.z)
   );
 
-  if (translucent_shadow > 0.99) {
-    return vec3(translucent_shadow);
-  }
-
   vec4 shadow_color = texture(
     shadow_color_tex,
     vec3(shadow_screen_pos.xy, cascade)
@@ -36,11 +32,10 @@ vec3 sample_shadow_map(vec3 shadow_screen_pos, int cascade) {
   shadow_color.rgb = pow(shadow_color.rgb, vec3(GAMMA));
 
   return mix(
-    shadow_color.rgb * opaque_shadow * (1.0 - shadow_color.a),
+    shadow_color.rgb * (1.0 - shadow_color.a) * opaque_shadow,
     vec3(1.0),
     translucent_shadow
   );
-
 }
 
 float get_blocker_distance(
@@ -124,8 +119,9 @@ vec4 compute_shadowing_and_blocker_distance(
 
   vec2 sample_radius =
     PCSS_MAX_RADIUS *
-    saturate(blocker_distance * 4.0) *
-    shadow_map_pixel_size.xy;
+      saturate(blocker_distance * 4.0) *
+      shadow_map_pixel_size.xy +
+    1e-3;
   shadow.rgb = sample_pcf(shadow_screen_pos, cascade, sample_radius, jitter);
 
   vec3 cloud_shadow_pos = get_shadow_screen_pos_cascade(
