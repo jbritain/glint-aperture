@@ -127,6 +127,7 @@ vec3 brdf_specular_area(
   return vec3(D * G / (4.0 * NoV + 1e-6));
 }
 
+// takes in a light vector that is NORMALIZED and a light radius IN RADIANS
 vec3 brdf_specular(Material material, vec3 L, vec3 V) {
   vec3 N = material.texture_normal;
   vec3 H = normalize(L + V);
@@ -146,6 +147,32 @@ vec3 brdf_specular(Material material, vec3 L, vec3 V) {
   float G = geometry_smith(N, V, L, material.roughness);
 
   return vec3(D * G / (4.0 * NoV + 1e-6));
+}
+
+// https://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_notes_v2.pdf
+// Page 13 - 'area lights'
+
+vec3 point_light_brdf(
+  Material material,
+  vec3 L,
+  vec3 V,
+  vec3 r, // reflected vector
+  vec3 fresnel,
+  float radius
+) {
+  vec3 diffuse = brdf_diffuse(material, normalize(L));
+
+  vec3 N = material.texture_normal;
+
+  vec3 centre_to_ray = dot(L, r) * r - L;
+  vec3 l = L + centre_to_ray * saturate(radius / length(centre_to_ray));
+  L = normalize(l);
+  float distance = length(l);
+
+  float alpha_prime = saturate(material.roughness + radius / (2.0 * distance));
+  float normalization = pow2(material.roughness / alpha_prime);
+
+  return mix(diffuse, brdf_specular(material, L, V), fresnel) * normalization;
 }
 
 #endif // BRDF_GLSL

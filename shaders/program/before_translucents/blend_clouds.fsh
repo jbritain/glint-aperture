@@ -4,6 +4,8 @@ in vec2 uv;
 
 #include "/lib/common.glsl"
 #include "/lib/util/space_conversions.glsl"
+uniform sampler2D cloud_shadow_tex;
+
 #include "/lib/atmospherics/clouds.glsl"
 
 uniform sampler2D scene_tex;
@@ -23,8 +25,10 @@ void main() {
 
   if (
     depth != 1.0 &&
-    !(ap.camera.pos.y > CLOUD_BASE_HEIGHT && world_pos.y < CLOUD_BASE_HEIGHT ||
-      ap.camera.pos.y < CLOUD_TOP_HEIGHT && world_pos.y > CLOUD_TOP_HEIGHT)
+    !(ap.camera.pos.y > cumulus_cloud_layer.base_height &&
+      world_pos.y < cumulus_cloud_layer.base_height ||
+      ap.camera.pos.y < cumulus_cloud_layer.top_height &&
+        world_pos.y > cumulus_cloud_layer.top_height)
   )
     return;
 
@@ -32,7 +36,7 @@ void main() {
   //   return;
   // }
 
-  vec4 clouds = texture(cloud_tex_w, uv);
+  vec4 clouds = catmull_texture(cloud_tex_w, uv);
   color = fma(color, vec3(clouds.a), clouds.rgb);
 
 }

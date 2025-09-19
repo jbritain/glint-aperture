@@ -44,6 +44,8 @@ void iris_emitFragment() {
 
   gbuffer.geometry_normal = tbn_matrix[2];
 
+  gbuffer.lightmap = lightmap;
+
   vec4 normal_data = iris_sampleNormalMap(uv);
   vec3 texture_normal = normal_data.xyz * 2.0 - 1.0;
   texture_normal.z = sqrt(1.0 - dot(texture_normal.xy, texture_normal.xy));
@@ -73,8 +75,6 @@ void iris_emitFragment() {
       )
     ) ==
     1.0;
-
-  gbuffer.lightmap = pow3(lightmap);
 
   encode_gbuffer(gbuffer_1, gbuffer_2, gbuffer);
 }

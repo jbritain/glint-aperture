@@ -10,6 +10,6 @@ uniform sampler2D scene_tex;
 layout(location = 0) out vec3 color;
 
 void main() {
-  color = texture(scene_tex, uv).rgb * auto_exposure;
+  color = texture(scene_tex, uv).rgb * 0.01; //auto_exposure;
 
 }

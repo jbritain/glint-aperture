@@ -65,7 +65,7 @@ bool ray_intersects(
     if (saturate(ray_pos.xy) != ray_pos.xy) return false;
 
     float depth = get_depth(ray_pos.xy, depth_sampler, lod);
-    if (depth == 1.0) return false;
+    if (depth == 1.0 || depth < 0.56) return false;
 
     if (
       abs(depth_lenience - (ray_pos.z - depth)) < depth_lenience &&

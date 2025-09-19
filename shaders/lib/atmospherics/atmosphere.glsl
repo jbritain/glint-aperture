@@ -133,4 +133,15 @@ Ray un_parameterise_multiple_scattering(vec2 uv) {
   return sun_vector;
 }
 
+vec3 parameterise_atmospheric_fog(vec3 screen_pos) {
+  return vec3(
+    screen_pos.xy,
+    screen_space_to_view_space(screen_pos.z) / ap.camera.far
+  );
+}
+
+vec3 un_parameterise_atmospheric_fog(vec3 pos) {
+  return vec3(pos.xy, view_space_to_screen_space(pos.z * ap.camera.far));
+}
+
 #endif // HILLAIRE_GLSL

@@ -55,7 +55,7 @@ layout(location = 0) out vec3 dof;
 void main() {
   float coc = extreme_filter(dof_coc_tex, uv).r;
 
-  float radius = mix(0.0, 4.0, abs(coc));
+  float radius = mix(0.0, 2.0, abs(coc));
 
   vec2 sample_radius = radius / textureSize(scene_tex, 0).xy;
 

@@ -10,6 +10,8 @@ layout(local_size_x = 8, local_size_y = 8) in;
 // TODO: holy shit definitely not this
 #define gl_FragCoord gl_GlobalInvocationID
 
+uniform sampler2D cloud_shadow_tex;
+
 #include "/lib/atmospherics/clouds.glsl"
 
 layout(rgba16f) uniform image2D cloud_spheremap;
@@ -24,9 +26,13 @@ void main(){
 
   vec3 dir = hemispherical_to_cartesian(uv * TAU);
 
-  vec4 clouds = get_clouds(ap.camera.pos, dir, true, false);
+  vec4 cumulus_clouds = get_clouds(cumulus_cloud_layer, ap.camera.pos, dir, true, false);
+  vec4 stratus_clouds = get_clouds(stratus_cloud_layer, ap.camera.pos, dir, true, false);
+  vec4 clouds = stratus_clouds;
+  clouds.rgb = fma(clouds.rgb, vec3(cumulus_clouds.a), cumulus_clouds.rgb);
+  clouds.a *= cumulus_clouds.a;
 
-  if(any(isnan(clouds))){
+  if(any(isnan(clouds)) || any(isinf(clouds))){
     clouds = vec4(0.0, 0.0, 0.0, 1.0);
   }
 

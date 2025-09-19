@@ -39,8 +39,6 @@ void main() {
 
   vec4 shadow = texture(shadow_tex, uv);
 
-  shadow.a /= 255.0;
-
   Material material = decode_material_from_gbuffer(
     texture(gbuffer_tex_1, uv),
     texture(gbuffer_tex_2, uv)

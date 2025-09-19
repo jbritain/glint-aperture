@@ -15,6 +15,7 @@ void main() {
 
   vec3 uv = clamp(texel_coord, vec3(0.0), lut_res - 1.0) / lut_res;
 
+
   vec3 ray_pos = vec3(0.0, ap.camera.pos.y + earth_radius + 64, 0.0);
   vec3 end_pos = (ap.camera.viewInv * vec4(screen_space_to_view_space(uv), 0.0)).xyz + vec3(0.0, ap.camera.pos.y + earth_radius + 64, 0.0);
 

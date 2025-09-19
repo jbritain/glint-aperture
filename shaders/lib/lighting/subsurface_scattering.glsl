@@ -13,13 +13,22 @@ vec3 compute_subsurface_scattering(
 ) {
   float VoL = saturate(dot(V, L));
 
-  float true_distance = blocker_distance;
-  return albedo *
-  sunlight_color *
-  PI *
-  exp(-true_distance * 200.0) *
-  max0(henyey_greenstein_phase(VoL, 0.3)) *
-  subsurface_scattering;
+  float true_distance =
+    blocker_distance * get_shadow_map_pixel_size(CASCADES - 1).z;
+
+  vec3 scatter =
+    albedo *
+    sunlight_color *
+    exp(-true_distance * rcp(albedo / max(0.1, sqrt(luminance(albedo))))) *
+    henyey_greenstein_phase(VoL, 0.3) *
+    1.5 *
+    subsurface_scattering;
+
+  if (any(isnan(scatter))) {
+    scatter = vec3(0.0);
+  }
+
+  return scatter;
 
 }
 

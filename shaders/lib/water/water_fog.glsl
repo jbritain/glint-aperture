@@ -9,8 +9,8 @@
 #include "/lib/util/dither.glsl"
 #include "/lib/util/misc.glsl"
 
-const vec3 water_absorption = vec3(0.3, 0.04, 0.01);
-const vec3 water_scattering = vec3(0.002, 0.01, 0.015) * 0.1;
+const vec3 water_absorption = vec3(0.3, 0.06, 0.04);
+const vec3 water_scattering = vec3(0.01, 0.05, 0.03) * 2.0;
 const vec3 water_extinction = water_absorption + water_scattering;
 const vec3 water_scattering_albedo = water_scattering / water_extinction;
 
@@ -59,33 +59,42 @@ Volume water_fog(vec3 start_pos, vec3 end_pos) {
 
   vec3 step_transmittance = max0(exp(-step_length * water_extinction));
 
-  float phase = rayleigh_phase(-dot(normalize(ray_step), world_light_dir));
+  float phase = henyey_greenstein_phase(
+    dot(normalize(ray_step), world_light_dir),
+    0.4
+  );
   phase = multiple_scattering_water(phase, step_length);
 
   for (int i = 0; i < WATER_FOG_STEPS; i++, ray_pos += ray_step) {
     int cascade;
     vec3 shadow_sample_pos = get_shadow_screen_pos(ray_pos, cascade);
+    vec3 transmittance_to_sun = vec3(1.0);
+
     vec3 shadow_map_pixel_size = get_shadow_map_pixel_size(cascade);
 
-    vec3 transmittance_to_sun = vec3(
+    float blocker_distance = 1.0;
+
+    transmittance_to_sun = vec3(
       texture(
         solidShadowMapFiltered,
         vec4(shadow_sample_pos.xy, cascade, shadow_sample_pos.z)
       ).r
     );
+
     if (min_vec3(transmittance_to_sun) > 0.01) {
       float translucent_shadow_depth = texture(
         shadowMap,
         vec3(shadow_sample_pos.xy, cascade)
       ).r;
 
-      float blocker_distance =
-        (shadow_sample_pos.z - translucent_shadow_depth) *
-        shadow_map_pixel_size.z;
+      blocker_distance =
+        shadow_sample_pos.z -
+        translucent_shadow_depth * shadow_map_pixel_size.z;
 
-      transmittance_to_sun *= exp(-blocker_distance * water_extinction);
+      transmittance_to_sun *= exp(-max0(blocker_distance) * water_extinction);
 
     }
+
     vec3 radiance =
       sunlight_color * phase * transmittance_to_sun +
       skylight_color * isotropic_phase;

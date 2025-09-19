@@ -4,6 +4,7 @@
 #include "/lib/util/jessie_utils.glsl"
 
 vec3 spherical_to_cartesian(vec2 coord) {
+  // coord.y /= 2.0;
   float sin_theta = sin(coord.x);
 
   return vec3(
@@ -23,11 +24,14 @@ vec2 cartesian_to_spherical(vec3 dir) {
 
 // TODO: fix these
 vec3 hemispherical_to_cartesian(vec2 coord) {
+  coord /= vec2(1.0, 2.0);
   return spherical_to_cartesian(coord);
 }
 
 vec2 cartesian_to_hemispherical(vec3 dir) {
-  return cartesian_to_spherical(dir);
+  vec2 coord = cartesian_to_spherical(dir);
+  coord *= vec2(1.0, 2.0);
+  return coord;
 }
 
 // https://backend.orbit.dtu.dk/ws/portalfiles/portal/126824972/onb_frisvad_jgt2012_v2.pdf

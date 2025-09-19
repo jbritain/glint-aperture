@@ -59,20 +59,24 @@ vec3 sample_point_light(
     ndc_depth * 0.5 + 0.5
   );
 
+  // float falloff = pow2(saturate(1.0 - pow4((sample_distance - 0.5)/LIGHT_RADIUS)))
+  // /(pow2(sample_distance) + 1.0);
+  float falloff = rcp(sample_distance + 1.0);
+  falloff *= 1.0 - smoothstep(0.8, 1.0, sample_distance / LIGHT_RADIUS);
+
   vec3 lighting =
     iris_getLightColor(light.block).rgb *
     (iris_getEmission(light.block) / 15.0) *
     EMISSION_STRENGTH *
-    mix(
-      material.albedo *
-        saturate(light_dot) *
-        float(material.metal_id == NO_METAL),
-      brdf_specular(material, sample_dir, -normalize(player_pos)),
-      fresnel
+    point_light_brdf(
+      material, 
+      sample_dir * sample_distance, 
+      -normalize(player_pos), 
+      reflect(normalize(player_pos), material.texture_normal), 
+      fresnel, 
+      0.5
     ) *
-    shadow * rcp(sample_distance);
-
-  lighting *= 1.0 - smoothstep(0.8, 1.0, sample_distance / LIGHT_RADIUS);
+    shadow * falloff;
 
   return lighting;
 }

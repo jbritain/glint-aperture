@@ -27,8 +27,8 @@ export function configureRenderer(renderer: RendererConfig) {
   renderer.sunPathRotation = 40.0;
 
   renderer.shadow.resolution = shadowRes;
-  renderer.shadow.far = 512;
-  renderer.shadow.distance = 512;
+  // renderer.shadow.far = 512;
+  // renderer.shadow.distance = 512;
   renderer.shadow.enabled = true;
   renderer.shadow.cascades = cascades;
   renderer.render.waterOverlay = false;
@@ -121,8 +121,15 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .clamp(false)
     .load();
 
+  const whiteNoiseTex = pipeline.importPNGTexture(
+    "noise_tex",
+    "textures/noise.png",
+    true,
+    false,
+  );
+
   const debugTex = pipeline
-    .createImageTexture("debug_tex", "debug")
+    .createImageTexture("_debug_tex", "debug")
     .format(Format.RGBA8)
     .width(screenWidth)
     .height(screenHeight)
@@ -271,6 +278,20 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .clear(false)
     .build();
 
+  const cloudShadowTex = pipeline
+    .createTexture("cloud_shadow_tex")
+    .format(Format.RG16)
+    .width(2048)
+    .height(2048)
+    .build();
+
+  preTranslucent
+    .createComposite("cloud_shadow_map")
+    .vertex("program/fullscreen_pass.vsh")
+    .fragment("program/before_translucents/generate_cloud_shadow_map.fsh")
+    .target(0, cloudShadowTex)
+    .compile();
+
   preRender
     .createCompute("generate_cloud_spheremap")
     .location("program/render_setup/generate_cloud_spheremap.csh")
@@ -375,6 +396,7 @@ export function configurePipeline(pipeline: PipelineConfig) {
     Usage.BLOCK_ENTITY,
     Usage.PARTICLES,
     Usage.EMISSIVE,
+    Usage.HAND,
   ];
 
   const forwardGbuffers = [
@@ -382,7 +404,6 @@ export function configurePipeline(pipeline: PipelineConfig) {
     Usage.ENTITY_TRANSLUCENT,
     Usage.BLOCK_ENTITY_TRANSLUCENT,
     Usage.PARTICLES_TRANSLUCENT,
-    Usage.HAND,
     Usage.TRANSLUCENT_HAND,
     Usage.TEXTURED,
     Usage.BASIC,
@@ -461,20 +482,6 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .fragment("program/before_translucents/generate_caustics.fsh")
     .target(0, causticsTex)
     .build();
-
-  const cloudShadowTex = pipeline
-    .createTexture("cloud_shadow_tex")
-    .format(Format.R16)
-    .width(2048)
-    .height(2048)
-    .build();
-
-  preTranslucent
-    .createComposite("cloud_shadow_map")
-    .vertex("program/fullscreen_pass.vsh")
-    .fragment("program/before_translucents/generate_cloud_shadow_map.fsh")
-    .target(0, cloudShadowTex)
-    .compile();
 
   preTranslucent
     .createComposite("opaque_shadowing")
@@ -757,8 +764,8 @@ export function configurePipeline(pipeline: PipelineConfig) {
   const DoFTex = pipeline
     .createTexture("dof_tex")
     .format(Format.RGB16F)
-    .width(Math.floor(screenWidth * 0.5))
-    .height(Math.floor(screenHeight * 0.5))
+    // .width(Math.floor(screenWidth * 0.5))
+    // .height(Math.floor(screenHeight * 0.5))
     .build();
 
   postRender

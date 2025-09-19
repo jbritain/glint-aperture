@@ -5,10 +5,10 @@
 #include "/lib/util/misc.glsl"
 #include "/lib/util/dither.glsl"
 
-#define PCSS_MAX_RADIUS 1.0 // 1 block
+#define PCSS_MAX_RADIUS 2.0 // 1 block
 
 #define PCF_SAMPLES 8
-#define BLOCKER_DISTANCE_SAMPLES 4
+#define BLOCKER_DISTANCE_SAMPLES 8
 
 vec3 sample_shadow_map(vec3 shadow_screen_pos, int cascade) {
   float opaque_shadow = texture(
@@ -104,24 +104,22 @@ vec4 compute_shadowing_and_blocker_distance(
     cascade
   );
 
+  if (cascade == CASCADES) return vec4(1.0);
+
   vec3 shadow_map_pixel_size = get_shadow_map_pixel_size(cascade);
-  vec3 shadow_map_max_pixel_size = get_shadow_map_pixel_size(3);
 
-  float blocker_distance =
-    get_blocker_distance(
-      shadow_screen_pos,
-      cascade,
-      PCSS_MAX_RADIUS * shadow_map_pixel_size.xy,
-      jitter
-    ) *
-    shadow_map_pixel_size.z /
-    shadow_map_max_pixel_size.z;
+  float blocker_distance = get_blocker_distance(
+    shadow_screen_pos,
+    cascade,
+    PCSS_MAX_RADIUS / shadow_map_pixel_size.xy,
+    jitter
+  );
 
-  vec2 sample_radius =
-    PCSS_MAX_RADIUS *
-      saturate(blocker_distance * 4.0) *
-      shadow_map_pixel_size.xy +
-    1e-3;
+  // all cascades have the same depth range
+  vec2 sample_radius = max(
+    blocker_distance * (PCSS_MAX_RADIUS / shadow_map_pixel_size.xy),
+    rcp(textureSize(shadowMap, 0).xy) * 2.0
+  );
   shadow.rgb = sample_pcf(shadow_screen_pos, cascade, sample_radius, jitter);
 
   vec3 cloud_shadow_pos = get_shadow_screen_pos_cascade(

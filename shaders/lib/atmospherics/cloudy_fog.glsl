@@ -39,7 +39,7 @@ float get_cloudy_fog_density(vec3 pos) {
 
   density *= mix(
     saturate(pow3(1.0 - abs(world_light_dir.y))) * 0.9 + 0.1,
-    0.1,
+    0.01,
     ap.world.rain
   );
 
@@ -176,7 +176,8 @@ Volume cloudy_fog(vec3 start_pos, vec3 end_pos, bool sky) {
         ray_pos - ap.camera.pos,
         CASCADES - 1
       );
-      shadow *= texture(cloud_shadow_tex, shadow_sample_pos.xy).r;
+      vec4 cloud_shadow = texture(cloud_shadow_tex, shadow_sample_pos.xy);
+      shadow *= cloud_shadow.r * cloud_shadow.g;
     }
 
     vec3 radiance =

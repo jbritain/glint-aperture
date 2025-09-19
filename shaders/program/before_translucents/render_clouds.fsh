@@ -1,6 +1,7 @@
 #version 460 core
 
 uniform sampler2D sky_irradiance_lut_tex;
+uniform sampler2D cloud_shadow_tex;
 
 #include "/lib/common.glsl"
 #include "/lib/atmospherics/clouds.glsl"
@@ -26,7 +27,31 @@ void main() {
   vec3 view_pos = screen_space_to_view_space(vec3(uv, depth));
   vec3 player_pos = (ap.camera.viewInv * vec4(view_pos, 1.0)).xyz;
 
-  clouds = get_clouds(ap.camera.pos, player_pos, depth == 1.0, true);
+  vec4 cumulus_clouds = get_clouds(
+    cumulus_cloud_layer,
+    ap.camera.pos,
+    player_pos,
+    depth == 1.0,
+    true
+  );
+
+  vec4 stratus_clouds = get_clouds(
+    stratus_cloud_layer,
+    ap.camera.pos,
+    player_pos,
+    depth == 1.0,
+    true
+  );
+
+  if (ap.camera.pos.y < cumulus_cloud_layer.top_height) {
+    clouds = stratus_clouds;
+    clouds.rgb = fma(clouds.rgb, vec3(cumulus_clouds.a), cumulus_clouds.rgb);
+    clouds.a *= cumulus_clouds.a;
+  } else {
+    clouds = cumulus_clouds;
+    clouds.rgb = fma(clouds.rgb, vec3(stratus_clouds.a), stratus_clouds.rgb);
+    clouds.a *= stratus_clouds.a;
+  }
 
   vec3 previous_screen_pos = previous_view_space_to_previous_screen_space(
     reproject_view_to_previous_frame(view_pos)

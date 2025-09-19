@@ -1,6 +1,8 @@
 #ifndef DITHER_GLSL
 #define DITHER_GLSL
 
+uniform sampler2D noise_tex;
+
 // The MIT License
 // Copyright © 2024 Pascal Gilcher
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -65,32 +67,5 @@ vec3 blue_noise(vec2 coord, int frame, int i) {
   vec2 offset = vec2(fract(0.5 + a1 * i), fract(0.5 + a2 * i));
   return blue_noise(coord + offset * 128, frame);
 }
-
-// // Spatiotemporal Blue Noise by NVIDIA
-// // https://github.com/NVIDIA-RTX/STBN
-// vec4 blue_noise(vec2 coord) {
-//   return texelFetch(
-//     blue_noise_tex,
-//     ivec2(coord) % ivec2(textureSize(blue_noise_tex, 0)),
-//     0
-//   );
-// }
-
-// // generates offsets using the R2 sequence
-// // https://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
-// vec4 blue_noise(vec2 coord, int i) {
-//   const float g = 1.6180339887498948482;
-//   float a1 = rcp(g);
-//   float a2 = rcp(pow2(g));
-
-//   vec2 offset = vec2(fract(0.5 + a1 * i), fract(0.5 + a2 * i));
-
-//   return texelFetch(
-//     blue_noise_tex,
-//     ivec2(coord + offset * textureSize(blue_noise_tex, 0)) %
-//       ivec2(textureSize(blue_noise_tex, 0)),
-//     0
-//   );
-// }
 
 #endif // DITHER_GLSL

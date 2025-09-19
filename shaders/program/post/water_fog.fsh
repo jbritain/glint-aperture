@@ -23,10 +23,9 @@ layout(location = 0) out vec3 color;
 void main() {
   color = texture(scene_tex, uv).rgb;
 
+  bool in_water = ap.camera.fluid == 1;
+
   float translucent_depth = texture(mainDepthTex, uv).r;
-  if (translucent_depth == 1.0) {
-    return;
-  }
 
   Material material = decode_material_from_gbuffer(
     texture(gbuffer_tex_1, uv),
@@ -34,7 +33,6 @@ void main() {
   );
 
   bool is_water = material.mask.is_fluid;
-  bool in_water = ap.camera.fluid == 1;
 
   if (CONDITION) {
     vec3 translucent_view_pos = screen_space_to_view_space(

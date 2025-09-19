@@ -76,7 +76,10 @@ vec4 ssr_sample(
     sky = fma(sky, vec3(clouds.a), clouds.rgb);
   }
 
-  return vec4(sky * sky_factor, ray_length);
+  return vec4(
+    sky * smoothstep(12.5 / 15.0, 13.5 / 15.0, sky_factor),
+    ray_length
+  );
 }
 
 vec4 compute_rough_reflections(

@@ -39,10 +39,4 @@ void main() {
     gbuffer.geometry_normal
   );
 
-  shadowing_and_blocker_distance.a *= 255;
-
-  // show(texture(shadow_color_tex, vec3(uv, 0)).a);
-  // show(texture(blue_noise_tex, vec3(uv, ap.time.frames)));
-  show(blue_noise(gl_FragCoord.xy, ap.time.frames));
-
 }

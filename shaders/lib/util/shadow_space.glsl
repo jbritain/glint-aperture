@@ -66,7 +66,10 @@ vec3 get_shadow_screen_pos_reverse(vec3 player_pos, out int cascade){
 
 // from null
 vec3 get_shadow_map_pixel_size(int cascade){
-  return 0.5 * abs(vec3(ap.celestial.projection[cascade][0].x, ap.celestial.projection[cascade][1].y, ap.celestial.projection[cascade][2].z));
+  vec4 near = ap.celestial.projectionInv[cascade] * vec4(-1, -1, -1, 1);
+  vec4 far = ap.celestial.projectionInv[cascade] * vec4(1);
+
+  return abs(far.xyz - near.xyz);
 }
 
 #endif // SHADOW_SPACE_GLSL
