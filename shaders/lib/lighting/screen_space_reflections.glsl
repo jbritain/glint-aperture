@@ -71,7 +71,7 @@ vec4 ssr_sample(
   if (world_dir.y > 0.0) {
     vec4 clouds = texture(
       cloud_spheremap_tex,
-      cartesian_to_hemispherical(world_dir) / TAU
+      fract(cartesian_to_hemispherical(world_dir) / TAU)
     );
     sky = fma(sky, vec3(clouds.a), clouds.rgb);
   }

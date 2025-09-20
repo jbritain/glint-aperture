@@ -47,6 +47,7 @@ void main() {
 
   if (material.mask.is_fluid) {
     ior = in_water ? rcp(1.33) : 1.33;
+    material.f0 = in_water ? rcp(0.02) : 0.02;
   }
 
   float translucent_depth = texture(mainDepthTex, uv).r;
@@ -73,15 +74,18 @@ void main() {
     if (dot(material.texture_normal, world_V) <= 0.1) {
       material.texture_normal = material.geometry_normal;
     }
+    // TODO: this seems hella wrong
     if (in_water) {
       material.texture_normal = -material.texture_normal;
     }
   }
 
+  bool total_internal_reflection = false;
+
   float opaque_depth = texture(solidDepthTex, uv).r;
   vec3 opaque_view_pos = screen_space_to_view_space(vec3(uv, opaque_depth));
   vec3 opaque_player_pos = (ap.camera.viewInv * vec4(opaque_view_pos, 1.0)).xyz;
-  vec3 refraction_normal =
+  vec3 refraction_normal = 
     in_water && material.mask.is_fluid
       ? material.texture_normal
       : material.geometry_normal - material.texture_normal;
@@ -92,19 +96,54 @@ void main() {
     rcp(ior)
   );
 
-
+  if(refracted == vec3(0.0)){
+    total_internal_reflection = true;
+  }
 
   vec3 refracted_pos =
     translucent_player_pos +
     refracted * distance(translucent_player_pos, opaque_player_pos);
   refracted_pos = (ap.camera.view * vec4(refracted_pos, 1.0)).xyz;
   refracted_pos = view_space_to_screen_space(refracted_pos);
+
+  // vec3 refracted_pos;
+  // bool intersect = ray_intersects(translucent_view_pos, mat3(ap.camera.view) * refracted, 16, 0.1, refracted_pos, solidDepthTex, 0);
+
+  vec3 indirect_fresnel = material.roughness <= ROUGH_REFLECTION_THRESHOLD ? schlick(
+    material,
+    dot(
+      world_V,
+      approximate_rough_normal(
+        world_V,
+        material.texture_normal,
+        material.roughness
+      )
+    )
+  ) : vec3(0.0);
+  
+  if(total_internal_reflection) {
+    indirect_fresnel = vec3(1.0);
+  }
+
+
+
   float refracted_depth = texelFetch(solidDepthTex, ivec2(refracted_pos.xy * textureSize(solidDepthTex, 0).xy), 0).r;
-  if (
-    saturate(refracted_pos.xy) == refracted_pos.xy &&
+  if(refracted_depth == 1.0 && in_water && refracted.y > 0.0){
+    vec3 sky = get_sky(refracted, false);
+
+      vec4 clouds = texture(
+        cloud_spheremap_tex,
+        cartesian_to_hemispherical(refracted) / TAU
+      );
+      sky = fma(sky, vec3(clouds.a), clouds.rgb);
+      color = sky * (1.0 - indirect_fresnel);
+
+  } else if (
     refracted_depth > translucent_depth
   ) {
-    color = texelFetch(scene_tex, ivec2(refracted_pos.xy * textureSize(scene_tex, 0).xy), 0).rgb;
+    color = texelFetch(scene_tex, ivec2(refracted_pos.xy * textureSize(scene_tex, 0).xy), 0).rgb * (1.0 - indirect_fresnel);
+  } else {
+    color *= 1.0 - indirect_fresnel;
   }
 
   vec3 direct_fresnel = schlick(
@@ -124,17 +163,14 @@ void main() {
     false
   );
 
-  vec3 indirect_fresnel = material.roughness <= ROUGH_REFLECTION_THRESHOLD ? schlick(
-    material,
-    dot(
-      world_V,
-      approximate_rough_normal(
-        world_V,
-        material.texture_normal,
-        material.roughness
-      )
-    )
-  ) : vec3(0.0);
+
+
+  if(total_internal_reflection){
+    indirect_fresnel = vec3(1.0);
+  }
+
+
+
 
 
 

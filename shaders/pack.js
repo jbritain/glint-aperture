@@ -410,6 +410,7 @@ function configureRenderer(renderer) {
   renderer.disableShade = true;
   renderer.sunPathRotation = 40;
   renderer.shadow.resolution = shadowRes;
+  renderer.shadow.entityCascadeCount = 1;
   renderer.shadow.enabled = true;
   renderer.shadow.cascades = cascades;
   renderer.render.waterOverlay = false;
@@ -490,14 +491,14 @@ function configurePipeline(pipeline) {
   preRender.barrier(IMAGE_BIT);
   preRender.createCompute("generate_atmospheric_fog_lut").location("program/atmosphere/generate_atmospheric_fog_lut.csh").workGroups(4, 4, 8).compile();
   preRender.barrier(IMAGE_BIT);
-  const cloudShapeTex = pipeline.createImageTexture("cloud_shape_tex", "cloud_shape").format(Format.RGBA16).width(128).height(128).depth(128).clear(false).build();
+  const cloudShapeTex = pipeline.createImageTexture("cloud_shape_tex", "cloud_shape").format(Format.R16).width(128).height(128).depth(128).clear(false).build();
   screenSetup.createCompute("generate_cloud_shape").location("program/render_setup/generate_cloud_shape.csh").workGroups(32, 32, 32).compile();
-  const cloudDetailTex = pipeline.createImageTexture("cloud_detail_tex", "cloud_detail").format(Format.RGBA16).width(32).height(32).depth(32).clear(false).build();
+  const cloudDetailTex = pipeline.createImageTexture("cloud_detail_tex", "cloud_detail").format(Format.R16).width(32).height(32).depth(32).clear(false).build();
   screenSetup.createCompute("generate_cloud_detail").location("program/render_setup/generate_cloud_detail.csh").workGroups(8, 8, 8).compile();
   const cloudWeatherTex = pipeline.createImageTexture("cloud_weather_tex", "cloud_weather").format(Format.RGBA16).width(512).height(512).clear(false).build();
   preRender.createCompute("generate_cloud_weather").location("program/render_setup/generate_cloud_weather.csh").workGroups(64, 64, 1).compile();
   preRender.barrier(IMAGE_BIT);
-  const cloudSpheremapLUTTex = pipeline.createImageTexture("cloud_spheremap_tex", "cloud_spheremap").format(Format.RGBA16F).width(256).height(256).clear(false).build();
+  const cloudSpheremapLUTTex = pipeline.createImageTexture("cloud_spheremap_tex", "cloud_spheremap").format(Format.RGBA16F).width(512).height(512).clear(false).build();
   const cloudShadowTex = pipeline.createTexture("cloud_shadow_tex").format(Format.RG16).width(2048).height(2048).build();
   preTranslucent.createComposite("cloud_shadow_map").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/generate_cloud_shadow_map.fsh").target(0, cloudShadowTex).compile();
   preRender.createCompute("generate_cloud_spheremap").location("program/render_setup/generate_cloud_spheremap.csh").workGroups(32, 32, 1).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();

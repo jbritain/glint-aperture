@@ -2,16 +2,15 @@
 
 in vec2 uv;
 
-#include "/lib/common.glsl"
-#include "/lib/util/space_conversions.glsl"
-uniform sampler2D cloud_shadow_tex;
-
-#include "/lib/atmospherics/clouds.glsl"
-
 uniform sampler2D scene_tex;
 uniform sampler2D cloud_tex;
 uniform sampler2D mainDepthTex;
 uniform sampler2D cloud_tex_w;
+uniform sampler2D cloud_shadow_tex;
+
+#include "/lib/common.glsl"
+#include "/lib/util/space_conversions.glsl"
+#include "/lib/atmospherics/clouds.glsl"
 
 layout(location = 0) out vec3 color;
 

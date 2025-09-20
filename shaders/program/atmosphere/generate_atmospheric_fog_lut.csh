@@ -7,7 +7,7 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
 layout(rgba16f) uniform image3D atmospheric_fog_lut;
 
-uniform sampler2D sun_transmittance_lut_tex;
+
 
 void main() {
   ivec3 texel_coord = ivec3(gl_GlobalInvocationID.xyz);
@@ -42,8 +42,8 @@ void main() {
     float mie_density = mie_density(altitude);
     float ozone_density = ozone_density(altitude);
 
-    vec3 rayleigh_scattering = rayleigh_scattering_coeff * rayleigh_density * 500.0;
-    vec3 mie_scattering = mie_scattering_coeff * mie_density * 500.0;
+    vec3 rayleigh_scattering = rayleigh_scattering_coeff * rayleigh_density  * ATMOSPHERIC_SCATTERING_STRENGTH;
+    vec3 mie_scattering = mie_scattering_coeff * mie_density  * ATMOSPHERIC_SCATTERING_STRENGTH;
 
     vec3 extinction = rayleigh_scattering + mie_scattering;
 
@@ -89,6 +89,8 @@ void main() {
 
     ray_pos += ray_step;
   }
+
+  luminance *= 2.0; // TODO: make multiple scattering work
 
   imageStore(atmospheric_fog_lut, texel_coord, vec4(luminance, (transmittance.x + transmittance.y + transmittance.z) / 3.0));
 

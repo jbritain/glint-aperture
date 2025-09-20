@@ -2,13 +2,14 @@
 
 layout(local_size_x = 8, local_size_y = 8) in;
 
+uniform sampler2D cloud_spheremap_tex;
+
+
 #include "/lib/buffers/scene_data.glsl"
 #include "/lib/common.glsl"
 #include "/lib/atmospherics/sky.glsl"
 #include "/lib/util/misc.glsl"
 #include "/lib/util/dither.glsl"
-
-uniform sampler2D cloud_spheremap_tex;
 
 layout(rgba16f) uniform image2D sky_irradiance_lut;
 

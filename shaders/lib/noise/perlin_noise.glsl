@@ -108,6 +108,8 @@ float perlin(vec3 vec, int cell_dimensions) {
   return (mix(y1, y2, w) + 1) / 2;
 }
 
+// grid_size is how many cells you want on the texture
+// cell_dimensions is how many pixels there are per cell I think (I wrote this a while ago)
 float sample_perlin_noise(vec3 coord, float grid_size, int cell_dimensions) {
   return perlin(vec3(coord / grid_size), cell_dimensions);
 }

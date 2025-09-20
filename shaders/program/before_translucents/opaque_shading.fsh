@@ -118,4 +118,5 @@ void main() {
   shaded_color +=
     material.emission * material.albedo * EMISSION_STRENGTH * 20.0;
 
+  show(material.texture_normal);
 }

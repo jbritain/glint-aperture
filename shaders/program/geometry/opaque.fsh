@@ -4,6 +4,7 @@
 #include "/lib/structs/gbuffer_material.glsl"
 #include "/lib/misc/parallax.glsl"
 #include "/lib/util/dither.glsl"
+#include "/lib/water/puddles.glsl"
 
 layout(location = 0) out vec4 gbuffer_1;
 layout(location = 1) out vec4 gbuffer_2;
@@ -21,6 +22,11 @@ in vec3 mid_block;
 in mat3 tbn_matrix;
 
 void iris_emitFragment() {
+  mat3 tbn_matrix = tbn_matrix;
+  tbn_matrix[0] = normalize(tbn_matrix[0]);
+  tbn_matrix[1] = normalize(tbn_matrix[1]);
+  tbn_matrix[2] = normalize(tbn_matrix[2]);
+
   Gbuffer gbuffer;
 
   vec2 dx = dFdx(uv);
@@ -61,6 +67,9 @@ void iris_emitFragment() {
 
   gbuffer.material_mask = build_material_mask(block_id);
   gbuffer.material_mask.is_fluid = false;
+
+  vec3 player_pos = (ap.camera.viewInv * vec4(view_pos, 1.0)).xyz;
+  // apply_puddles(gbuffer, normal_data.a, player_pos + ap.camera.pos);
 
   gbuffer.material_mask.parallax_shadow =
     step(

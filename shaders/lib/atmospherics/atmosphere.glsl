@@ -10,6 +10,10 @@
   https://sebh.github.io/publications/egsr2020.pdf
 */
 
+uniform sampler2D sun_transmittance_lut_tex;
+
+#define ATMOSPHERIC_SCATTERING_STRENGTH 500.0
+
 // numbers obtained from belmu
 const float sun_radius = 6.9634e8;
 const float sun_distance = 1.496e11;

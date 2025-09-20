@@ -24,13 +24,13 @@ vec2 cartesian_to_spherical(vec3 dir) {
 
 // TODO: fix these
 vec3 hemispherical_to_cartesian(vec2 coord) {
-  coord /= vec2(1.0, 2.0);
-  return spherical_to_cartesian(coord);
+  return spherical_to_cartesian(coord).yxz;
 }
 
 vec2 cartesian_to_hemispherical(vec3 dir) {
+  dir = dir.yxz;
   vec2 coord = cartesian_to_spherical(dir);
-  coord *= vec2(1.0, 2.0);
+
   return coord;
 }
 

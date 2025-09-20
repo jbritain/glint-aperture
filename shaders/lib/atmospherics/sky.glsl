@@ -1,10 +1,9 @@
 #ifndef SKY_GLSL
 #define SKY_GLSL
 
-#include "/lib/atmospherics/atmosphere.glsl"
-
 uniform sampler2D sky_view_lut_tex;
-uniform sampler2D sun_transmittance_lut_tex;
+
+#include "/lib/atmospherics/atmosphere.glsl"
 
 vec3 getValFromSkyLUT(vec3 ray_dir, int lod) {
   return vec3(0.0);

@@ -29,6 +29,7 @@ export function configureRenderer(renderer: RendererConfig) {
   renderer.shadow.resolution = shadowRes;
   // renderer.shadow.far = 512;
   // renderer.shadow.distance = 512;
+  renderer.shadow.entityCascadeCount = 1;
   renderer.shadow.enabled = true;
   renderer.shadow.cascades = cascades;
   renderer.render.waterOverlay = false;
@@ -226,7 +227,7 @@ export function configurePipeline(pipeline: PipelineConfig) {
   // =======================================================================================
   const cloudShapeTex = pipeline
     .createImageTexture("cloud_shape_tex", "cloud_shape")
-    .format(Format.RGBA16)
+    .format(Format.R16)
     .width(128)
     .height(128)
     .depth(128)
@@ -241,7 +242,7 @@ export function configurePipeline(pipeline: PipelineConfig) {
 
   const cloudDetailTex = pipeline
     .createImageTexture("cloud_detail_tex", "cloud_detail")
-    .format(Format.RGBA16)
+    .format(Format.R16)
     .width(32)
     .height(32)
     .depth(32)
@@ -273,8 +274,8 @@ export function configurePipeline(pipeline: PipelineConfig) {
   const cloudSpheremapLUTTex = pipeline
     .createImageTexture("cloud_spheremap_tex", "cloud_spheremap")
     .format(Format.RGBA16F)
-    .width(256)
-    .height(256)
+    .width(512)
+    .height(512)
     .clear(false)
     .build();
 

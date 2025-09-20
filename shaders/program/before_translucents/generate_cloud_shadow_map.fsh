@@ -4,6 +4,7 @@
 
 uniform sampler2D cloud_shadow_tex;
 
+
 #include "/lib/atmospherics/clouds.glsl"
 #include "/lib/util/space_conversions.glsl"
 
@@ -45,9 +46,6 @@ void main() {
   vec3 player_pos = (ap.celestial.viewInv * vec4(shadow_view_pos, 1.0)).xyz;
   vec3 world_pos = player_pos + ap.camera.pos;
 
-  ray_plane_intersection(world_pos, world_light_dir, cumulus_cloud_layer.base_height, world_pos);
   cloud_shadow.r = get_transmittance_to_sun(cumulus_cloud_layer, world_pos);
-
-  
-  cloud_shadow.r = get_transmittance_to_sun(stratus_cloud_layer, world_pos);
+  cloud_shadow.g = get_transmittance_to_sun(stratus_cloud_layer, world_pos);
 }

@@ -57,8 +57,6 @@ void main() {
   //   textureGather(ssr_tex, previous_screen_pos.xy, 3)
   // );
 
-  show(material.lightmap.y);
-
   ssr = compute_screen_space_reflections(
     view_pos,
     material.roughness,

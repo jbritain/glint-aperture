@@ -9,6 +9,7 @@
 #include "/lib/atmospherics/atmosphere.glsl"
 #include "/lib/util/intersections.glsl"
 #include "/lib/util/shadow_space.glsl"
+#include "/lib/atmospherics/sky.glsl"
 
 uniform sampler3D cloud_shape_tex;
 uniform sampler3D cloud_detail_tex;
@@ -42,7 +43,7 @@ CloudLayer stratus_cloud_layer = CloudLayer(
   1800,
   16,
   4,
-  0.2 + 2.0 * ap.world.thunder,
+  0.3,
   1,
   bvec2(false, false)
 );
@@ -122,21 +123,12 @@ float get_cloud_density(
     linearstep(cloud_layer.base_height, cloud_layer.top_height, sample_pos.y)
   );
 
-  vec4 low_frequency_noise = texture(
+  float density = texture(
     cloud_shape_tex,
     fract(
       (sample_pos + vec3(0.0, 0.0, world_time_counter) * WIND_SPEED) / 2000.0
     )
-  );
-
-  float low_frequency_fbm = saturate(
-    low_frequency_noise.g * 0.625 +
-      low_frequency_noise.b * 0.25 +
-      low_frequency_noise.a * 0.125
-  );
-
-  float density = low_frequency_noise.r;
-  density = saturate(remap(density, low_frequency_fbm * 0.7, 1.0, 0.0, 1.0));
+  ).r;
 
   #ifdef VOXEL_CLOUDS
   sample_pos = floor(pos / 32.0) * 32.0;
@@ -176,20 +168,13 @@ float get_cloud_density(
     sample_pos = floor(pos / 16.0) * 16.0;
     #endif
 
-    vec3 high_frequency_noise = texture(
+    float high_frequency_fbm = texture(
       cloud_detail_tex,
       fract(
         (sample_pos + vec3(0.0, 0.0, world_time_counter) * WIND_SPEED * 2.0) /
           100.0
       )
-    ).rgb;
-    float high_frequency_fbm =
-      high_frequency_noise.r * 0.625 +
-      high_frequency_noise.g * 0.25 +
-      high_frequency_noise.b * 0.125;
-
-    // high_frequency_fbm = pow3(high_frequency_fbm);
-
+    ).r;
     high_frequency_fbm =
       0.5 *
       exp(-coverage * 0.75) *
@@ -217,7 +202,11 @@ float get_light_from_sun(
   vec2 jitter,
   float phase
 ) {
-  // vec3 ray_dir = generate_cone_vector(world_light_dir, jitter, 0.03);
+  // vec3 ray_dir = generate_cone_vector(
+  //   world_light_dir,
+  //   fract(jitter + ray_pos.y),
+  //   0.2
+  // );
   vec3 ray_dir = world_light_dir;
 
   vec3 a = ray_pos;
@@ -265,6 +254,9 @@ vec4 get_clouds(
   bool high_quality
 ) {
   vec3 ray_dir = normalize(player_pos);
+
+  vec3 aerial_perspective_pos = vec3(0.0);
+  float aerial_perspective_pos_weight = 0.0;
 
   vec3 a;
   vec3 b;
@@ -347,6 +339,11 @@ vec4 get_clouds(
 
     float sample_transmittance = exp(-density * step_length * CLOUD_EXTINCTION);
 
+    if (sample_transmittance < 1.0) {
+      aerial_perspective_pos += (ray_pos - ap.camera.pos) * transmittance;
+      aerial_perspective_pos_weight += transmittance;
+    }
+
     vec3 radiance =
       sunlight_color * get_light_from_sun(cloud_layer, ray_pos, jitter, phase);
     radiance +=
@@ -365,6 +362,31 @@ vec4 get_clouds(
     }
 
   }
+
+  float air_density = mie_density(aerial_perspective_pos.y);
+  vec3 air_transmittance = exp(
+    -air_density * mie_absorption_coeff * length(aerial_perspective_pos)
+  );
+
+  // transmittance = mix(transmittance, 1.0, mean3(air_transmittance));
+  // scatter *= air_transmittance;
+
+  // if (transmittance < 1.0) {
+  //   Volume atmospheric_scattering = aerial_perspective(
+  //     vec3(0.0),
+  //     aerial_perspective_pos - ap.camera.pos,
+  //     8
+  //   );
+
+  //   show(atmospheric_scattering.scattering);
+
+  //   scatter = fma(
+  //     scatter,
+  //     atmospheric_scattering.transmittance,
+  //     atmospheric_scattering.scattering
+  //   );
+  //   transmittance *= mean3(atmospheric_scattering.transmittance);
+  // }
 
   return vec4(scatter, transmittance);
 }

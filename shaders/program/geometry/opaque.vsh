@@ -27,7 +27,7 @@ void iris_sendParameters(VertexData data) {
     data.color.a
   );
 
-  tbn_matrix[2] = normalize(mat3(iris_modelViewMatrix) * data.normal.xyz);
+  tbn_matrix[2] = normalize(mat3(iris_modelViewMatrix) * data.normal);
   tbn_matrix[0] = normalize(mat3(iris_modelViewMatrix) * data.tangent.xyz);
   tbn_matrix[1] = normalize(
     cross(tbn_matrix[0], tbn_matrix[2]) * data.tangent.w

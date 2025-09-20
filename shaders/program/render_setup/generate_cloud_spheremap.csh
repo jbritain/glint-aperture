@@ -2,16 +2,18 @@
 
 layout(local_size_x = 8, local_size_y = 8) in;
 
-#include "/lib/common.glsl"
-#include "/lib/atmospherics/sky.glsl"
-#include "/lib/util/misc.glsl"
-#include "/lib/util/dither.glsl"
+
 
 // TODO: holy shit definitely not this
 #define gl_FragCoord gl_GlobalInvocationID
 
 uniform sampler2D cloud_shadow_tex;
 
+
+#include "/lib/common.glsl"
+#include "/lib/atmospherics/sky.glsl"
+#include "/lib/util/misc.glsl"
+#include "/lib/util/dither.glsl"
 #include "/lib/atmospherics/clouds.glsl"
 
 layout(rgba16f) uniform image2D cloud_spheremap;

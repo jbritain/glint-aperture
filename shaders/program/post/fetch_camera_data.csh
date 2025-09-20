@@ -22,5 +22,5 @@ void main() {
 
   exposure = clamp(exposure, 1e-3, 0.5);
 
-  auto_exposure = mix(auto_exposure, exposure, saturate(exp2(-100.0 * ap.time.delta)));
+  auto_exposure = mix(auto_exposure, exposure, saturate(exp2(-300.0 * ap.time.delta)));
 }
