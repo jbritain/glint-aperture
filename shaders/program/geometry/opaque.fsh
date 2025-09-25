@@ -22,12 +22,9 @@ in vec3 mid_block;
 in mat3 tbn_matrix;
 
 void iris_emitFragment() {
-  mat3 tbn_matrix = tbn_matrix;
-  tbn_matrix[0] = normalize(tbn_matrix[0]);
-  tbn_matrix[1] = normalize(tbn_matrix[1]);
-  tbn_matrix[2] = normalize(tbn_matrix[2]);
-
   Gbuffer gbuffer;
+
+  show(mat3(ap.camera.viewInv) * normalize(tbn_matrix[0]));
 
   vec2 dx = dFdx(uv);
   vec2 dy = dFdy(uv);
@@ -69,21 +66,22 @@ void iris_emitFragment() {
   gbuffer.material_mask.is_fluid = false;
 
   vec3 player_pos = (ap.camera.viewInv * vec4(view_pos, 1.0)).xyz;
-  // apply_puddles(gbuffer, normal_data.a, player_pos + ap.camera.pos);
+  apply_puddles(gbuffer, normal_data.a, player_pos + ap.camera.pos);
 
-  gbuffer.material_mask.parallax_shadow =
-    step(
-      0.01,
-      parallax_shadow(
-        parallax_pos,
-        view_pos,
-        tbn_matrix,
-        dx,
-        dy,
-        interleaved_gradient_noise(floor(gl_FragCoord.xy), ap.time.frames)
-      )
-    ) ==
-    1.0;
+  // gbuffer.material_mask.parallax_shadow =
+  //   step(
+  //     0.01,
+  //     parallax_shadow(
+  //       parallax_pos,
+  //       view_pos,
+  //       tbn_matrix,
+  //       dx,
+  //       dy,
+  //       interleaved_gradient_noise(floor(gl_FragCoord.xy), ap.time.frames)
+  //     )
+  //   ) ==
+  //   1.0;
 
   encode_gbuffer(gbuffer_1, gbuffer_2, gbuffer);
+
 }

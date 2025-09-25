@@ -10,7 +10,7 @@
 #include "/lib/util/misc.glsl"
 
 const vec3 water_absorption = vec3(0.3, 0.06, 0.04);
-const vec3 water_scattering = vec3(0.01, 0.05, 0.03) * 2.0;
+const vec3 water_scattering = vec3(0.01, 0.05, 0.03);
 const vec3 water_extinction = water_absorption + water_scattering;
 const vec3 water_scattering_albedo = water_scattering / water_extinction;
 
@@ -80,6 +80,9 @@ Volume water_fog(vec3 start_pos, vec3 end_pos) {
         vec4(shadow_sample_pos.xy, cascade, shadow_sample_pos.z)
       ).r
     );
+
+    float cloud_shadow = texture(cloud_shadow_tex, shadow_sample_pos.xy).r;
+    transmittance_to_sun *= cloud_shadow;
 
     if (min_vec3(transmittance_to_sun) > 0.01) {
       float translucent_shadow_depth = texture(

@@ -1,9 +1,11 @@
 #version 460 core
-#include "/lib/common.glsl"
-#include "/lib/util/shadow_space.glsl"
 
+uniform sampler2D cloud_shadow_tex;
 uniform sampler2DArrayShadow solidShadowMapFiltered;
 uniform sampler2DArray shadowMap;
+
+#include "/lib/common.glsl"
+#include "/lib/util/shadow_space.glsl"
 #include "/lib/water/water_fog.glsl"
 
 layout(location = 0) out vec4 out_color;

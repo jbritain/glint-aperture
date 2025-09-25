@@ -39,7 +39,7 @@ float wave_height(vec2 position) {
       position,
       p,
       frequency,
-      ap.time.elapsed * timeMultiplier + wavePhaseShift
+      world_time_counter * timeMultiplier + wavePhaseShift
     );
 
     // shift position around according to wave drag and derivative of the wave

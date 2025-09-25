@@ -281,7 +281,7 @@ export function configurePipeline(pipeline: PipelineConfig) {
 
   const cloudShadowTex = pipeline
     .createTexture("cloud_shadow_tex")
-    .format(Format.RG16)
+    .format(Format.R16)
     .width(2048)
     .height(2048)
     .build();

@@ -499,7 +499,7 @@ function configurePipeline(pipeline) {
   preRender.createCompute("generate_cloud_weather").location("program/render_setup/generate_cloud_weather.csh").workGroups(64, 64, 1).compile();
   preRender.barrier(IMAGE_BIT);
   const cloudSpheremapLUTTex = pipeline.createImageTexture("cloud_spheremap_tex", "cloud_spheremap").format(Format.RGBA16F).width(512).height(512).clear(false).build();
-  const cloudShadowTex = pipeline.createTexture("cloud_shadow_tex").format(Format.RG16).width(2048).height(2048).build();
+  const cloudShadowTex = pipeline.createTexture("cloud_shadow_tex").format(Format.R16).width(2048).height(2048).build();
   preTranslucent.createComposite("cloud_shadow_map").vertex("program/fullscreen_pass.vsh").fragment("program/before_translucents/generate_cloud_shadow_map.fsh").target(0, cloudShadowTex).compile();
   preRender.createCompute("generate_cloud_spheremap").location("program/render_setup/generate_cloud_spheremap.csh").workGroups(32, 32, 1).ssbo(0, sceneData).define("SCENE_DATA_BINDING", "0").compile();
   preRender.barrier(IMAGE_BIT);

@@ -126,8 +126,8 @@ vec4 compute_shadowing_and_blocker_distance(
     player_pos,
     CASCADES - 1
   );
-  vec2 cloud_shadow = texture(cloud_shadow_tex, cloud_shadow_pos.xy).rg;
-  shadow.rgb *= cloud_shadow.r * cloud_shadow.g;
+  float cloud_shadow = texture(cloud_shadow_tex, cloud_shadow_pos.xy).r;
+  shadow.rgb *= cloud_shadow;
 
   shadow.a = blocker_distance;
 

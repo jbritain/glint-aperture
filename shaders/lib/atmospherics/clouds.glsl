@@ -23,7 +23,7 @@ struct CloudLayer {
   float light_samples;
   float density;
   uint component; // when the cloud is stored as a single value in a texture, which component does it occupy?
-  bvec2 sample_shadows; // which components in the cloud shadow map should cast a shadow?
+  bvec2 sample_shadows; // which other layers should be sampled for transmittance
 };
 
 CloudLayer cumulus_cloud_layer = CloudLayer(
@@ -32,7 +32,7 @@ CloudLayer cumulus_cloud_layer = CloudLayer(
   1000,
   32,
   8,
-  0.5 + 2.0 * ap.world.thunder,
+  0.3 + ap.world.rain + ap.world.thunder,
   0,
   bvec2(false, true)
 );
@@ -43,7 +43,7 @@ CloudLayer stratus_cloud_layer = CloudLayer(
   1800,
   16,
   4,
-  0.3,
+  0.1,
   1,
   bvec2(false, false)
 );
@@ -196,6 +196,34 @@ float get_cloud_density(
   return pow(density, 0.7) * cloud_layer.density;
 }
 
+float get_transmittance_to_sun(CloudLayer cloud_layer, vec3 origin) {
+  vec3 ray_dir = world_light_dir;
+
+  vec3 a;
+  vec3 b;
+  ray_plane_intersection(origin, ray_dir, cloud_layer.base_height, a);
+  ray_plane_intersection(origin, ray_dir, cloud_layer.top_height, b);
+
+  float density = 0.0;
+
+  vec3 previous_sample_pos = a;
+  for (int i = 0; i < cloud_layer.light_samples; i++) {
+    float progress = float(i) / float(cloud_layer.light_samples);
+    vec3 sample_pos = mix(a, b, exp(10.0 * (progress - 1.0)));
+
+    float temp1;
+    float temp2;
+
+    density +=
+      get_cloud_density(cloud_layer, sample_pos, false, temp1, temp2) *
+      distance(previous_sample_pos, sample_pos);
+
+    previous_sample_pos = sample_pos;
+  }
+
+  return exp(-density * CLOUD_EXTINCTION);
+}
+
 float get_light_from_sun(
   CloudLayer cloud_layer,
   vec3 ray_pos,
@@ -234,12 +262,16 @@ float get_light_from_sun(
     previous_sample_pos = sample_pos;
   }
 
-  // return exp(-density * CLOUD_EXTINCTION) * phase;
   float light = multiple_scattering_clouds(density, phase);
-  vec3 cloud_shadow_pos = get_shadow_screen_pos_cascade(
-    ray_pos - ap.camera.pos,
-    CASCADES - 1
-  );
+
+  for(uint i = 0; i < 2; i++){
+    if(cloud_layer.sample_shadows[i]){
+      if(light < 0.01){
+        break;
+      }
+      light *= get_transmittance_to_sun(cloud_layers[i], ray_pos);
+    }
+  }
 
   return light;
 }

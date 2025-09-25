@@ -20,11 +20,10 @@ vec3 compute_subsurface_scattering(
     albedo *
     sunlight_color *
     exp(
-      -true_distance * rcp(albedo / max(0.1, sqrt(luminance(albedo)))) * 0.3
+      -true_distance * rcp(albedo / max(0.1, sqrt(luminance(albedo)))) * 0.5
     ) *
     henyey_greenstein_phase(VoL, 0.3) *
-    PI *
-    2.0 *
+    8.0 *
     subsurface_scattering;
 
   if (any(isnan(scatter))) {

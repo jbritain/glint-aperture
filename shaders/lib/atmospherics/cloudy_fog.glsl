@@ -14,7 +14,7 @@
 
 #define CLOUDY_FOG_BASE_HEIGHT -63
 #define CLOUDY_FOG_CENTRE_HEIGHT 0
-#define CLOUDY_FOG_TOP_HEIGHT mix(150, 1000, ap.world.rain)
+#define CLOUDY_FOG_TOP_HEIGHT (100 + 900 * ap.world.rain)
 
 #define CLOUDY_FOG_EXTINCTION 0.1
 #define CLOUDY_FOG_DENSITY 1.0
@@ -39,7 +39,7 @@ float get_cloudy_fog_density(vec3 pos) {
 
   density *= mix(
     saturate(pow3(1.0 - abs(world_light_dir.y))) * 0.9 + 0.1,
-    0.01,
+    1.0,
     ap.world.rain
   );
 
@@ -176,8 +176,8 @@ Volume cloudy_fog(vec3 start_pos, vec3 end_pos, bool sky) {
         ray_pos - ap.camera.pos,
         CASCADES - 1
       );
-      vec4 cloud_shadow = texture(cloud_shadow_tex, shadow_sample_pos.xy);
-      shadow *= cloud_shadow.r * cloud_shadow.g;
+      float cloud_shadow = texture(cloud_shadow_tex, shadow_sample_pos.xy).r;
+      shadow *= cloud_shadow;
     }
 
     vec3 radiance =

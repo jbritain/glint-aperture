@@ -18,6 +18,7 @@ uniform sampler2D sky_irradiance_lut_tex;
 #include "/lib/lighting/brdf.glsl"
 #include "/lib/lighting/subsurface_scattering.glsl"
 #include "/lib/lighting/shadows.glsl"
+#include "/lib/water/puddles.glsl"
 
 layout(location = 0) out vec4 diffuse;
 layout(location = 1) out vec4 gbuffer_1;
@@ -78,6 +79,10 @@ void iris_emitFragment() {
     gbuffer.specular_map = vec4(1.0, 0.02, 0.0, 0.0);
     albedo.a = 0.0;
 
+  }
+
+  if (!gbuffer.material_mask.is_fluid) {
+    apply_puddles(gbuffer, normal_data.a, player_pos + ap.camera.pos);
   }
 
   encode_gbuffer(gbuffer_1, gbuffer_2, gbuffer);

@@ -6,6 +6,7 @@
 uniform sampler2DArray shadowMap;
 uniform sampler2DArrayShadow solidShadowMapFiltered;
 uniform sampler2D sky_irradiance_lut_tex;
+uniform sampler2D cloud_shadow_tex;
 
 #include "/lib/water/water_fog.glsl"
 
