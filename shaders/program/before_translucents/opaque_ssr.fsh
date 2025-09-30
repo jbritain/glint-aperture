@@ -12,7 +12,7 @@ uniform sampler2D cloud_spheremap_tex;
 in vec2 uv;
 
 uniform sampler2D mainDepthTex;
-uniform sampler2D previousMainDepthTex;
+uniform sampler2D previousSolidDepthTex;
 
 uniform sampler2D diffuse_tex;
 uniform sampler2D ssr_tex;
@@ -41,7 +41,7 @@ void main() {
     previous_view_pos
   );
   previous_screen_pos.z = texture(
-    previousMainDepthTex,
+    previousSolidDepthTex,
     previous_screen_pos.xy
   ).r;
   vec3 actual_previous_view_pos = previous_screen_space_to_previous_view_space(

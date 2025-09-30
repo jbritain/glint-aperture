@@ -39,7 +39,7 @@ float get_cloudy_fog_density(vec3 pos) {
 
   density *= mix(
     saturate(pow3(1.0 - abs(world_light_dir.y))) * 0.9 + 0.1,
-    1.0,
+    0.1,
     ap.world.rain
   );
 

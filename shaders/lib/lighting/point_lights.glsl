@@ -17,7 +17,7 @@ vec3 sample_point_light(
 ) {
   ap_PointLight light = iris_getPointLight(index);
 
-    float sample_distance = distance(player_pos, light.pos);
+  float sample_distance = distance(player_pos, light.pos);
 
   if(sample_distance > LIGHT_RADIUS){
     return vec3(0.0);
@@ -76,7 +76,7 @@ vec3 sample_point_light(
       fresnel, 
       0.5
     ) *
-    shadow * falloff;
+    shadow * falloff * PI;
 
   return lighting;
 }

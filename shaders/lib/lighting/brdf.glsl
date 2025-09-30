@@ -2,6 +2,7 @@
 #define BRDF_GLSL
 
 vec3 brdf_diffuse(Material material, vec3 L) {
+  if (material.metal_id != NO_METAL) return vec3(0.0);
   float NoL = saturate(dot(material.texture_normal, L));
   NoL *= step(0.0, dot(material.geometry_normal, L));
 
@@ -161,6 +162,7 @@ vec3 point_light_brdf(
   float radius
 ) {
   vec3 diffuse = brdf_diffuse(material, normalize(L));
+  diffuse = mix(diffuse, vec3(material.albedo), material.subsurface_scattering);
 
   vec3 N = material.texture_normal;
 
@@ -172,7 +174,9 @@ vec3 point_light_brdf(
   float alpha_prime = saturate(material.roughness + radius / (2.0 * distance));
   float normalization = pow2(material.roughness / alpha_prime);
 
-  return mix(diffuse, brdf_specular(material, L, V), fresnel) * normalization;
+  return mix(diffuse, brdf_specular(material, L, V), fresnel) *
+  normalization *
+  PI;
 }
 
 #endif // BRDF_GLSL

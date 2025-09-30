@@ -13,7 +13,7 @@ in vec2 uv;
 
 uniform sampler2D scene_tex;
 uniform sampler2D shadow_tex;
-uniform sampler2D global_illumination_tex;
+uniform sampler2D global_illumination_tex_w;
 uniform sampler2D ssr_tex_w;
 uniform sampler3D atmospheric_fog_lut_tex;
 
@@ -44,7 +44,7 @@ void main() {
     texture(gbuffer_tex_2, uv)
   );
 
-  vec4 global_illumination = texture(global_illumination_tex, uv);
+  vec4 global_illumination = texture(global_illumination_tex_w, uv);
 
   // shadow *= float(material.mask.parallax_shadow);
 
@@ -85,7 +85,12 @@ void main() {
     material.albedo *
     textureLod(sky_irradiance_lut_tex, irradiance_uv, 0).rgb *
     material.lightmap.y *
-    (1.0 - indirect_fresnel);
+    (1.0 - indirect_fresnel) *
+    global_illumination.a;
+
+  // if (uv.x > 0.5)
+  diffuse +=
+    material.albedo * global_illumination.rgb * (1.0 - indirect_fresnel);
 
   diffuse +=
     compute_subsurface_scattering(
@@ -103,19 +108,13 @@ void main() {
     shadow.rgb *
     direct_fresnel;
 
-  if (material.metal_id != NO_METAL) {
-    specular *= material.albedo;
-  }
-
   specular += ssr.rgb * indirect_fresnel;
 
-  if (material.metal_id == NO_METAL) {
-    shaded_color = diffuse + specular;
-  } else {
-    shaded_color = specular;
-  }
+  shaded_color = diffuse + specular;
 
   shaded_color +=
-    material.emission * material.albedo * EMISSION_STRENGTH * 20.0;
+    (material.emission + 2e-4) * material.albedo * EMISSION_STRENGTH * 20.0;
+
+  // show(global_illumination.a);
 
 }

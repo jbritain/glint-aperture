@@ -17,6 +17,11 @@ let ssrTexWrite: ActiveTextureReference;
 let ssrTexA: BuiltTexture;
 let ssrTexB: BuiltTexture;
 
+let globalIlluminationTexRead: ActiveTextureReference;
+let globalIlluminationTexWrite: ActiveTextureReference;
+let globalIlluminationTexA: BuiltTexture;
+let globalIlluminationTexB: BuiltTexture;
+
 let cloudyFogTexRead: ActiveTextureReference;
 let cloudyFogTexWrite: ActiveTextureReference;
 let cloudyFogTexA: BuiltTexture;
@@ -57,6 +62,18 @@ export function beginFrame(state: WorldState) {
 
   ssrTexWrite.pointTo(state.currentFrame() % 2 == 0 ? ssrTexA : ssrTexB);
   ssrTexRead.pointTo(state.currentFrame() % 2 == 0 ? ssrTexB : ssrTexA);
+
+  globalIlluminationTexWrite.pointTo(
+    state.currentFrame() % 2 == 0 ?
+      globalIlluminationTexA
+    : globalIlluminationTexB,
+  );
+
+  globalIlluminationTexRead.pointTo(
+    state.currentFrame() % 2 == 0 ?
+      globalIlluminationTexB
+    : globalIlluminationTexA,
+  );
 
   cloudyFogTexWrite.pointTo(
     state.currentFrame() % 2 == 0 ? cloudyFogTexA : cloudyFogTexB,
@@ -491,11 +508,6 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .target(0, shadowTex)
     .compile();
 
-  // const sceneTex = pipeline
-  //   .createTexture("scene_tex")
-  //   .format(Format.RGBA16F)
-  //   .clear(true)
-  //   .build();
   const sceneTex = new FlippableTexture("scene_tex")
     .format(Format.RGBA16F)
     .clear(false)
@@ -515,19 +527,43 @@ export function configurePipeline(pipeline: PipelineConfig) {
     .clear(false)
     .build();
 
-  // const globalIlluminationTex = pipeline
-  //   .createTexture("global_illumination_tex")
-  //   .format(Format.RGBA16F)
-  //   .clear(false)
-  //   .build();
+  globalIlluminationTexA = pipeline
+    .createTexture("global_illumination_tex_a")
+    .format(Format.RGBA16F)
+    .clear(false)
+    .build();
 
-  // preTranslucent
-  //   .createComposite("global_illumination")
-  //   .vertex("program/fullscreen_pass.vsh")
-  //   .fragment("program/before_translucents/gtao.fsh")
-  //   .target(0, globalIlluminationTex)
-  //   .ssbo(0, sceneData)
-  //   .compile();
+  globalIlluminationTexB = pipeline
+    .createTexture("global_illumination_tex_b")
+    .format(Format.RGBA16F)
+    .clear(false)
+    .build();
+
+  globalIlluminationTexWrite = pipeline.createTextureReference(
+    "global_illumination_tex_w",
+    null,
+    screenWidth,
+    screenHeight,
+    1,
+    Format.RGBA16F,
+  );
+
+  globalIlluminationTexRead = pipeline.createTextureReference(
+    "global_illumination_tex",
+    null,
+    screenWidth,
+    screenHeight,
+    1,
+    Format.RGBA16F,
+  );
+
+  preTranslucent
+    .createComposite("global_illumination")
+    .vertex("program/fullscreen_pass.vsh")
+    .fragment("program/before_translucents/ssgi.fsh")
+    .target(0, globalIlluminationTexWrite)
+    .ssbo(0, sceneData)
+    .compile();
 
   ssrTexA = pipeline
     .createTexture("ssr_tex_a")

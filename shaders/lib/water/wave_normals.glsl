@@ -8,7 +8,7 @@
 // https://opensource.org/license/mit
 
 #define DRAG_MULT 0.38 // changes how much waves pull on the water
-#define WAVE_E 0.01
+#define WAVE_E 0.1
 #define WAVE_DEPTH 0.5
 
 // Calculates wave value and its derivative,

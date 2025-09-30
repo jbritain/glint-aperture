@@ -4,6 +4,8 @@
 #define BINARY_REFINEMENTS 6
 #define BINARY_REDUCTION 0.5
 
+#include "/lib/util/space_conversions.glsl"
+
 const float hand_depth = 0.0; //MC_HAND_DEPTH * 0.5 + 0.5;
 
 float get_depth(vec2 pos, sampler2D depth_sampler, int lod) {

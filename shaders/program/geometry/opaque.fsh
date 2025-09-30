@@ -24,8 +24,6 @@ in mat3 tbn_matrix;
 void iris_emitFragment() {
   Gbuffer gbuffer;
 
-  show(mat3(ap.camera.viewInv) * normalize(tbn_matrix[0]));
-
   vec2 dx = dFdx(uv);
   vec2 dy = dFdy(uv);
   vec3 parallax_pos;
