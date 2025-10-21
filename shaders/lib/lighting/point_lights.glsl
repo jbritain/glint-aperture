@@ -35,7 +35,7 @@ vec3 sample_point_light(
 
   float light_dot = dot(sample_dir, material.texture_normal);
   light_dot = mix(light_dot, sqrt(material.subsurface_scattering), saturate(-light_dot));
-  player_pos += sample_dir  * material.subsurface_scattering;
+  player_pos += sample_dir  * material.subsurface_scattering * 0.5;
 
   // player_pos =
   //   light.pos -

@@ -125,18 +125,16 @@ void main() {
     indirect_fresnel = vec3(1.0);
   }
 
-
-
   float refracted_depth = texelFetch(solidDepthTex, ivec2(refracted_pos.xy * textureSize(solidDepthTex, 0).xy), 0).r;
-  if(refracted_depth == 1.0 && in_water && refracted.y > 0.0){
+  if(in_water && ((refracted_depth == 1.0 && refracted.y > 0.0) || saturate(refracted_pos.xy) != refracted_pos.xy)){
     vec3 sky = get_sky(refracted, false);
 
-      vec4 clouds = texture(
-        cloud_spheremap_tex,
-        cartesian_to_hemispherical(refracted) / TAU
-      );
-      sky = fma(sky, vec3(clouds.a), clouds.rgb);
-      color = sky * (1.0 - indirect_fresnel);
+    vec4 clouds = texture(
+      cloud_spheremap_tex,
+      cartesian_to_hemispherical(refracted) / TAU
+    );
+    // sky = fma(sky, vec3(clouds.a), clouds.rgb);
+    color = sky;
 
   } else if (
     refracted_depth > translucent_depth

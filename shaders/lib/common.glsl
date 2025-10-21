@@ -193,5 +193,16 @@ float luminance(vec3 color) {
 
 #define ROUGH_REFLECTION_THRESHOLD 0.5
 
+const ivec2 neighbourhood_offsets[8] = ivec2[8](
+  ivec2(1, 1),
+  ivec2(1, -1),
+  ivec2(-1, 1),
+  ivec2(-1, -1),
+  ivec2(1, 0),
+  ivec2(0, 1),
+  ivec2(-1, 0),
+  ivec2(0, -1)
+);
+
 
 #endif // COMMON_GLSL

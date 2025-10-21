@@ -6,7 +6,7 @@
 
 #include "/lib/util/space_conversions.glsl"
 
-const float hand_depth = 0.0; //MC_HAND_DEPTH * 0.5 + 0.5;
+const float hand_depth = 0.56; //MC_HAND_DEPTH * 0.5 + 0.5;
 
 float get_depth(vec2 pos, sampler2D depth_sampler, int lod) {
   return texelFetch(depth_sampler, ivec2(pos * ap.game.screenSize), lod).r;

@@ -33,6 +33,8 @@ vec3 hejl_burgess_tonemap(vec3 v) {
 }
 
 vec3 aces_tonemap(vec3 v) {
+  v *= 0.5;
+
   float a = 2.51;
   float b = 0.03;
   float c = 2.43;
@@ -131,6 +133,7 @@ vec3 agx_look(vec3 val) {
 }
 
 vec3 agx_tonemap(vec3 col) {
+  col *= 2.0;
   col = agx(col);
   col = agx_look(col);
   col = agx_eotf(col);

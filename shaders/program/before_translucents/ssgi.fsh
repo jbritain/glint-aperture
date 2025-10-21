@@ -6,6 +6,7 @@
 #include "/lib/structs/gbuffer_material.glsl"
 #include "/lib/util/misc.glsl"
 #include "/lib/util/reproject.glsl"
+#include "/lib/atmospherics/sky.glsl"
 
 in vec2 uv;
 uniform sampler2D diffuse_tex;
@@ -13,6 +14,7 @@ uniform sampler2D gbuffer_tex_1;
 uniform sampler2D mainDepthTex;
 uniform sampler2D previousSolidDepthTex;
 uniform sampler2D global_illumination_tex;
+uniform sampler2D cloud_spheremap_tex;
 
 layout(location = 0) out vec4 global_illumination;
 
@@ -60,8 +62,21 @@ void main() {
     );
 
     if (intersect) {
-      global_illumination.rgb += texture(diffuse_tex, sample_pos.xy).rgb;
+      vec3 gi_sample = texture(diffuse_tex, sample_pos.xy).rgb;
+      if (!any(isnan(gi_sample))) global_illumination.rgb += gi_sample;
     } else {
+      // vec3 world_sample_dir = mat3(ap.camera.viewInv) * sample_dir;
+      // vec3 sky = get_sky(
+      //   vec3(0.0),
+      //   mat3(ap.camera.viewInv) * sample_dir,
+      //   false
+      // );
+      // vec4 clouds = texture(
+      //   cloud_spheremap_tex,
+      //   cartesian_to_hemispherical(world_sample_dir) / TAU
+      // );
+      // sky = fma(sky, vec3(clouds.a), clouds.rgb);
+      // global_illumination.rgb += sky * gbuffer.lightmap.y;
       global_illumination.a += 1.0;
     }
   }
@@ -99,6 +114,8 @@ void main() {
     );
   }
 
-  show(global_illumination.a);
+  // if (uv.x < 0.5) {
+  //   global_illumination = vec4(0.0, 0.0, 0.0, 1.0);
+  // }
 
 }

@@ -48,14 +48,7 @@ void main() {
     previous_screen_pos
   );
 
-  vec4 previous_ssr = texture(ssr_tex, previous_screen_pos.xy);
-
-  // mat4 previous_ssr_samples = mat4(
-  //   textureGather(ssr_tex, previous_screen_pos.xy, 0),
-  //   textureGather(ssr_tex, previous_screen_pos.xy, 1),
-  //   textureGather(ssr_tex, previous_screen_pos.xy, 2),
-  //   textureGather(ssr_tex, previous_screen_pos.xy, 3)
-  // );
+  vec4 previous_ssr = catmull_texture(ssr_tex, previous_screen_pos.xy);
 
   ssr = compute_screen_space_reflections(
     view_pos,
@@ -66,20 +59,6 @@ void main() {
     diffuse_tex,
     true
   );
-
-  // previous_ssr_samples = transpose(previous_ssr_samples);
-
-  // // weight previous samples by similarity in fresnel to the current sample
-  // vec3 previous_ssr = vec3(0.0);
-  // float previous_ssr_weight = 0.0;
-
-  // for (int i = 0; i < 4; i++) {
-  //   float weight = 1.0 - saturate(abs(previous_ssr_samples[i].a - ssr.a));
-  //   previous_ssr += previous_ssr_samples[i].rgb * weight;
-  //   previous_ssr_weight += weight;
-  // }
-
-  // previous_ssr /= previous_ssr_weight;
 
   if (
     distance(previous_view_pos, actual_previous_view_pos) < 0.1 &&

@@ -129,7 +129,7 @@ vec4 compute_shadowing_and_blocker_distance(
   float cloud_shadow = texture(cloud_shadow_tex, cloud_shadow_pos.xy).r;
   shadow.rgb *= cloud_shadow;
 
-  shadow.a = blocker_distance;
+  shadow.a = mix(blocker_distance, 100.0, 1.0 - cloud_shadow);
 
   return shadow;
 }

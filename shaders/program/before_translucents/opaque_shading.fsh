@@ -58,6 +58,20 @@ void main() {
 
   vec4 ssr = texture(ssr_tex_w, uv);
 
+  vec3 max_col = vec3(0.0);
+  vec3 min_col = vec3(999999999.0);
+  for (int i = 0; i < 8; i++) {
+    vec3 neighbourhood_sample = texelFetch(
+      ssr_tex_w,
+      ivec2(gl_FragCoord.xy) + neighbourhood_offsets[i],
+      0
+    ).rgb;
+    max_col = max(max_col, neighbourhood_sample);
+    min_col = min(min_col, neighbourhood_sample);
+  }
+
+  ssr.rgb = clamp(ssr.rgb, min_col, max_col);
+
   vec3 indirect_fresnel =
     material.roughness <= ROUGH_REFLECTION_THRESHOLD
       ? schlick(
@@ -85,12 +99,18 @@ void main() {
     material.albedo *
     textureLod(sky_irradiance_lut_tex, irradiance_uv, 0).rgb *
     material.lightmap.y *
-    (1.0 - indirect_fresnel) *
+    (material.metal_id == NO_METAL
+      ? 1.0 - indirect_fresnel
+      : vec3(0.0)) *
     global_illumination.a;
 
   // if (uv.x > 0.5)
   diffuse +=
-    material.albedo * global_illumination.rgb * (1.0 - indirect_fresnel);
+    material.albedo *
+    global_illumination.rgb *
+    (material.metal_id == NO_METAL
+      ? 1.0 - indirect_fresnel
+      : vec3(0.0));
 
   diffuse +=
     compute_subsurface_scattering(
