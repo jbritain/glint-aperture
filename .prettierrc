@@ -1,0 +1,5 @@
+{
+  "plugins": ["prettier-plugin-glsl"],
+  "overrides": [{ "files": ["*.csh"], "options": { "parser": "glsl-parser" } }],
+  "experimentalTernaries": true
+}

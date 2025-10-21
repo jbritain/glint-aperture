@@ -1,0 +1,7 @@
+{
+  "slang.additionalSearchPaths": [
+    "../../includes"
+  ],
+  "slang.format.enableFormatOnType": false,
+  "slang.format.clangFormatFallbackStyle": "{BasedOnStyle: Microsoft, BreakBeforeBraces: Attach, BreakConstructorInitializers: AfterColon}"
+}

@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["pack.ts"],
+  "sourcesContent": ["export function configureRenderer(renderer: RendererConfig): void {\n    renderer.mergedHandDepth = true;\n    renderer.ambientOcclusionLevel = 1.0;\n    renderer.disableShade = true;\n    renderer.render.entityShadow = false;\n}\n\n\nexport function configurePipeline(pipeline: PipelineConfig): void {\n    let sceneTex = pipeline.createTexture(\"sceneTex\")\n            .width(screenWidth)\n            .height(screenHeight)\n            .format(Format.RGBA8)\n            .build();\n\n    pipeline.createObjectShader(\"basic\", Usage.BASIC)\n            .location(\"program/geometry/basic\")\n            .target(0, sceneTex)\n            .compile();\n\n\n    // The combination pass. For more information, see the file.\n    pipeline.createCombinationPass(\"program/combination\").compile();\n}\n\nexport function beginFrame(state : WorldState) : void {\n    // This runs every frame. However, it won't be used in this template.\n}"],
+  "mappings": ";AAAO,SAAS,kBAAkB,UAAgC;AAC9D,WAAS,kBAAkB;AAC3B,WAAS,wBAAwB;AACjC,WAAS,eAAe;AACxB,WAAS,OAAO,eAAe;AACnC;AAGO,SAAS,kBAAkB,UAAgC;AAC9D,MAAI,WAAW,SAAS,cAAc,UAAU,EACvC,MAAM,WAAW,EACjB,OAAO,YAAY,EACnB,OAAO,OAAO,KAAK,EACnB,MAAM;AAEf,WAAS,mBAAmB,SAAS,MAAM,KAAK,EACvC,SAAS,wBAAwB,EACjC,OAAO,GAAG,QAAQ,EAClB,QAAQ;AAIjB,WAAS,sBAAsB,qBAAqB,EAAE,QAAQ;AAClE;AAEO,SAAS,WAAW,OAA2B;AAEtD;",
+  "names": []
+}
